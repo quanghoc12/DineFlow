@@ -1,0 +1,48 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.BusinessObjects", "src\DineFlow.BusinessObjects\DineFlow.BusinessObjects.csproj", "{335CE827-40D7-4E28-9CFA-67A56C73B19E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.DataAccessObjects", "src\DineFlow.DataAccessObjects\DineFlow.DataAccessObjects.csproj", "{CE83EBA9-177A-4E24-8E24-B17705199FE2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.Repositories", "src\DineFlow.Repositories\DineFlow.Repositories.csproj", "{59FDEBD5-41AE-40F8-ABB4-FB81FB2E7736}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.Services", "src\DineFlow.Services\DineFlow.Services.csproj", "{2DE012F6-965A-403F-ABFD-07F2E4F97BF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.Api", "src\DineFlow.Api\DineFlow.Api.csproj", "{A877B5D9-53FD-409C-99EA-EC5E71FF317E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DineFlow.WPFApp", "src\DineFlow.WPFApp\DineFlow.WPFApp.csproj", "{33CCD209-F56E-4E61-922C-A6A736B273BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{335CE827-40D7-4E28-9CFA-67A56C73B19E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{335CE827-40D7-4E28-9CFA-67A56C73B19E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{335CE827-40D7-4E28-9CFA-67A56C73B19E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{335CE827-40D7-4E28-9CFA-67A56C73B19E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE83EBA9-177A-4E24-8E24-B17705199FE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE83EBA9-177A-4E24-8E24-B17705199FE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE83EBA9-177A-4E24-8E24-B17705199FE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE83EBA9-177A-4E24-8E24-B17705199FE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59FDEBD5-41AE-40F8-ABB4-FB81FB2E7736}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59FDEBD5-41AE-40F8-ABB4-FB81FB2E7736}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59FDEBD5-41AE-40F8-ABB4-FB81FB2E7736}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59FDEBD5-41AE-40F8-ABB4-FB81FB2E7736}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DE012F6-965A-403F-ABFD-07F2E4F97BF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DE012F6-965A-403F-ABFD-07F2E4F97BF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DE012F6-965A-403F-ABFD-07F2E4F97BF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DE012F6-965A-403F-ABFD-07F2E4F97BF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A877B5D9-53FD-409C-99EA-EC5E71FF317E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A877B5D9-53FD-409C-99EA-EC5E71FF317E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A877B5D9-53FD-409C-99EA-EC5E71FF317E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A877B5D9-53FD-409C-99EA-EC5E71FF317E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33CCD209-F56E-4E61-922C-A6A736B273BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33CCD209-F56E-4E61-922C-A6A736B273BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33CCD209-F56E-4E61-922C-A6A736B273BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33CCD209-F56E-4E61-922C-A6A736B273BB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
