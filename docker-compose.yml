@@ -1,0 +1,21 @@
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: dineflow-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: dineflow
+            POSTGRES_USER: dineflow_user
+            POSTGRES_PASSWORD: dineflow_password
+        ports:
+            - "5433:5432"
+        volumes:
+            - dineflow-postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U dineflow_user -d dineflow"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    dineflow-postgres-data:

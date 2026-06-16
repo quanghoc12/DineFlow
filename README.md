@@ -7,7 +7,7 @@ Bộ khung dự án nhóm theo hướng **Feature-based + Code First + EF Core M
 ```text
 Customer Web QR (React/Vite)
     ↓ HTTP/SignalR
-DineFlow.Api (ASP.NET Core Web API + SignalR)
+DineFlow.Api (ASP.NET Core 10 Web API + SignalR)
     ↓
 DineFlow.Services
     ↓
@@ -15,9 +15,9 @@ DineFlow.Repositories
     ↓
 DineFlow.DataAccessObjects
     ↓ EF Core Migration / AppDbContext
-SQL Server
+PostgreSQL Docker
 
-DineFlow.WPFApp
+DineFlow.WPFApp (.NET 8 WPF)
     ↓
 DineFlow.Services
     ↓
@@ -25,7 +25,16 @@ DineFlow.Repositories
     ↓
 DineFlow.DataAccessObjects
     ↓ EF Core
-SQL Server
+PostgreSQL Docker
+```
+
+## Stack rule
+
+```text
+WPF Staff App: .NET 8 / net8.0-windows
+Customer/API Web: ASP.NET Core 10 API + React/Vite customer web
+Database: PostgreSQL in Docker
+Shared layers: net8.0 so WPF and API can both reference them
 ```
 
 ## Project structure
@@ -51,20 +60,32 @@ DineFlow.sln
 
 ## Setup nhanh
 
-### 1. Restore .NET
+### 1. Start PostgreSQL
+
+```bash
+docker compose up -d postgres
+```
+
+Default local connection:
+
+```text
+Host=localhost;Port=5432;Database=dineflow;Username=dineflow_user;Password=dineflow_password
+```
+
+### 2. Restore .NET
 
 ```bash
 dotnet tool restore
 dotnet restore
 ```
 
-### 2. Build backend/WPF projects
+### 3. Build backend/WPF projects
 
 ```bash
 dotnet build DineFlow.sln
 ```
 
-### 3. Tạo database bằng Migration
+### 4. Tạo database bằng Migration
 
 Chỉ DB owner/leader chạy lệnh này:
 
@@ -82,17 +103,17 @@ dotnet ef database update \
   --context AppDbContext
 ```
 
-### 4. Chạy API
+### 5. Chạy API
 
 ```bash
 dotnet run --project src/DineFlow.Api
 ```
 
-### 5. Chạy WPF
+### 6. Chạy WPF
 
 Mở solution bằng Visual Studio 2022, set startup project là `DineFlow.WPFApp`.
 
-### 6. Chạy Customer Web
+### 7. Chạy Customer Web
 
 ```bash
 cd src/DineFlow.CustomerWeb
@@ -107,6 +128,6 @@ npm run dev
 - Api chỉ gọi Services.
 - Services gọi Repositories.
 - Repositories gọi DAO.
-- DAO dùng AppDbContext/EF Core để thao tác SQL Server.
+- DAO dùng AppDbContext/EF Core để thao tác PostgreSQL.
 - Migration chỉ do DB owner/leader tạo.
 - CustomerWeb chỉ gọi API, không truy cập database.
