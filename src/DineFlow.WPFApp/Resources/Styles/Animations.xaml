@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Window Fade-in Animation -->
+    <Storyboard x:Key="WindowFadeInStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0.0" To="1.0"
+                         Duration="0:0:0.200" />
+    </Storyboard>
+    
+    <!-- We will use ControlTemplates with embedded storyboards for Button hovers/presses to avoid resource resolution issues across different visual trees. -->
+
+</ResourceDictionary>

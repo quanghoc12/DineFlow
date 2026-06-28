@@ -4,10 +4,48 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:DineFlow.WPFApp.ViewModels"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
         Title="DineFlow - Main Shell" Height="768" Width="1024"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome GlassFrameThickness="0" CornerRadius="0" CaptionHeight="60" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Window Control Buttons Styles -->
+        <Style TargetType="Button" x:Key="WindowControlButtonStyle">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E2E8F0"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Button" x:Key="WindowCloseButtonStyle" BasedOn="{StaticResource WindowControlButtonStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EF4444"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard Storyboard="{StaticResource WindowFadeInStoryboard}" />
+        </EventTrigger>
+    </Window.Triggers>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -15,44 +53,72 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="260"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- HEADER -->
-        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#2C3E50">
-            <Grid Margin="15,0">
-                <TextBlock Text="DineFlow App" Foreground="White" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+        <!-- SIDEBAR -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}" BorderThickness="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
                 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CurrentUserName}" Foreground="White" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding CurrentRole, StringFormat='({0})'}" Foreground="#BDC3C7" FontSize="14" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <Button Content="Logout" Command="{Binding LogoutCommand}" Padding="15,5" Background="#E74C3C" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                <!-- Logo Area -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                    <iconPacks:PackIconMaterial Kind="SilverwareForkKnife" Width="28" Height="28" Foreground="{DynamicResource BrandPrimaryBrush}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="DineFlow" FontFamily="{StaticResource PrimaryFontFamily}" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Navigation -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding MenuItems}" Margin="12,24,12,0" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource SidebarButtonStyle}"
+                                    Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="ChevronRight" Width="16" Height="16" Margin="0,0,16,0" VerticalAlignment="Center" Foreground="#94A3B8"/>
+                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="15" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <!-- HEADER -->
+        <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource HeaderBackgroundBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0">
+                    <iconPacks:PackIconMaterial Kind="AccountCircle" Width="24" Height="24" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentUserName}" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentRole, StringFormat='({0})'}" Style="{StaticResource CaptionTextStyle}" Margin="0,0,32,0" VerticalAlignment="Center"/>
+                    <Button WindowChrome.IsHitTestVisibleInChrome="True" Content="Logout" Command="{Binding LogoutCommand}" Style="{StaticResource StandardButtonStyle}" Padding="16,8" />
+                </StackPanel>
+                
+                <!-- System Window Controls -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Click="BtnMinimize_Click" Style="{StaticResource WindowControlButtonStyle}" Width="46" Height="32">
+                        <iconPacks:PackIconMaterial Kind="WindowMinimize" Width="12" Height="12" />
+                    </Button>
+                    <Button Click="BtnMaximize_Click" Style="{StaticResource WindowControlButtonStyle}" Width="46" Height="32">
+                        <iconPacks:PackIconMaterial Kind="WindowMaximize" Width="12" Height="12" />
+                    </Button>
+                    <Button Click="BtnClose_Click" Style="{StaticResource WindowCloseButtonStyle}" Width="46" Height="32">
+                        <iconPacks:PackIconMaterial Kind="Close" Width="12" Height="12" />
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- SIDEBAR -->
-        <Border Grid.Row="1" Grid.Column="0" Background="#34495E">
-            <ItemsControl ItemsSource="{Binding MenuItems}" Margin="0,15,0,0">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <!-- Bind Command to the MainViewModel while CommandParameter is the MenuItemViewModel itself -->
-                        <Button Content="{Binding Title}" 
-                                Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                CommandParameter="{Binding}"
-                                Margin="10,5" Padding="10" 
-                                HorizontalContentAlignment="Left"
-                                Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" FontSize="16"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
-
         <!-- CONTENT AREA -->
-        <Border Grid.Row="1" Grid.Column="1" Background="#ECF0F1" Padding="20">
-            <!-- 4. ContentControl bound to CurrentViewModel. Automatic resolution happens via DataTemplates. -->
-            <ContentControl Content="{Binding CurrentViewModel}" />
+        <!-- Adding some padding inside the window background so it looks like floating content -->
+        <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource WindowBackgroundBrush}">
+            <ContentControl Content="{Binding CurrentViewModel}" Margin="32" />
         </Border>
     </Grid>
 </Window>

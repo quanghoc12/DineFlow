@@ -47,8 +47,7 @@ public partial class App : Application
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<DineFlow.DataAccessObjects.AppDbContext>();
                 
-                // [TẠM THỜI] Xóa DB cũ để nạp lại Hash Password mới một cách chuẩn xác
-                dbContext.Database.EnsureDeleted();
+                // Ensure the database is created if it doesn't exist
                 dbContext.Database.EnsureCreated();
             }
         }

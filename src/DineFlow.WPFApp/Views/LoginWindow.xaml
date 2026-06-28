@@ -4,58 +4,73 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:DineFlow.WPFApp.ViewModels"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         d:DataContext="{d:DesignInstance Type=viewmodels:LoginViewModel}"
         mc:Ignorable="d"
-        Title="Login - DineFlow" Height="400" Width="400"
+        Title="Login - DineFlow" Height="600" Width="900"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        FocusManager.FocusedElement="{Binding ElementName=txtUsername}">
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard Storyboard="{StaticResource WindowFadeInStoryboard}" />
+        </EventTrigger>
+    </Window.Triggers>
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid Margin="30">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="420" />
+        </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Text="DineFlow" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+        <!-- Left Side: Brand Area -->
+        <Border Grid.Column="0" Background="{DynamicResource BrandPrimaryBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="40">
+                <iconPacks:PackIconMaterial Kind="SilverwareForkKnife" Width="96" Height="96" Foreground="{DynamicResource TextOnAccentBrush}" HorizontalAlignment="Center" Margin="0,0,0,24" />
+                <TextBlock Text="DineFlow" FontFamily="{StaticResource PrimaryFontFamily}" FontSize="48" FontWeight="Bold" Foreground="{DynamicResource TextOnAccentBrush}" HorizontalAlignment="Center" Margin="0,0,0,16" />
+                <TextBlock Text="Modern Restaurant Management" FontFamily="{StaticResource PrimaryFontFamily}" FontSize="18" FontWeight="Medium" Foreground="{DynamicResource TextOnAccentBrush}" Opacity="0.85" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
 
-        <TextBlock Grid.Row="1" Text="Username:" Margin="0,0,0,5"/>
-        <TextBox Grid.Row="2" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" 
-                 Margin="0,0,0,15" Padding="5" Height="30"/>
+        <!-- Right Side: Login Form -->
+        <Border Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}">
+            <Grid Margin="48">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Welcome Back" Style="{StaticResource ApplicationTitleStyle}" Margin="0,0,0,8" />
+                    <TextBlock Text="Please sign in to your account." Style="{StaticResource BodyTextStyle}" FontSize="15" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,48" />
 
-        <TextBlock Grid.Row="3" Text="Password:" Margin="0,0,0,5"/>
-        <!-- Securely forward password value via Code-Behind to preserve MVVM boundaries -->
-        <PasswordBox Grid.Row="4" x:Name="txtPassword" PasswordChanged="txtPassword_PasswordChanged" 
-                     Margin="0,0,0,15" Padding="5" Height="30"/>
+                    <TextBlock Text="Username" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBox x:Name="txtUsername" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" 
+                             Style="{StaticResource StandardTextBoxStyle}" Margin="0,0,0,24" />
 
-        <!-- Error Message -->
-        <TextBlock Grid.Row="5" Text="{Binding ErrorMessage}" Foreground="Red" 
-                   TextWrapping="Wrap" Margin="0,0,0,15" 
-                   HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="Password" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <!-- Securely forward password value via Code-Behind to preserve MVVM boundaries -->
+                    <PasswordBox x:Name="txtPassword" PasswordChanged="txtPassword_PasswordChanged" 
+                                 Style="{StaticResource StandardPasswordBoxStyle}" Margin="0,0,0,8" />
+                                 
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource ActionDangerBrush}" 
+                               Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,16,0,8" />
 
-        <!-- Action Row: Progress Bar & Login Button -->
-        <Grid Grid.Row="6" VerticalAlignment="Top">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+                    <Button Content="Sign In" Command="{Binding LoginCommand}" 
+                            IsDefault="True" Style="{StaticResource PrimaryButtonStyle}" Height="44" FontSize="16" Margin="0,24,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
-            <!-- Loading Spinner (Indeterminate Progress Bar) -->
-            <ProgressBar Grid.Column="0" IsIndeterminate="True" 
-                         Margin="0,0,15,0" Height="20"
-                         Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" />
-
-            <Button Grid.Column="1" Content="Login" Command="{Binding LoginCommand}" 
-                    IsDefault="True"
-                    Width="100" Height="35" Padding="10,5"/>
-        </Grid>
+        <!-- Loading Overlay -->
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource OverlayBackgroundBrush}" 
+                Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Panel.ZIndex="10">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="4" Foreground="{DynamicResource BrandPrimaryBrush}" BorderThickness="0" Background="Transparent" />
+                <TextBlock Text="Authenticating..." Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,15,0,0" Foreground="{DynamicResource BrandPrimaryBrush}" />
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

@@ -6,6 +6,16 @@
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Typography.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Animations.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Cards.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Buttons.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/TextBoxes.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/DataGrid.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <DataTemplate DataType="{x:Type viewmodels:UserManagementViewModel}">
                 <views:UserManagementView />
             </DataTemplate>
