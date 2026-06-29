@@ -1,4 +1,5 @@
 using DineFlow.DataAccessObjects.DbContexts;
+using DineFlow.DataAccessObjects.Seed;
 using DineFlow.Services;
 using DineFlow.Services.Auth;
 using DineFlow.WPFApp.ViewModels;
@@ -42,6 +43,13 @@ public partial class App : Application
         services.AddTransient<MenuManagementView>();
         services.AddTransient<MainWindow>();
         _serviceProvider = services.BuildServiceProvider();
+
+        using (IServiceScope initializationScope = _serviceProvider.CreateScope())
+        {
+            AppDbContext dbContext = initializationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Database.Migrate();
+            DevelopmentDataSeeder.SeedDevelopmentDataAsync(dbContext).GetAwaiter().GetResult();
+        }
 
         RunLoginLoop();
     }
