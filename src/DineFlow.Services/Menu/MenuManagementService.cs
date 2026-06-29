@@ -66,31 +66,40 @@ public sealed class MenuManagementService : IMenuManagementService
             throw new InvalidOperationException("Tên danh mục phải từ 1 đến 120 ký tự.");
         if (request.Description?.Length > 500)
             throw new InvalidOperationException("Mô tả danh mục không vượt quá 500 ký tự.");
+        if (request.DisplayOrder < 0)
+            throw new InvalidOperationException("Thứ tự danh mục không được âm.");
         if (await _repository.CategoryNameExistsAsync(name, request.CategoryId, cancellationToken))
             throw new InvalidOperationException("Tên danh mục đã tồn tại.");
 
         DateTime now = DateTime.UtcNow;
+        List<Category> categories = await _repository.GetCategoriesAsync(cancellationToken);
+        int targetOrder = request.DisplayOrder;
+        Category category;
+
         if (request.CategoryId is null)
         {
-            await _repository.AddCategoryAsync(new Category
+            category = new Category
             {
                 CategoryName = name,
                 Description = request.Description?.Trim(),
-                DisplayOrder = request.DisplayOrder,
+                DisplayOrder = targetOrder,
                 IsActive = true,
                 CreatedAt = now,
                 UpdatedAt = now
-            }, cancellationToken);
+            };
+            await _repository.AddCategoryAsync(category, cancellationToken);
+            categories.Add(category);
         }
         else
         {
-            Category category = await _repository.GetCategoryAsync(request.CategoryId.Value, cancellationToken)
+            category = categories.FirstOrDefault(x => x.CategoryId == request.CategoryId.Value)
                 ?? throw new InvalidOperationException("Không tìm thấy danh mục.");
             category.CategoryName = name;
             category.Description = request.Description?.Trim();
-            category.DisplayOrder = request.DisplayOrder;
             category.UpdatedAt = now;
         }
+
+        RebuildCategoryOrders(categories, category, targetOrder, now);
         await _repository.SaveChangesAsync(cancellationToken);
     }
 
@@ -497,5 +506,30 @@ public sealed class MenuManagementService : IMenuManagementService
         if (!_currentUser.IsAuthenticated ||
             !_currentUser.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Chỉ Admin được quản lý thực đơn.");
+    }
+
+    private static void RebuildCategoryOrders(
+        List<Category> categories,
+        Category movingCategory,
+        int targetOrder,
+        DateTime now)
+    {
+        List<Category> ordered = categories
+            .Where(category => !ReferenceEquals(category, movingCategory))
+            .OrderBy(category => category.DisplayOrder)
+            .ThenBy(category => category.CategoryName)
+            .ToList();
+
+        int insertIndex = Math.Clamp(targetOrder, 0, ordered.Count);
+        ordered.Insert(insertIndex, movingCategory);
+
+        for (int index = 0; index < ordered.Count; index++)
+        {
+            if (ordered[index].DisplayOrder != index)
+            {
+                ordered[index].DisplayOrder = index;
+                ordered[index].UpdatedAt = now;
+            }
+        }
     }
 }

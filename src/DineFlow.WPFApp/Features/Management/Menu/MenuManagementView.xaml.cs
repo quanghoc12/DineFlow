@@ -130,11 +130,11 @@ public partial class MenuManagementView : UserControl
         _editingCategoryId = null;
         _viewModel.SelectedCategory = null;
         CategoryFormTitle.Text = "Thêm danh mục mới";
-        CategoryFormHint.Text = "Nhập thông tin rồi bấm Lưu danh mục để tạo danh mục mới.";
+        CategoryFormHint.Text = "Thứ tự được gợi ý là cuối danh sách. Nếu nhập số đã tồn tại, các danh mục phía sau sẽ tự dịch xuống.";
         CategoryToggleButton.IsEnabled = false;
         CategoryNameBox.Clear();
         CategoryDescriptionBox.Clear();
-        CategoryOrderBox.Text = "0";
+        CategoryOrderBox.Text = GetNextCategoryOrder().ToString(CultureInfo.InvariantCulture);
     }
 
     private void BeginEditCategory(ManagedCategoryDto category)
@@ -142,11 +142,18 @@ public partial class MenuManagementView : UserControl
         _editingCategoryId = category.CategoryId;
         _viewModel.SelectedCategory = category;
         CategoryFormTitle.Text = $"Chỉnh sửa: {category.CategoryName}";
-        CategoryFormHint.Text = "Đang chỉnh sửa danh mục đã chọn. Bấm Lưu danh mục để cập nhật.";
+        CategoryFormHint.Text = "Khi đổi thứ tự, các danh mục nằm giữa vị trí cũ và mới sẽ tự dịch chuyển để giữ thứ tự duy nhất.";
         CategoryToggleButton.IsEnabled = true;
         CategoryNameBox.Text = category.CategoryName;
         CategoryDescriptionBox.Text = category.Description ?? string.Empty;
         CategoryOrderBox.Text = category.DisplayOrder.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private int GetNextCategoryOrder()
+    {
+        return _viewModel.EditableCategories.Count == 0
+            ? 0
+            : _viewModel.EditableCategories.Max(category => category.DisplayOrder) + 1;
     }
 
     private async void SaveCategory_Click(object sender, RoutedEventArgs e)

@@ -14,7 +14,7 @@ public sealed class MenuManagementDao : IMenuManagementDao
     }
 
     public Task<List<Category>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
-        _dbContext.Categories.AsNoTracking()
+        _dbContext.Categories
             .OrderBy(category => category.DisplayOrder)
             .ThenBy(category => category.CategoryName)
             .ToListAsync(cancellationToken);
