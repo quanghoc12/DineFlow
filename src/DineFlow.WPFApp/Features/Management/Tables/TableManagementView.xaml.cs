@@ -1,5 +1,6 @@
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.WPFApp.ViewModels;
+using DineFlow.Services.Tables;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,15 +9,23 @@ namespace DineFlow.WPFApp.Features.Management.Tables;
 public partial class TableManagementView : UserControl
 {
     private readonly TableManagementViewModel _viewModel;
+    private readonly ITableManagementService _service;
 
-    public TableManagementView(TableManagementViewModel viewModel)
+    public TableManagementView(TableManagementViewModel viewModel, ITableManagementService service)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _service = service;
         DataContext = viewModel;
     }
 
     public Task LoadAsync() => _viewModel.LoadAsync();
+
+    private async void AreaButton_Click(object sender, RoutedEventArgs e)
+    {
+        new AreaManagementWindow(_service) { Owner = Window.GetWindow(this) }.ShowDialog();
+        await _viewModel.LoadAsync();
+    }
 
     private async void CreateButton_Click(object sender, RoutedEventArgs e)
     {
