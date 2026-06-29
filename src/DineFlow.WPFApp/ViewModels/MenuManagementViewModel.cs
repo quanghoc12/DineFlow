@@ -23,6 +23,7 @@ public sealed class MenuManagementViewModel : BaseViewModel
     public MenuManagementViewModel(IMenuManagementService service) => _service = service;
 
     public ObservableCollection<ManagedCategoryDto> Categories { get; } = [];
+    public ObservableCollection<ManagedCategoryDto> EditableCategories { get; } = [];
     public ObservableCollection<ManagedMenuItemDto> Items { get; } = [];
     public ObservableCollection<ManagedChoiceGroupDto> ChoiceGroups { get; } = [];
     public ObservableCollection<ManagedChoiceItemDto> ChoiceItems { get; } = [];
@@ -122,7 +123,12 @@ public sealed class MenuManagementViewModel : BaseViewModel
 
         Categories.Clear();
         Categories.Add(new ManagedCategoryDto { CategoryId = 0, CategoryName = "Tất cả danh mục", IsActive = true });
-        foreach (ManagedCategoryDto category in categories) Categories.Add(category);
+        EditableCategories.Clear();
+        foreach (ManagedCategoryDto category in categories)
+        {
+            Categories.Add(category);
+            EditableCategories.Add(category);
+        }
 
         ChoiceGroups.Clear();
         foreach (ManagedChoiceGroupDto group in groups) ChoiceGroups.Add(group);

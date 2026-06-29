@@ -10,6 +10,7 @@ namespace DineFlow.WPFApp.Features.Management.Menu;
 public partial class MenuManagementView : UserControl
 {
     private readonly MenuManagementViewModel _viewModel;
+    private int? _editingCategoryId;
 
     public MenuManagementView(MenuManagementViewModel viewModel)
     {
@@ -50,15 +51,14 @@ public partial class MenuManagementView : UserControl
         FillChoiceItemForm();
         FillChannelForm();
         FillChannelPriceForms();
+        BeginNewCategory();
     }
 
     private void FillCategoryForm()
     {
         ManagedCategoryDto? category = _viewModel.SelectedCategory;
         if (category is null || category.CategoryId == 0) return;
-        CategoryNameBox.Text = category.CategoryName;
-        CategoryDescriptionBox.Text = category.Description ?? string.Empty;
-        CategoryOrderBox.Text = category.DisplayOrder.ToString(CultureInfo.InvariantCulture);
+        BeginEditCategory(category);
     }
 
     private void FillItemForm()
@@ -110,12 +110,43 @@ public partial class MenuManagementView : UserControl
             _viewModel.SelectedSalesChannel).ToString(CultureInfo.InvariantCulture);
     }
 
+    private void AddCategoryButton_Click(object sender, RoutedEventArgs e) => BeginNewCategory();
+
+    private void EditCategoryRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ManagedCategoryDto category)
+        {
+            BeginEditCategory(category);
+        }
+    }
+
     private void NewCategory_Click(object sender, RoutedEventArgs e)
     {
+        BeginNewCategory();
+    }
+
+    private void BeginNewCategory()
+    {
+        _editingCategoryId = null;
         _viewModel.SelectedCategory = null;
+        CategoryFormTitle.Text = "Thêm danh mục mới";
+        CategoryFormHint.Text = "Nhập thông tin rồi bấm Lưu danh mục để tạo danh mục mới.";
+        CategoryToggleButton.IsEnabled = false;
         CategoryNameBox.Clear();
         CategoryDescriptionBox.Clear();
         CategoryOrderBox.Text = "0";
+    }
+
+    private void BeginEditCategory(ManagedCategoryDto category)
+    {
+        _editingCategoryId = category.CategoryId;
+        _viewModel.SelectedCategory = category;
+        CategoryFormTitle.Text = $"Chỉnh sửa: {category.CategoryName}";
+        CategoryFormHint.Text = "Đang chỉnh sửa danh mục đã chọn. Bấm Lưu danh mục để cập nhật.";
+        CategoryToggleButton.IsEnabled = true;
+        CategoryNameBox.Text = category.CategoryName;
+        CategoryDescriptionBox.Text = category.Description ?? string.Empty;
+        CategoryOrderBox.Text = category.DisplayOrder.ToString(CultureInfo.InvariantCulture);
     }
 
     private async void SaveCategory_Click(object sender, RoutedEventArgs e)
@@ -123,21 +154,34 @@ public partial class MenuManagementView : UserControl
         if (!TryParseInt(CategoryOrderBox.Text, "Thứ tự danh mục", out int order)) return;
         await _viewModel.SaveCategoryAsync(new SaveCategoryRequest
         {
-            CategoryId = _viewModel.SelectedCategory?.CategoryId is > 0 ? _viewModel.SelectedCategory.CategoryId : null,
+            CategoryId = _editingCategoryId,
             CategoryName = CategoryNameBox.Text,
             Description = CategoryDescriptionBox.Text,
             DisplayOrder = order
         });
+        if (string.IsNullOrEmpty(_viewModel.ErrorMessage))
+        {
+            BeginNewCategory();
+        }
     }
 
     private async void ToggleCategory_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedCategory is not { CategoryId: > 0 } category)
+        if (_editingCategoryId is not { } categoryId)
         {
-            MessageBox.Show("Vui lòng chọn danh mục.", "Quản lý danh mục");
+            MessageBox.Show("Vui lòng bấm Sửa ở một dòng danh mục trước.", "Quản lý danh mục");
             return;
         }
+
+        ManagedCategoryDto? category = _viewModel.EditableCategories.FirstOrDefault(x => x.CategoryId == categoryId);
+        if (category is null)
+        {
+            MessageBox.Show("Không tìm thấy danh mục đang chỉnh sửa.", "Quản lý danh mục");
+            return;
+        }
+
         await _viewModel.ToggleCategoryAsync(category);
+        BeginNewCategory();
     }
 
     private void NewItem_Click(object sender, RoutedEventArgs e)
