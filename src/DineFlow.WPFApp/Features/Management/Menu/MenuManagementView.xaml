@@ -186,56 +186,115 @@
             <TabItem Header="Nhóm phụ">
                 <Grid Margin="12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="380" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="220" />
                     </Grid.RowDefinitions>
 
-                    <DataGrid ItemsSource="{Binding ChoiceGroups}" SelectedItem="{Binding SelectedChoiceGroup}"
+                    <DockPanel Grid.ColumnSpan="2" Margin="0,0,0,12" LastChildFill="False">
+                        <StackPanel>
+                            <TextBlock Text="Nhóm phụ" FontSize="18" FontWeight="Bold" />
+                            <TextBlock Text="Nhóm bắt buộc dùng cho các lựa chọn phải chọn đúng 1 như size, đá. Nhóm không bắt buộc cho chọn nhiều lựa chọn theo MaxSelect."
+                                       Foreground="#64748B"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Button Content="+ Thêm nhóm" Click="AddChoiceGroupButton_Click" DockPanel.Dock="Right"
+                                HorizontalAlignment="Right" Padding="14,8" />
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding ChoiceGroups}" SelectedItem="{Binding SelectedChoiceGroup}"
                               AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Nhóm phụ" Binding="{Binding GroupName}" Width="*" />
                             <DataGridCheckBoxColumn Header="Bắt buộc" Binding="{Binding IsRequired}" Width="100" />
                             <DataGridTextColumn Header="Max mặc định" Binding="{Binding MaxSelectDefault}" Width="120" />
                             <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
+                            <DataGridTemplateColumn Header="Thao tác" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Sửa" Tag="{Binding}" Click="EditChoiceGroupRow_Click" Padding="10,4" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <Border Grid.Column="1" Background="White" CornerRadius="10" Padding="16" Margin="16,0,0,0">
+                    <Border x:Name="ChoiceGroupFormBorder" Grid.Row="1" Grid.Column="1"
+                            Background="White" CornerRadius="10" Padding="16" Margin="16,0,0,0"
+                            Width="380" Visibility="Collapsed">
                         <StackPanel>
-                            <TextBlock Text="Thêm / sửa nhóm phụ" FontWeight="Bold" FontSize="16" />
+                            <TextBlock x:Name="ChoiceGroupFormTitle" Text="Thêm nhóm phụ" FontWeight="Bold" FontSize="16" />
+                            <TextBlock x:Name="ChoiceGroupFormHint"
+                                       Text="Nhập thông tin nhóm phụ rồi bấm Lưu nhóm."
+                                       Foreground="#64748B"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0" />
                             <TextBlock Text="Tên nhóm" Margin="0,12,0,4" /><TextBox x:Name="GroupNameBox" />
-                            <CheckBox x:Name="GroupRequiredBox" Content="Bắt buộc chọn đúng 1" Margin="0,12,0,0" />
+                            <CheckBox x:Name="GroupRequiredBox" Content="Bắt buộc chọn đúng 1" Margin="0,12,0,0"
+                                      Checked="GroupRequiredBox_Changed" Unchecked="GroupRequiredBox_Changed" />
                             <TextBlock Text="MaxSelect mặc định" Margin="0,10,0,4" /><TextBox x:Name="GroupMaxBox" Text="1" />
+                            <TextBlock Text="Bắt buộc = chọn đúng 1. Không bắt buộc = được chọn nhiều, giới hạn bởi MaxSelect."
+                                       Foreground="#64748B"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0" />
                             <WrapPanel Margin="0,16,0,0">
-                                <Button Content="Tạo mới" Click="NewChoiceGroup_Click" Margin="0,0,8,0" />
                                 <Button Content="Lưu nhóm" Click="SaveChoiceGroup_Click" Margin="0,0,8,0" />
-                                <Button Content="Ẩn / hiện" Click="ToggleChoiceGroup_Click" />
+                                <Button x:Name="ChoiceGroupToggleButton" Content="Ẩn / hiện" Click="ToggleChoiceGroup_Click" Margin="0,0,8,0" />
+                                <Button Content="Hủy" Click="CancelChoiceGroup_Click" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
 
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding ChoiceItems}" SelectedItem="{Binding SelectedChoiceItem}"
+                    <DockPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,14,0,8" LastChildFill="False">
+                        <StackPanel>
+                            <TextBlock Text="Lựa chọn trong nhóm" FontWeight="Bold" />
+                            <TextBlock Text="Chọn một nhóm phụ phía trên để xem/thêm lựa chọn của nhóm đó."
+                                       Foreground="#64748B"
+                                       FontSize="12" />
+                        </StackPanel>
+                        <Button Content="+ Thêm lựa chọn" Click="AddChoiceItemButton_Click" DockPanel.Dock="Right"
+                                HorizontalAlignment="Right" Padding="14,8" />
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="3" ItemsSource="{Binding ChoiceItems}" SelectedItem="{Binding SelectedChoiceItem}"
                               AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Margin="0,14,0,0">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Lựa chọn phụ" Binding="{Binding ChoiceName}" Width="*" />
                             <DataGridTextColumn Header="Giá thêm" Binding="{Binding ExtraPrice, StringFormat={}{0:N0} ₫}" Width="120" />
                             <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
+                            <DataGridTemplateColumn Header="Thao tác" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Sửa" Tag="{Binding}" Click="EditChoiceItemRow_Click" Padding="10,4" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <Border Grid.Row="1" Grid.Column="1" Background="White" CornerRadius="10" Padding="16" Margin="16,14,0,0">
+                    <Border x:Name="ChoiceItemFormBorder" Grid.Row="3" Grid.Column="1"
+                            Background="White" CornerRadius="10" Padding="16" Margin="16,14,0,0"
+                            Width="380" Visibility="Collapsed">
                         <StackPanel>
-                            <TextBlock Text="Lựa chọn trong nhóm" FontWeight="Bold" />
+                            <TextBlock x:Name="ChoiceItemFormTitle" Text="Thêm lựa chọn" FontWeight="Bold" />
+                            <TextBlock x:Name="ChoiceItemFormHint"
+                                       Text="Lựa chọn sẽ được thêm vào nhóm phụ đang chọn."
+                                       Foreground="#64748B"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0" />
                             <TextBlock Text="Tên lựa chọn" Margin="0,10,0,4" /><TextBox x:Name="ChoiceNameBox" />
                             <TextBlock Text="Giá cộng thêm" Margin="0,10,0,4" /><TextBox x:Name="ChoiceExtraBox" Text="0" />
                             <WrapPanel Margin="0,14,0,0">
-                                <Button Content="Thêm mới" Click="NewChoiceItem_Click" Margin="0,0,8,0" />
                                 <Button Content="Lưu" Click="SaveChoiceItem_Click" Margin="0,0,8,0" />
-                                <Button Content="Ẩn / hiện" Click="ToggleChoiceItem_Click" />
+                                <Button x:Name="ChoiceItemToggleButton" Content="Ẩn / hiện" Click="ToggleChoiceItem_Click" Margin="0,0,8,0" />
+                                <Button Content="Hủy" Click="CancelChoiceItem_Click" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>

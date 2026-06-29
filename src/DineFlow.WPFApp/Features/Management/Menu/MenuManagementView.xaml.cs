@@ -11,6 +11,8 @@ public partial class MenuManagementView : UserControl
 {
     private readonly MenuManagementViewModel _viewModel;
     private int? _editingCategoryId;
+    private int? _editingChoiceGroupId;
+    private int? _editingChoiceItemId;
 
     public MenuManagementView(MenuManagementViewModel viewModel)
     {
@@ -34,10 +36,12 @@ public partial class MenuManagementView : UserControl
             FillItemForm();
             FillChannelPriceForms();
         }
-        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedChoiceGroup)) FillChoiceGroupForm();
+        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedChoiceGroup))
+        {
+            HideChoiceItemForm();
+        }
         if (e.PropertyName == nameof(MenuManagementViewModel.SelectedChoiceItem))
         {
-            FillChoiceItemForm();
             FillChannelPriceForms();
         }
         if (e.PropertyName == nameof(MenuManagementViewModel.SelectedSalesChannel)) FillChannelForm();
@@ -47,8 +51,8 @@ public partial class MenuManagementView : UserControl
     {
         FillCategoryForm();
         FillItemForm();
-        FillChoiceGroupForm();
-        FillChoiceItemForm();
+        HideChoiceGroupForm();
+        HideChoiceItemForm();
         FillChannelForm();
         FillChannelPriceForms();
         BeginNewCategory();
@@ -72,23 +76,6 @@ public partial class MenuManagementView : UserControl
         ItemImageBox.Text = item.ImageUrl ?? string.Empty;
         ItemDescriptionBox.Text = item.Description ?? string.Empty;
         ItemAvailableBox.IsChecked = item.IsAvailable;
-    }
-
-    private void FillChoiceGroupForm()
-    {
-        ManagedChoiceGroupDto? group = _viewModel.SelectedChoiceGroup;
-        if (group is null) return;
-        GroupNameBox.Text = group.GroupName;
-        GroupRequiredBox.IsChecked = group.IsRequired;
-        GroupMaxBox.Text = group.MaxSelectDefault.ToString(CultureInfo.InvariantCulture);
-    }
-
-    private void FillChoiceItemForm()
-    {
-        ManagedChoiceItemDto? item = _viewModel.SelectedChoiceItem;
-        if (item is null) return;
-        ChoiceNameBox.Text = item.ChoiceName;
-        ChoiceExtraBox.Text = item.ExtraPrice.ToString(CultureInfo.InvariantCulture);
     }
 
     private void FillChannelForm()
@@ -281,41 +268,157 @@ public partial class MenuManagementView : UserControl
         await _viewModel.RemoveChoiceGroupAssignmentAsync(item, group);
     }
 
-    private void NewChoiceGroup_Click(object sender, RoutedEventArgs e)
+    private void AddChoiceGroupButton_Click(object sender, RoutedEventArgs e)
     {
+        BeginNewChoiceGroup();
+    }
+
+    private void EditChoiceGroupRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ManagedChoiceGroupDto group)
+        {
+            BeginEditChoiceGroup(group);
+        }
+    }
+
+    private void BeginNewChoiceGroup()
+    {
+        _editingChoiceGroupId = null;
         _viewModel.SelectedChoiceGroup = null;
+        ChoiceGroupFormBorder.Visibility = Visibility.Visible;
+        ChoiceGroupFormTitle.Text = "Thêm nhóm phụ";
+        ChoiceGroupFormHint.Text = "Tạo nhóm bắt buộc cho size/đá hoặc nhóm tùy chọn cho topping/add-on.";
+        ChoiceGroupToggleButton.IsEnabled = false;
         GroupNameBox.Clear();
         GroupRequiredBox.IsChecked = false;
         GroupMaxBox.Text = "1";
+        GroupMaxBox.IsEnabled = true;
+        GroupNameBox.Focus();
+    }
+
+    private void BeginEditChoiceGroup(ManagedChoiceGroupDto group)
+    {
+        _editingChoiceGroupId = group.ChoiceGroupId;
+        _viewModel.SelectedChoiceGroup = group;
+        ChoiceGroupFormBorder.Visibility = Visibility.Visible;
+        ChoiceGroupFormTitle.Text = $"Chỉnh sửa nhóm: {group.GroupName}";
+        ChoiceGroupFormHint.Text = "Bắt buộc = khách phải chọn đúng 1. Không bắt buộc = khách được chọn nhiều theo MaxSelect.";
+        ChoiceGroupToggleButton.IsEnabled = true;
+        GroupNameBox.Text = group.GroupName;
+        GroupRequiredBox.IsChecked = group.IsRequired;
+        GroupMaxBox.Text = group.MaxSelectDefault.ToString(CultureInfo.InvariantCulture);
+        GroupMaxBox.IsEnabled = !group.IsRequired;
+        GroupNameBox.Focus();
+    }
+
+    private void HideChoiceGroupForm()
+    {
+        _editingChoiceGroupId = null;
+        ChoiceGroupFormBorder.Visibility = Visibility.Collapsed;
+        GroupNameBox.Clear();
+        GroupRequiredBox.IsChecked = false;
+        GroupMaxBox.Text = "1";
+        GroupMaxBox.IsEnabled = true;
+    }
+
+    private void CancelChoiceGroup_Click(object sender, RoutedEventArgs e)
+    {
+        HideChoiceGroupForm();
     }
 
     private async void SaveChoiceGroup_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryParseInt(GroupMaxBox.Text, "MaxSelect mặc định", out int max)) return;
+        int max = GroupRequiredBox.IsChecked == true ? 1 : 0;
+        if (GroupRequiredBox.IsChecked != true &&
+            !TryParseInt(GroupMaxBox.Text, "MaxSelect mặc định", out max)) return;
+
         await _viewModel.SaveChoiceGroupAsync(new SaveChoiceGroupRequest
         {
-            ChoiceGroupId = _viewModel.SelectedChoiceGroup?.ChoiceGroupId,
+            ChoiceGroupId = _editingChoiceGroupId,
             GroupName = GroupNameBox.Text,
             IsRequired = GroupRequiredBox.IsChecked == true,
             MaxSelectDefault = max
         });
+        if (string.IsNullOrEmpty(_viewModel.ErrorMessage))
+        {
+            HideChoiceGroupForm();
+        }
     }
 
     private async void ToggleChoiceGroup_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedChoiceGroup is not { } group)
+        if (_editingChoiceGroupId is not { } groupId)
         {
-            MessageBox.Show("Vui lòng chọn nhóm phụ.", "Quản lý nhóm phụ");
+            MessageBox.Show("Vui lòng bấm Sửa ở một dòng nhóm phụ trước.", "Quản lý nhóm phụ");
             return;
         }
+        ManagedChoiceGroupDto? group = _viewModel.ChoiceGroups.FirstOrDefault(x => x.ChoiceGroupId == groupId);
+        if (group is null)
+        {
+            MessageBox.Show("Không tìm thấy nhóm phụ đang chỉnh sửa.", "Quản lý nhóm phụ");
+            return;
+        }
+
         await _viewModel.ToggleChoiceGroupAsync(group);
+        HideChoiceGroupForm();
     }
 
-    private void NewChoiceItem_Click(object sender, RoutedEventArgs e)
+    private void AddChoiceItemButton_Click(object sender, RoutedEventArgs e)
     {
+        BeginNewChoiceItem();
+    }
+
+    private void EditChoiceItemRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ManagedChoiceItemDto item)
+        {
+            BeginEditChoiceItem(item);
+        }
+    }
+
+    private void BeginNewChoiceItem()
+    {
+        if (_viewModel.SelectedChoiceGroup is null)
+        {
+            MessageBox.Show("Vui lòng chọn nhóm phụ trước khi thêm lựa chọn.", "Quản lý nhóm phụ");
+            return;
+        }
+
+        _editingChoiceItemId = null;
         _viewModel.SelectedChoiceItem = null;
+        ChoiceItemFormBorder.Visibility = Visibility.Visible;
+        ChoiceItemFormTitle.Text = $"Thêm lựa chọn cho nhóm: {_viewModel.SelectedChoiceGroup.GroupName}";
+        ChoiceItemFormHint.Text = "Ví dụ: Ít đá, Size L, Trân châu. Giá cộng thêm nhập 0 nếu miễn phí.";
+        ChoiceItemToggleButton.IsEnabled = false;
         ChoiceNameBox.Clear();
         ChoiceExtraBox.Text = "0";
+        ChoiceNameBox.Focus();
+    }
+
+    private void BeginEditChoiceItem(ManagedChoiceItemDto item)
+    {
+        _editingChoiceItemId = item.ChoiceItemId;
+        _viewModel.SelectedChoiceItem = item;
+        ChoiceItemFormBorder.Visibility = Visibility.Visible;
+        ChoiceItemFormTitle.Text = $"Chỉnh sửa lựa chọn: {item.ChoiceName}";
+        ChoiceItemFormHint.Text = "Cập nhật tên hoặc giá cộng thêm của lựa chọn trong nhóm đang chọn.";
+        ChoiceItemToggleButton.IsEnabled = true;
+        ChoiceNameBox.Text = item.ChoiceName;
+        ChoiceExtraBox.Text = item.ExtraPrice.ToString(CultureInfo.InvariantCulture);
+        ChoiceNameBox.Focus();
+    }
+
+    private void HideChoiceItemForm()
+    {
+        _editingChoiceItemId = null;
+        ChoiceItemFormBorder.Visibility = Visibility.Collapsed;
+        ChoiceNameBox.Clear();
+        ChoiceExtraBox.Text = "0";
+    }
+
+    private void CancelChoiceItem_Click(object sender, RoutedEventArgs e)
+    {
+        HideChoiceItemForm();
     }
 
     private async void SaveChoiceItem_Click(object sender, RoutedEventArgs e)
@@ -328,21 +431,47 @@ public partial class MenuManagementView : UserControl
         if (!TryParseDecimal(ChoiceExtraBox.Text, "Giá cộng thêm", out decimal extra)) return;
         await _viewModel.SaveChoiceItemAsync(new SaveChoiceItemRequest
         {
-            ChoiceItemId = _viewModel.SelectedChoiceItem?.ChoiceItemId,
+            ChoiceItemId = _editingChoiceItemId,
             ChoiceGroupId = group.ChoiceGroupId,
             ChoiceName = ChoiceNameBox.Text,
             ExtraPrice = extra
         });
+        if (string.IsNullOrEmpty(_viewModel.ErrorMessage))
+        {
+            HideChoiceItemForm();
+        }
     }
 
     private async void ToggleChoiceItem_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedChoiceItem is not { } item)
+        if (_editingChoiceItemId is not { } itemId)
         {
-            MessageBox.Show("Vui lòng chọn lựa chọn phụ.", "Quản lý nhóm phụ");
+            MessageBox.Show("Vui lòng bấm Sửa ở một dòng lựa chọn phụ trước.", "Quản lý nhóm phụ");
             return;
         }
+        ManagedChoiceItemDto? item = _viewModel.ChoiceItems.FirstOrDefault(x => x.ChoiceItemId == itemId);
+        if (item is null)
+        {
+            MessageBox.Show("Không tìm thấy lựa chọn phụ đang chỉnh sửa.", "Quản lý nhóm phụ");
+            return;
+        }
+
         await _viewModel.ToggleChoiceItemAsync(item);
+        HideChoiceItemForm();
+    }
+
+    private void GroupRequiredBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (GroupRequiredBox.IsChecked == true)
+        {
+            GroupMaxBox.Text = "1";
+            GroupMaxBox.IsEnabled = false;
+        }
+        else
+        {
+            GroupMaxBox.IsEnabled = true;
+            if (string.IsNullOrWhiteSpace(GroupMaxBox.Text)) GroupMaxBox.Text = "1";
+        }
     }
 
     private void NewChannel_Click(object sender, RoutedEventArgs e)
