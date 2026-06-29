@@ -15,6 +15,7 @@ public sealed class ManagedTableDto
 {
     public int TableId { get; set; }
     public string TableName { get; set; } = string.Empty;
+    public int? AreaId { get; set; }
     public string Area { get; set; } = string.Empty;
     public string QrToken { get; set; } = string.Empty;
     public string QrUrl { get; set; } = string.Empty;
@@ -25,6 +26,7 @@ public sealed class ManagedTableDto
 public sealed class CreateManagedTableRequest
 {
     public string TableName { get; set; } = string.Empty;
+    public int? AreaId { get; set; }
     public string Area { get; set; } = string.Empty;
 }
 
@@ -32,5 +34,21 @@ public sealed class UpdateManagedTableRequest
 {
     public int TableId { get; set; }
     public string TableName { get; set; } = string.Empty;
+    public int? AreaId { get; set; }
     public string Area { get; set; } = string.Empty;
+}
+
+public sealed class ManagedAreaDto
+{
+    public int AreaId { get; set; }
+    public string AreaName { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed class SaveAreaRequest
+{
+    public int? AreaId { get; set; }
+    public string AreaName { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
 }

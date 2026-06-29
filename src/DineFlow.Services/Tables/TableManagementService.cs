@@ -28,13 +28,79 @@ public sealed class TableManagementService : ITableManagementService
         return (await _repository.GetAllAsync(cancellationToken)).Select(Map).ToList();
     }
 
+    public async Task<IReadOnlyList<ManagedAreaDto>> GetAreasAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        return (await _repository.GetAreasAsync(cancellationToken)).Select(MapArea).ToList();
+    }
+
+    public async Task<ManagedAreaDto> SaveAreaAsync(
+        SaveAreaRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        string name = request.AreaName.Trim();
+        if (name.Length is < 1 or > 100)
+        {
+            throw new InvalidOperationException("Tên khu vực phải từ 1 đến 100 ký tự.");
+        }
+        if (request.DisplayOrder < 0)
+        {
+            throw new InvalidOperationException("Thứ tự hiển thị không được âm.");
+        }
+        if (await _repository.AreaNameExistsAsync(name, request.AreaId, cancellationToken))
+        {
+            throw new InvalidOperationException("Tên khu vực đã tồn tại.");
+        }
+
+        DateTime now = DateTime.UtcNow;
+        Area area;
+        if (request.AreaId is null)
+        {
+            area = new Area
+            {
+                AreaName = name,
+                DisplayOrder = request.DisplayOrder,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            await _repository.AddAreaAsync(area, cancellationToken);
+        }
+        else
+        {
+            area = await _repository.GetAreaAsync(request.AreaId.Value, cancellationToken)
+                ?? throw new InvalidOperationException("Không tìm thấy khu vực.");
+            area.AreaName = name;
+            area.DisplayOrder = request.DisplayOrder;
+            area.UpdatedAt = now;
+        }
+
+        await _repository.SaveChangesAsync(cancellationToken);
+        return MapArea(area);
+    }
+
+    public async Task SetAreaActiveAsync(
+        int areaId,
+        bool active,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        Area area = await _repository.GetAreaAsync(areaId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy khu vực.");
+        area.IsActive = active;
+        area.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<ManagedTableDto> CreateAsync(
         CreateManagedTableRequest request,
         CancellationToken cancellationToken = default)
     {
         EnsureAdmin();
-        (string name, string area) = Validate(request.TableName, request.Area);
-        if (await _repository.NameExistsInAreaAsync(name, area, cancellationToken: cancellationToken))
+        (string name, Area? areaEntity, string area) = await ValidateAsync(
+            request.TableName, request.AreaId, request.Area, cancellationToken);
+        if (await _repository.NameExistsInAreaAsync(name, areaEntity?.AreaId, area, cancellationToken: cancellationToken))
         {
             throw new InvalidOperationException("Tên bàn đã tồn tại trong khu vực này.");
         }
@@ -43,6 +109,7 @@ public sealed class TableManagementService : ITableManagementService
         DiningTable table = new()
         {
             TableName = name,
+            AreaId = areaEntity?.AreaId,
             Area = area,
             QrToken = await GenerateUniqueTokenAsync(cancellationToken),
             Status = TableStatuses.Available,
@@ -61,13 +128,15 @@ public sealed class TableManagementService : ITableManagementService
     {
         EnsureAdmin();
         DiningTable table = await FindAsync(request.TableId, cancellationToken);
-        (string name, string area) = Validate(request.TableName, request.Area);
-        if (await _repository.NameExistsInAreaAsync(name, area, request.TableId, cancellationToken))
+        (string name, Area? areaEntity, string area) = await ValidateAsync(
+            request.TableName, request.AreaId, request.Area, cancellationToken);
+        if (await _repository.NameExistsInAreaAsync(name, areaEntity?.AreaId, area, request.TableId, cancellationToken))
         {
             throw new InvalidOperationException("Tên bàn đã tồn tại trong khu vực này.");
         }
 
         table.TableName = name;
+        table.AreaId = areaEntity?.AreaId;
         table.Area = area;
         table.UpdatedAt = DateTime.UtcNow;
         await _repository.SaveChangesAsync(cancellationToken);
@@ -132,29 +201,58 @@ public sealed class TableManagementService : ITableManagementService
         throw new InvalidOperationException("Không thể sinh QR token duy nhất. Vui lòng thử lại.");
     }
 
-    private static (string Name, string Area) Validate(string tableName, string area)
+    private async Task<(string Name, Area? AreaEntity, string AreaName)> ValidateAsync(
+        string tableName,
+        int? areaId,
+        string legacyArea,
+        CancellationToken cancellationToken)
     {
         string name = tableName.Trim();
-        string normalizedArea = area.Trim();
         if (name.Length is < 1 or > 100)
         {
             throw new InvalidOperationException("Tên bàn phải từ 1 đến 100 ký tự.");
         }
+        if (areaId.HasValue)
+        {
+            Area area = await _repository.GetAreaAsync(areaId.Value, cancellationToken)
+                ?? throw new InvalidOperationException("Không tìm thấy khu vực.");
+            if (!area.IsActive)
+            {
+                throw new InvalidOperationException("Không thể gán bàn vào khu vực đang bị khóa.");
+            }
+            return (name, area, area.AreaName);
+        }
+
+        string normalizedArea = legacyArea.Trim();
         if (normalizedArea.Length is < 1 or > 100)
         {
             throw new InvalidOperationException("Khu vực phải từ 1 đến 100 ký tự.");
         }
-        return (name, normalizedArea);
+        Area? matchingArea = await _repository.GetAreaByNameAsync(normalizedArea, cancellationToken);
+        if (matchingArea is not null && !matchingArea.IsActive)
+        {
+            throw new InvalidOperationException("Không thể gán bàn vào khu vực đang bị khóa.");
+        }
+        return (name, matchingArea, matchingArea?.AreaName ?? normalizedArea);
     }
 
     private ManagedTableDto Map(DiningTable table) => new()
     {
         TableId = table.TableId,
         TableName = table.TableName,
-        Area = table.Area,
+        AreaId = table.AreaId,
+        Area = table.AreaEntity?.AreaName ?? table.Area,
         QrToken = table.QrToken,
         QrUrl = $"{_customerWebBaseUrl}?t={Uri.EscapeDataString(table.QrToken)}",
         Status = table.Status,
         IsActive = table.IsActive
+    };
+
+    private static ManagedAreaDto MapArea(Area area) => new()
+    {
+        AreaId = area.AreaId,
+        AreaName = area.AreaName,
+        DisplayOrder = area.DisplayOrder,
+        IsActive = area.IsActive
     };
 }

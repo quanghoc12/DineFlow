@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Area> Areas => Set<Area>();
     public DbSet<DiningTable> DiningTables => Set<DiningTable>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<MenuItem> MenuItems => Set<MenuItem>();
@@ -61,6 +62,13 @@ public class AppDbContext : DbContext
 
     private static void ConfigureTables(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Area>(entity =>
+        {
+            entity.HasKey(x => x.AreaId);
+            entity.HasIndex(x => x.AreaName).IsUnique();
+            entity.Property(x => x.AreaName).HasMaxLength(100).IsRequired();
+        });
+
         modelBuilder.Entity<DiningTable>(entity =>
         {
             entity.HasKey(x => x.TableId);
@@ -69,6 +77,11 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Area).HasMaxLength(100).IsRequired();
             entity.Property(x => x.QrToken).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+
+            entity.HasOne(x => x.AreaEntity)
+                .WithMany(x => x.DiningTables)
+                .HasForeignKey(x => x.AreaId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

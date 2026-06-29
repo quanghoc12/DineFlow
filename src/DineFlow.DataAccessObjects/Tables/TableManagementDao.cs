@@ -16,15 +16,50 @@ public sealed class TableManagementDao : ITableManagementDao
     public Task<List<DiningTable>> GetAllAsync(CancellationToken cancellationToken = default) =>
         _dbContext.DiningTables
             .AsNoTracking()
-            .OrderBy(table => table.Area)
+            .Include(table => table.AreaEntity)
+            .OrderBy(table => table.AreaEntity != null ? table.AreaEntity.DisplayOrder : int.MaxValue)
+            .ThenBy(table => table.Area)
             .ThenBy(table => table.TableName)
             .ToListAsync(cancellationToken);
+
+    public Task<List<Area>> GetAreasAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.Areas.AsNoTracking()
+            .OrderBy(area => area.DisplayOrder)
+            .ThenBy(area => area.AreaName)
+            .ToListAsync(cancellationToken);
+
+    public Task<Area?> GetAreaAsync(int areaId, CancellationToken cancellationToken = default) =>
+        _dbContext.Areas.FirstOrDefaultAsync(area => area.AreaId == areaId, cancellationToken);
+
+    public Task<Area?> GetAreaByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        string normalized = name.Trim().ToLower();
+        return _dbContext.Areas.FirstOrDefaultAsync(
+            area => area.AreaName.ToLower() == normalized,
+            cancellationToken);
+    }
+
+    public Task<bool> AreaNameExistsAsync(
+        string name,
+        int? excludedAreaId = null,
+        CancellationToken cancellationToken = default)
+    {
+        string normalized = name.Trim().ToLower();
+        return _dbContext.Areas.AnyAsync(
+            area => area.AreaName.ToLower() == normalized &&
+                    (!excludedAreaId.HasValue || area.AreaId != excludedAreaId.Value),
+            cancellationToken);
+    }
+
+    public Task AddAreaAsync(Area area, CancellationToken cancellationToken = default) =>
+        _dbContext.Areas.AddAsync(area, cancellationToken).AsTask();
 
     public Task<DiningTable?> GetByIdAsync(int tableId, CancellationToken cancellationToken = default) =>
         _dbContext.DiningTables.FirstOrDefaultAsync(table => table.TableId == tableId, cancellationToken);
 
     public Task<bool> NameExistsInAreaAsync(
         string name,
+        int? areaId,
         string area,
         int? excludedTableId = null,
         CancellationToken cancellationToken = default)
@@ -33,7 +68,9 @@ public sealed class TableManagementDao : ITableManagementDao
         string normalizedArea = area.Trim().ToLower();
         return _dbContext.DiningTables.AnyAsync(
             table => table.TableName.ToLower() == normalizedName &&
-                     table.Area.ToLower() == normalizedArea &&
+                     (areaId.HasValue
+                         ? table.AreaId == areaId
+                         : table.AreaId == null && table.Area.ToLower() == normalizedArea) &&
                      (!excludedTableId.HasValue || table.TableId != excludedTableId.Value),
             cancellationToken);
     }
