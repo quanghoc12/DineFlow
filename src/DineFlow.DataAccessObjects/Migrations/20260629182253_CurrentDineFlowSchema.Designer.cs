@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DineFlow.DataAccessObjects.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260626194548_AddBillDetailAdjustmentLog")]
-    partial class AddBillDetailAdjustmentLog
+    [Migration("20260629182253_CurrentDineFlowSchema")]
+    partial class CurrentDineFlowSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -121,6 +121,19 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("SalesChannelCodeSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("SalesChannelId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SalesChannelNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -138,7 +151,11 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.HasIndex("BillCode")
                         .IsUnique();
 
-                    b.HasIndex("TableSessionId");
+                    b.HasIndex("SalesChannelId");
+
+                    b.HasIndex("TableSessionId")
+                        .IsUnique()
+                        .HasFilter("\"IsDefault\" = TRUE AND \"Status\" = 'Unpaid'");
 
                     b.ToTable("Bills");
                 });
@@ -151,8 +168,16 @@ namespace DineFlow.DataAccessObjects.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BillDetailId"));
 
+                    b.Property<decimal>("BasePriceSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<int>("BillId")
                         .HasColumnType("integer");
+
+                    b.Property<decimal>("ChoiceExtraPriceSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("ChoiceSummary")
                         .HasMaxLength(500)
@@ -166,6 +191,10 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<decimal>("MenuItemChannelExtraPriceSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<int>("MenuItemId")
                         .HasColumnType("integer");
 
@@ -173,7 +202,13 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<int>("NotifiedQuantity")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SalesChannelId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("TotalPrice")
@@ -189,6 +224,8 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.HasIndex("BillId");
 
                     b.HasIndex("MenuItemId");
+
+                    b.HasIndex("SalesChannelId");
 
                     b.ToTable("BillDetails");
                 });
@@ -451,6 +488,14 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsOutOfStock")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -545,13 +590,19 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("SalesChannelId");
 
                     b.HasIndex("ChannelCode")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = FALSE");
 
                     b.ToTable("SalesChannels");
                 });
@@ -786,7 +837,7 @@ namespace DineFlow.DataAccessObjects.Migrations
 
                     b.HasIndex("TableId")
                         .IsUnique()
-                        .HasFilter("\"Status\" IN ('Open', 'WaitingPayment')");
+                        .HasFilter("\"Status\" IN ('Browsing', 'Open', 'WaitingPayment')");
 
                     b.ToTable("TableSessions");
                 });
@@ -880,6 +931,39 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.ToTable("ServiceRequests");
                 });
 
+            modelBuilder.Entity("DineFlow.BusinessObjects.Tables.Area", b =>
+                {
+                    b.Property<int>("AreaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AreaId"));
+
+                    b.Property<string>("AreaName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AreaId");
+
+                    b.HasIndex("AreaName")
+                        .IsUnique();
+
+                    b.ToTable("Areas");
+                });
+
             modelBuilder.Entity("DineFlow.BusinessObjects.Tables.DiningTable", b =>
                 {
                     b.Property<int>("TableId")
@@ -893,8 +977,16 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("AreaId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -919,6 +1011,8 @@ namespace DineFlow.DataAccessObjects.Migrations
 
                     b.HasKey("TableId");
 
+                    b.HasIndex("AreaId");
+
                     b.HasIndex("QrToken")
                         .IsUnique();
 
@@ -927,11 +1021,19 @@ namespace DineFlow.DataAccessObjects.Migrations
 
             modelBuilder.Entity("DineFlow.BusinessObjects.Bills.Bill", b =>
                 {
+                    b.HasOne("DineFlow.BusinessObjects.Menu.SalesChannel", "SalesChannel")
+                        .WithMany()
+                        .HasForeignKey("SalesChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("DineFlow.BusinessObjects.Orders.TableSession", "TableSession")
                         .WithMany("Bills")
                         .HasForeignKey("TableSessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("SalesChannel");
 
                     b.Navigation("TableSession");
                 });
@@ -948,6 +1050,12 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .WithMany("BillDetails")
                         .HasForeignKey("MenuItemId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DineFlow.BusinessObjects.Menu.SalesChannel", null)
+                        .WithMany()
+                        .HasForeignKey("SalesChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Bill");
@@ -1166,6 +1274,16 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Navigation("TableSession");
                 });
 
+            modelBuilder.Entity("DineFlow.BusinessObjects.Tables.DiningTable", b =>
+                {
+                    b.HasOne("DineFlow.BusinessObjects.Tables.Area", "AreaEntity")
+                        .WithMany("DiningTables")
+                        .HasForeignKey("AreaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AreaEntity");
+                });
+
             modelBuilder.Entity("DineFlow.BusinessObjects.Bills.Bill", b =>
                 {
                     b.Navigation("BillDetails");
@@ -1240,6 +1358,11 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Navigation("Orders");
 
                     b.Navigation("ServiceRequests");
+                });
+
+            modelBuilder.Entity("DineFlow.BusinessObjects.Tables.Area", b =>
+                {
+                    b.Navigation("DiningTables");
                 });
 
             modelBuilder.Entity("DineFlow.BusinessObjects.Tables.DiningTable", b =>

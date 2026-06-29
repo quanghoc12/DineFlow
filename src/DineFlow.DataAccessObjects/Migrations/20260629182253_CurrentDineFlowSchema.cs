@@ -7,11 +7,28 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DineFlow.DataAccessObjects.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialDineFlowSchema : Migration
+    public partial class CurrentDineFlowSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Areas",
+                columns: table => new
+                {
+                    AreaId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AreaName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Areas", x => x.AreaId);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
@@ -49,22 +66,21 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DiningTables",
+                name: "SalesChannels",
                 columns: table => new
                 {
-                    TableId = table.Column<int>(type: "integer", nullable: false)
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    TableName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Area = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    QrToken = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    ChannelCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    ChannelName = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DiningTables", x => x.TableId);
+                    table.PrimaryKey("PK_SalesChannels", x => x.SalesChannelId);
                 });
 
             migrationBuilder.CreateTable(
@@ -87,6 +103,33 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DiningTables",
+                columns: table => new
+                {
+                    TableId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TableName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    AreaId = table.Column<int>(type: "integer", nullable: true),
+                    Area = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    QrToken = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DiningTables", x => x.TableId);
+                    table.ForeignKey(
+                        name: "FK_DiningTables_Areas_AreaId",
+                        column: x => x.AreaId,
+                        principalTable: "Areas",
+                        principalColumn: "AreaId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MenuItems",
                 columns: table => new
                 {
@@ -98,6 +141,8 @@ namespace DineFlow.DataAccessObjects.Migrations
                     BasePrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     ImageUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     IsAvailable = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    IsOutOfStock = table.Column<bool>(type: "boolean", nullable: false),
                     Stock = table.Column<int>(type: "integer", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -162,6 +207,33 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MenuItemChannelPrices",
+                columns: table => new
+                {
+                    MenuItemId = table.Column<int>(type: "integer", nullable: false),
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false),
+                    ChannelExtraPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MenuItemChannelPrices", x => new { x.MenuItemId, x.SalesChannelId });
+                    table.ForeignKey(
+                        name: "FK_MenuItemChannelPrices_MenuItems_MenuItemId",
+                        column: x => x.MenuItemId,
+                        principalTable: "MenuItems",
+                        principalColumn: "MenuItemId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MenuItemChannelPrices_SalesChannels_SalesChannelId",
+                        column: x => x.SalesChannelId,
+                        principalTable: "SalesChannels",
+                        principalColumn: "SalesChannelId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MenuItemChoiceGroups",
                 columns: table => new
                 {
@@ -190,6 +262,33 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ChoiceItemChannelPrices",
+                columns: table => new
+                {
+                    ChoiceItemId = table.Column<int>(type: "integer", nullable: false),
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false),
+                    ChannelExtraPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChoiceItemChannelPrices", x => new { x.ChoiceItemId, x.SalesChannelId });
+                    table.ForeignKey(
+                        name: "FK_ChoiceItemChannelPrices_ChoiceItems_ChoiceItemId",
+                        column: x => x.ChoiceItemId,
+                        principalTable: "ChoiceItems",
+                        principalColumn: "ChoiceItemId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ChoiceItemChannelPrices_SalesChannels_SalesChannelId",
+                        column: x => x.SalesChannelId,
+                        principalTable: "SalesChannels",
+                        principalColumn: "SalesChannelId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Bills",
                 columns: table => new
                 {
@@ -197,6 +296,9 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     BillCode = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     TableSessionId = table.Column<int>(type: "integer", nullable: false),
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false),
+                    SalesChannelCodeSnapshot = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    SalesChannelNameSnapshot = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     BillNo = table.Column<int>(type: "integer", nullable: false),
                     BillName = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     IsDefault = table.Column<bool>(type: "boolean", nullable: false),
@@ -214,6 +316,12 @@ namespace DineFlow.DataAccessObjects.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Bills", x => x.BillId);
+                    table.ForeignKey(
+                        name: "FK_Bills_SalesChannels_SalesChannelId",
+                        column: x => x.SalesChannelId,
+                        principalTable: "SalesChannels",
+                        principalColumn: "SalesChannelId",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Bills_TableSessions_TableSessionId",
                         column: x => x.TableSessionId,
@@ -245,6 +353,35 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "BillDetailAdjustments",
+                columns: table => new
+                {
+                    BillDetailAdjustmentId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    BillId = table.Column<int>(type: "integer", nullable: false),
+                    BillDetailId = table.Column<int>(type: "integer", nullable: false),
+                    MenuItemId = table.Column<int>(type: "integer", nullable: false),
+                    ItemName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    QuantityBefore = table.Column<int>(type: "integer", nullable: false),
+                    QuantityAfter = table.Column<int>(type: "integer", nullable: false),
+                    ChangedQuantity = table.Column<int>(type: "integer", nullable: false),
+                    ChangeType = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    Reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BillDetailAdjustments", x => x.BillDetailAdjustmentId);
+                    table.ForeignKey(
+                        name: "FK_BillDetailAdjustments_Bills_BillId",
+                        column: x => x.BillId,
+                        principalTable: "Bills",
+                        principalColumn: "BillId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BillDetails",
                 columns: table => new
                 {
@@ -252,10 +389,15 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     BillId = table.Column<int>(type: "integer", nullable: false),
                     MenuItemId = table.Column<int>(type: "integer", nullable: false),
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false),
                     ItemName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     ChoiceSummary = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Note = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
+                    NotifiedQuantity = table.Column<int>(type: "integer", nullable: false),
+                    BasePriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    MenuItemChannelExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    ChoiceExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     TotalPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -275,6 +417,12 @@ namespace DineFlow.DataAccessObjects.Migrations
                         principalTable: "MenuItems",
                         principalColumn: "MenuItemId",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BillDetails_SalesChannels_SalesChannelId",
+                        column: x => x.SalesChannelId,
+                        principalTable: "SalesChannels",
+                        principalColumn: "SalesChannelId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -311,8 +459,10 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TableSessionId = table.Column<int>(type: "integer", nullable: false),
                     SessionCustomerId = table.Column<int>(type: "integer", nullable: true),
+                    SalesChannelId = table.Column<int>(type: "integer", nullable: false),
                     OrderCode = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     OrderSource = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    ExternalOrderCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ClientToken = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     PrintStatus = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
@@ -330,6 +480,12 @@ namespace DineFlow.DataAccessObjects.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Orders", x => x.OrderId);
+                    table.ForeignKey(
+                        name: "FK_Orders_SalesChannels_SalesChannelId",
+                        column: x => x.SalesChannelId,
+                        principalTable: "SalesChannels",
+                        principalColumn: "SalesChannelId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Orders_TableSessionCustomers_SessionCustomerId",
                         column: x => x.SessionCustomerId,
@@ -387,6 +543,8 @@ namespace DineFlow.DataAccessObjects.Migrations
                     MenuItemId = table.Column<int>(type: "integer", nullable: false),
                     MenuItemNameSnapshot = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     BasePriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    ChannelExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    FinalUnitPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     Note = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -421,6 +579,8 @@ namespace DineFlow.DataAccessObjects.Migrations
                     GroupNameSnapshot = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     ChoiceNameSnapshot = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     ExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    ChannelExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    FinalExtraPriceSnapshot = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -447,6 +607,27 @@ namespace DineFlow.DataAccessObjects.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Areas_AreaName",
+                table: "Areas",
+                column: "AreaName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BillDetailAdjustments_BillDetailId",
+                table: "BillDetailAdjustments",
+                column: "BillDetailId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BillDetailAdjustments_BillId",
+                table: "BillDetailAdjustments",
+                column: "BillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BillDetailAdjustments_MenuItemId",
+                table: "BillDetailAdjustments",
+                column: "MenuItemId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_BillDetails_BillId",
                 table: "BillDetails",
                 column: "BillId");
@@ -457,15 +638,32 @@ namespace DineFlow.DataAccessObjects.Migrations
                 column: "MenuItemId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_BillDetails_SalesChannelId",
+                table: "BillDetails",
+                column: "SalesChannelId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Bills_BillCode",
                 table: "Bills",
                 column: "BillCode",
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Bills_SalesChannelId",
+                table: "Bills",
+                column: "SalesChannelId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Bills_TableSessionId",
                 table: "Bills",
-                column: "TableSessionId");
+                column: "TableSessionId",
+                unique: true,
+                filter: "\"IsDefault\" = TRUE AND \"Status\" = 'Unpaid'");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChoiceItemChannelPrices_SalesChannelId",
+                table: "ChoiceItemChannelPrices",
+                column: "SalesChannelId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ChoiceItems_ChoiceGroupId",
@@ -473,10 +671,20 @@ namespace DineFlow.DataAccessObjects.Migrations
                 column: "ChoiceGroupId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DiningTables_AreaId",
+                table: "DiningTables",
+                column: "AreaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DiningTables_QrToken",
                 table: "DiningTables",
                 column: "QrToken",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MenuItemChannelPrices_SalesChannelId",
+                table: "MenuItemChannelPrices",
+                column: "SalesChannelId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MenuItemChoiceGroups_ChoiceGroupId",
@@ -520,6 +728,11 @@ namespace DineFlow.DataAccessObjects.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Orders_SalesChannelId",
+                table: "Orders",
+                column: "SalesChannelId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Orders_SessionCustomerId",
                 table: "Orders",
                 column: "SessionCustomerId");
@@ -533,6 +746,13 @@ namespace DineFlow.DataAccessObjects.Migrations
                 name: "IX_Payments_BillId",
                 table: "Payments",
                 column: "BillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SalesChannels_ChannelCode",
+                table: "SalesChannels",
+                column: "ChannelCode",
+                unique: true,
+                filter: "\"IsDeleted\" = FALSE");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ServiceRequests_SessionCustomerId",
@@ -555,7 +775,7 @@ namespace DineFlow.DataAccessObjects.Migrations
                 table: "TableSessions",
                 column: "TableId",
                 unique: true,
-                filter: "\"Status\" IN ('Open', 'WaitingPayment')");
+                filter: "\"Status\" IN ('Browsing', 'Open', 'WaitingPayment')");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Username",
@@ -568,7 +788,16 @@ namespace DineFlow.DataAccessObjects.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "BillDetailAdjustments");
+
+            migrationBuilder.DropTable(
                 name: "BillDetails");
+
+            migrationBuilder.DropTable(
+                name: "ChoiceItemChannelPrices");
+
+            migrationBuilder.DropTable(
+                name: "MenuItemChannelPrices");
 
             migrationBuilder.DropTable(
                 name: "MenuItemChoiceGroups");
@@ -607,6 +836,9 @@ namespace DineFlow.DataAccessObjects.Migrations
                 name: "Categories");
 
             migrationBuilder.DropTable(
+                name: "SalesChannels");
+
+            migrationBuilder.DropTable(
                 name: "TableSessionCustomers");
 
             migrationBuilder.DropTable(
@@ -614,6 +846,9 @@ namespace DineFlow.DataAccessObjects.Migrations
 
             migrationBuilder.DropTable(
                 name: "DiningTables");
+
+            migrationBuilder.DropTable(
+                name: "Areas");
         }
     }
 }
