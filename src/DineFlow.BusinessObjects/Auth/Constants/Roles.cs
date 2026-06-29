@@ -1,0 +1,7 @@
+namespace DineFlow.BusinessObjects.Auth.Constants;
+
+public static class Roles
+{
+    public const string Admin = "Admin";
+    public const string Staff = "Staff";
+}

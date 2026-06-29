@@ -1,0 +1,24 @@
+<Application x:Class="DineFlow.WPFApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewmodels="clr-namespace:DineFlow.WPFApp.ViewModels"
+             xmlns:views="clr-namespace:DineFlow.WPFApp.Views"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Typography.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Animations.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Cards.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/Buttons.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/TextBoxes.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/DineFlow.WPFApp;component/Resources/Styles/DataGrid.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate DataType="{x:Type viewmodels:UserManagementViewModel}">
+                <views:UserManagementView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

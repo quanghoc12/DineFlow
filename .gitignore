@@ -43,3 +43,7 @@ docs/Rule_Contract/
 # OS
 .DS_Store
 Thumbs.db
+
+.agents/
+skills-lock.json
+
