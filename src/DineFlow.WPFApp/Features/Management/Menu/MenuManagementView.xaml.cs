@@ -1,5 +1,6 @@
 using DineFlow.BusinessObjects.Menu;
 using DineFlow.WPFApp.ViewModels;
+using DineFlow.Services.Menu;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,12 +9,20 @@ namespace DineFlow.WPFApp.Features.Management.Menu;
 public partial class MenuManagementView : UserControl
 {
     private readonly MenuManagementViewModel _viewModel;
+    private readonly IMenuManagementService _service;
 
-    public MenuManagementView(MenuManagementViewModel viewModel)
+    public MenuManagementView(MenuManagementViewModel viewModel, IMenuManagementService service)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _service = service;
         DataContext = viewModel;
+    }
+
+    private void ChoicePricingButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetItem(out ManagedMenuItemDto item)) return;
+        new ChoicePricingWindow(_service, item) { Owner = Window.GetWindow(this) }.ShowDialog();
     }
 
     public Task LoadAsync() => _viewModel.LoadAsync();

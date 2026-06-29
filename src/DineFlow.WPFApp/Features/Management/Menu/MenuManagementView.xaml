@@ -14,6 +14,7 @@
             </StackPanel>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Content="Danh mục" Click="CategoryButton_Click" Padding="16,10" Margin="0,0,8,0" />
+                <Button Content="Lựa chọn &amp; giá kênh" Click="ChoicePricingButton_Click" Padding="16,10" Margin="0,0,8,0" />
                 <Button Content="+ Thêm món" Click="CreateButton_Click" Padding="16,10"
                         Background="#2F80ED" Foreground="White" BorderThickness="0" />
             </StackPanel>

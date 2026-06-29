@@ -154,6 +154,222 @@ public sealed class MenuManagementService : IMenuManagementService
         await _repository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ManagedChoiceGroupDto>> GetChoiceGroupsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        return (await _repository.GetChoiceGroupsAsync(cancellationToken))
+            .Select(group => new ManagedChoiceGroupDto
+            {
+                ChoiceGroupId = group.ChoiceGroupId,
+                GroupName = group.GroupName,
+                IsAvailable = group.IsAvailable,
+                IsRequired = group.IsRequired,
+                MaxSelectDefault = group.MaxSelectDefault,
+                Items = group.ChoiceItems.OrderBy(item => item.ChoiceName).Select(item => new ManagedChoiceItemDto
+                {
+                    ChoiceItemId = item.ChoiceItemId,
+                    ChoiceName = item.ChoiceName,
+                    ExtraPrice = item.ExtraPrice,
+                    IsAvailable = item.IsAvailable
+                }).ToList()
+            }).ToList();
+    }
+
+    public async Task SaveChoiceGroupAsync(
+        SaveChoiceGroupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        string name = request.GroupName.Trim();
+        if (name.Length is < 1 or > 120)
+            throw new InvalidOperationException("Tên nhóm lựa chọn phải từ 1 đến 120 ký tự.");
+        if (request.MaxSelectDefault < 1)
+            throw new InvalidOperationException("Số lựa chọn tối đa phải ít nhất là 1.");
+        if (request.IsRequired && request.MaxSelectDefault != 1)
+            throw new InvalidOperationException("Nhóm bắt buộc hiện hỗ trợ chọn đúng 1 lựa chọn.");
+        if (await _repository.ChoiceGroupNameExistsAsync(name, request.ChoiceGroupId, cancellationToken))
+            throw new InvalidOperationException("Tên nhóm lựa chọn đã tồn tại.");
+
+        DateTime now = DateTime.UtcNow;
+        if (request.ChoiceGroupId is null)
+        {
+            await _repository.AddChoiceGroupAsync(new ChoiceGroup
+            {
+                GroupName = name,
+                IsAvailable = true,
+                IsRequired = request.IsRequired,
+                MaxSelectDefault = request.MaxSelectDefault,
+                CreatedAt = now,
+                UpdatedAt = now
+            }, cancellationToken);
+        }
+        else
+        {
+            ChoiceGroup group = await _repository.GetChoiceGroupAsync(request.ChoiceGroupId.Value, cancellationToken)
+                ?? throw new InvalidOperationException("Không tìm thấy nhóm lựa chọn.");
+            group.GroupName = name;
+            group.IsRequired = request.IsRequired;
+            group.MaxSelectDefault = request.MaxSelectDefault;
+            group.UpdatedAt = now;
+        }
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveChoiceItemAsync(
+        SaveChoiceItemRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        ChoiceGroup group = await _repository.GetChoiceGroupAsync(request.ChoiceGroupId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy nhóm lựa chọn.");
+        string name = request.ChoiceName.Trim();
+        if (name.Length is < 1 or > 120)
+            throw new InvalidOperationException("Tên lựa chọn phải từ 1 đến 120 ký tự.");
+        if (request.ExtraPrice < 0)
+            throw new InvalidOperationException("Giá cộng thêm không được âm.");
+        if (await _repository.ChoiceItemNameExistsAsync(group.ChoiceGroupId, name, request.ChoiceItemId, cancellationToken))
+            throw new InvalidOperationException("Tên lựa chọn đã tồn tại trong nhóm.");
+
+        DateTime now = DateTime.UtcNow;
+        if (request.ChoiceItemId is null)
+        {
+            await _repository.AddChoiceItemAsync(new ChoiceItem
+            {
+                ChoiceGroupId = group.ChoiceGroupId,
+                ChoiceName = name,
+                ExtraPrice = request.ExtraPrice,
+                IsAvailable = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            }, cancellationToken);
+        }
+        else
+        {
+            ChoiceItem item = await _repository.GetChoiceItemAsync(request.ChoiceItemId.Value, cancellationToken)
+                ?? throw new InvalidOperationException("Không tìm thấy lựa chọn.");
+            if (item.ChoiceGroupId != group.ChoiceGroupId)
+                throw new InvalidOperationException("Lựa chọn không thuộc nhóm đã chọn.");
+            item.ChoiceName = name;
+            item.ExtraPrice = request.ExtraPrice;
+            item.UpdatedAt = now;
+        }
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetChoiceGroupAvailabilityAsync(
+        int choiceGroupId, bool available, CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        ChoiceGroup group = await _repository.GetChoiceGroupAsync(choiceGroupId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy nhóm lựa chọn.");
+        group.IsAvailable = available;
+        group.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetChoiceItemAvailabilityAsync(
+        int choiceItemId, bool available, CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        ChoiceItem item = await _repository.GetChoiceItemAsync(choiceItemId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy lựa chọn.");
+        item.IsAvailable = available;
+        item.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AssignChoiceGroupAsync(
+        AssignChoiceGroupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        _ = await _repository.GetItemAsync(request.MenuItemId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy món.");
+        ChoiceGroup group = await _repository.GetChoiceGroupAsync(request.ChoiceGroupId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy nhóm lựa chọn.");
+        int maxSelect = request.MaxSelect ?? group.MaxSelectDefault;
+        if (maxSelect < 1 || (group.IsRequired && maxSelect != 1))
+            throw new InvalidOperationException("Giới hạn lựa chọn không hợp lệ.");
+
+        DateTime now = DateTime.UtcNow;
+        MenuItemChoiceGroup? assignment = await _repository.GetAssignmentAsync(
+            request.MenuItemId, request.ChoiceGroupId, cancellationToken);
+        if (assignment is null)
+        {
+            await _repository.AddAssignmentAsync(new MenuItemChoiceGroup
+            {
+                MenuItemId = request.MenuItemId,
+                ChoiceGroupId = request.ChoiceGroupId,
+                DisplayOrder = request.DisplayOrder,
+                MaxSelect = request.MaxSelect,
+                CreatedAt = now,
+                UpdatedAt = now
+            }, cancellationToken);
+        }
+        else
+        {
+            assignment.DisplayOrder = request.DisplayOrder;
+            assignment.MaxSelect = request.MaxSelect;
+            assignment.UpdatedAt = now;
+        }
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemoveChoiceGroupAssignmentAsync(
+        int menuItemId, int choiceGroupId, CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        MenuItemChoiceGroup assignment = await _repository.GetAssignmentAsync(menuItemId, choiceGroupId, cancellationToken)
+            ?? throw new InvalidOperationException("Món chưa được gán nhóm lựa chọn này.");
+        _repository.RemoveAssignment(assignment);
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ManagedSalesChannelDto>> GetSalesChannelsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        return (await _repository.GetSalesChannelsAsync(cancellationToken)).Select(channel => new ManagedSalesChannelDto
+        {
+            SalesChannelId = channel.SalesChannelId,
+            ChannelCode = channel.ChannelCode,
+            ChannelName = channel.ChannelName,
+            IsActive = channel.IsActive
+        }).ToList();
+    }
+
+    public async Task SaveMenuItemChannelPriceAsync(
+        SaveChannelPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        _ = await _repository.GetItemAsync(request.MenuItemId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy món.");
+        if (request.ChannelExtraPrice < 0)
+            throw new InvalidOperationException("Giá cộng thêm theo kênh không được âm.");
+        if (!(await _repository.GetSalesChannelsAsync(cancellationToken))
+            .Any(channel => channel.SalesChannelId == request.SalesChannelId && channel.IsActive))
+            throw new InvalidOperationException("Kênh bán không tồn tại hoặc đang bị khóa.");
+
+        MenuItemChannelPrice? price = await _repository.GetMenuItemChannelPriceAsync(
+            request.MenuItemId, request.SalesChannelId, cancellationToken);
+        if (price is null)
+        {
+            await _repository.AddMenuItemChannelPriceAsync(new MenuItemChannelPrice
+            {
+                MenuItemId = request.MenuItemId,
+                SalesChannelId = request.SalesChannelId,
+                ChannelExtraPrice = request.ChannelExtraPrice
+            }, cancellationToken);
+        }
+        else
+        {
+            price.ChannelExtraPrice = request.ChannelExtraPrice;
+        }
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
     private void EnsureAdmin()
     {
         if (!_currentUser.IsAuthenticated ||

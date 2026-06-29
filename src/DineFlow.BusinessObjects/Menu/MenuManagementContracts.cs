@@ -41,3 +41,60 @@ public sealed class SaveMenuItemRequest
     public int? Stock { get; set; }
     public bool IsAvailable { get; set; }
 }
+
+public sealed class ManagedChoiceGroupDto
+{
+    public int ChoiceGroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
+    public bool IsAvailable { get; set; }
+    public bool IsRequired { get; set; }
+    public int MaxSelectDefault { get; set; }
+    public List<ManagedChoiceItemDto> Items { get; set; } = [];
+}
+
+public sealed class ManagedChoiceItemDto
+{
+    public int ChoiceItemId { get; set; }
+    public string ChoiceName { get; set; } = string.Empty;
+    public decimal ExtraPrice { get; set; }
+    public bool IsAvailable { get; set; }
+}
+
+public sealed class SaveChoiceGroupRequest
+{
+    public int? ChoiceGroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
+    public bool IsRequired { get; set; }
+    public int MaxSelectDefault { get; set; } = 1;
+}
+
+public sealed class SaveChoiceItemRequest
+{
+    public int? ChoiceItemId { get; set; }
+    public int ChoiceGroupId { get; set; }
+    public string ChoiceName { get; set; } = string.Empty;
+    public decimal ExtraPrice { get; set; }
+}
+
+public sealed class AssignChoiceGroupRequest
+{
+    public int MenuItemId { get; set; }
+    public int ChoiceGroupId { get; set; }
+    public int DisplayOrder { get; set; }
+    public int? MaxSelect { get; set; }
+}
+
+public sealed class SaveChannelPriceRequest
+{
+    public int MenuItemId { get; set; }
+    public int SalesChannelId { get; set; }
+    public decimal ChannelExtraPrice { get; set; }
+}
+
+public sealed class ManagedSalesChannelDto
+{
+    public int SalesChannelId { get; set; }
+    public string ChannelCode { get; set; } = string.Empty;
+    public string ChannelName { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+}
