@@ -40,9 +40,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local/private docs
-docs/Rule_Contract/
+# Local/private docs and database notes
+docs/
 document/
+database/
 
 # Database
 *.mdf
