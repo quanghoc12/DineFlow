@@ -17,7 +17,7 @@ public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -47,8 +47,8 @@ public partial class App : Application
         using (IServiceScope initializationScope = _serviceProvider.CreateScope())
         {
             AppDbContext dbContext = initializationScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.Migrate();
-            DevelopmentDataSeeder.SeedDevelopmentDataAsync(dbContext).GetAwaiter().GetResult();
+            await dbContext.Database.MigrateAsync();
+            await DevelopmentDataSeeder.SeedDevelopmentDataAsync(dbContext);
         }
 
         RunLoginLoop();
