@@ -18,5 +18,8 @@ public interface IMenuManagementService
     Task AssignChoiceGroupAsync(AssignChoiceGroupRequest request, CancellationToken cancellationToken = default);
     Task RemoveChoiceGroupAssignmentAsync(int menuItemId, int choiceGroupId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ManagedSalesChannelDto>> GetSalesChannelsAsync(CancellationToken cancellationToken = default);
+    Task SaveSalesChannelAsync(SaveSalesChannelRequest request, CancellationToken cancellationToken = default);
+    Task SetSalesChannelActiveAsync(int salesChannelId, bool active, CancellationToken cancellationToken = default);
     Task SaveMenuItemChannelPriceAsync(SaveChannelPriceRequest request, CancellationToken cancellationToken = default);
+    Task SaveChoiceItemChannelPriceAsync(SaveChannelPriceRequest request, CancellationToken cancellationToken = default);
 }

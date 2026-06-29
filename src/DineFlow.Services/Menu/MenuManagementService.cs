@@ -41,7 +41,20 @@ public sealed class MenuManagementService : IMenuManagementService
             BasePrice = item.BasePrice,
             ImageUrl = item.ImageUrl,
             IsAvailable = item.IsAvailable,
-            Stock = item.Stock
+            Stock = item.Stock,
+            ChoiceGroups = item.MenuItemChoiceGroups
+                .OrderBy(assignment => assignment.DisplayOrder)
+                .Select(assignment => new ManagedMenuItemChoiceGroupDto
+                {
+                    ChoiceGroupId = assignment.ChoiceGroupId,
+                    GroupName = assignment.ChoiceGroup?.GroupName ?? string.Empty,
+                    DisplayOrder = assignment.DisplayOrder,
+                    MaxSelect = assignment.MaxSelect,
+                    EffectiveMaxSelect = assignment.MaxSelect ?? assignment.ChoiceGroup?.MaxSelectDefault ?? 1,
+                    IsRequired = assignment.ChoiceGroup?.IsRequired == true,
+                    IsAvailable = assignment.ChoiceGroup?.IsAvailable == true
+                }).ToList(),
+            ChannelPrices = item.ChannelPrices.Select(MapChannelPrice).ToList()
         }).ToList();
     }
 
@@ -171,7 +184,8 @@ public sealed class MenuManagementService : IMenuManagementService
                     ChoiceItemId = item.ChoiceItemId,
                     ChoiceName = item.ChoiceName,
                     ExtraPrice = item.ExtraPrice,
-                    IsAvailable = item.IsAvailable
+                    IsAvailable = item.IsAvailable,
+                    ChannelPrices = item.ChannelPrices.Select(MapChannelPrice).ToList()
                 }).ToList()
             }).ToList();
     }
@@ -339,6 +353,55 @@ public sealed class MenuManagementService : IMenuManagementService
         }).ToList();
     }
 
+    public async Task SaveSalesChannelAsync(
+        SaveSalesChannelRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        string code = NormalizeChannelCode(request.ChannelCode);
+        string name = request.ChannelName.Trim();
+        if (name.Length is < 1 or > 120)
+            throw new InvalidOperationException("Tên kênh bán phải từ 1 đến 120 ký tự.");
+        if (await _repository.SalesChannelCodeExistsAsync(code, request.SalesChannelId, cancellationToken))
+            throw new InvalidOperationException("Mã kênh bán đã tồn tại.");
+
+        DateTime now = DateTime.UtcNow;
+        if (request.SalesChannelId is null)
+        {
+            await _repository.AddSalesChannelAsync(new SalesChannel
+            {
+                ChannelCode = code,
+                ChannelName = name,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            }, cancellationToken);
+        }
+        else
+        {
+            SalesChannel channel = await _repository.GetSalesChannelAsync(request.SalesChannelId.Value, cancellationToken)
+                ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
+            channel.ChannelCode = code;
+            channel.ChannelName = name;
+            channel.UpdatedAt = now;
+        }
+
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetSalesChannelActiveAsync(
+        int salesChannelId,
+        bool active,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
+        channel.IsActive = active;
+        channel.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SaveMenuItemChannelPriceAsync(
         SaveChannelPriceRequest request,
         CancellationToken cancellationToken = default)
@@ -368,6 +431,65 @@ public sealed class MenuManagementService : IMenuManagementService
             price.ChannelExtraPrice = request.ChannelExtraPrice;
         }
         await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveChoiceItemChannelPriceAsync(
+        SaveChannelPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        int choiceItemId = request.ChoiceItemId
+            ?? throw new InvalidOperationException("Vui lòng chọn lựa chọn phụ.");
+        _ = await _repository.GetChoiceItemAsync(choiceItemId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy lựa chọn phụ.");
+        if (request.ChannelExtraPrice < 0)
+            throw new InvalidOperationException("Giá cộng thêm theo kênh không được âm.");
+        if (!(await _repository.GetSalesChannelsAsync(cancellationToken))
+            .Any(channel => channel.SalesChannelId == request.SalesChannelId && channel.IsActive))
+            throw new InvalidOperationException("Kênh bán không tồn tại hoặc đang bị khóa.");
+
+        ChoiceItemChannelPrice? price = await _repository.GetChoiceItemChannelPriceAsync(
+            choiceItemId, request.SalesChannelId, cancellationToken);
+        if (price is null)
+        {
+            await _repository.AddChoiceItemChannelPriceAsync(new ChoiceItemChannelPrice
+            {
+                ChoiceItemId = choiceItemId,
+                SalesChannelId = request.SalesChannelId,
+                ChannelExtraPrice = request.ChannelExtraPrice
+            }, cancellationToken);
+        }
+        else
+        {
+            price.ChannelExtraPrice = request.ChannelExtraPrice;
+        }
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    private static ManagedChannelPriceDto MapChannelPrice(MenuItemChannelPrice price) => new()
+    {
+        SalesChannelId = price.SalesChannelId,
+        ChannelCode = price.SalesChannel?.ChannelCode ?? string.Empty,
+        ChannelName = price.SalesChannel?.ChannelName ?? string.Empty,
+        ChannelExtraPrice = price.ChannelExtraPrice
+    };
+
+    private static ManagedChannelPriceDto MapChannelPrice(ChoiceItemChannelPrice price) => new()
+    {
+        SalesChannelId = price.SalesChannelId,
+        ChannelCode = price.SalesChannel?.ChannelCode ?? string.Empty,
+        ChannelName = price.SalesChannel?.ChannelName ?? string.Empty,
+        ChannelExtraPrice = price.ChannelExtraPrice
+    };
+
+    private static string NormalizeChannelCode(string code)
+    {
+        string normalized = code.Trim().ToUpperInvariant().Replace(' ', '_');
+        if (normalized.Length is < 2 or > 50)
+            throw new InvalidOperationException("Mã kênh bán phải từ 2 đến 50 ký tự.");
+        if (!normalized.All(ch => char.IsLetterOrDigit(ch) || ch == '_'))
+            throw new InvalidOperationException("Mã kênh bán chỉ gồm chữ, số hoặc dấu gạch dưới.");
+        return normalized;
     }
 
     private void EnsureAdmin()

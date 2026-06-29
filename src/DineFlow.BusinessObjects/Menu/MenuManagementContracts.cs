@@ -20,6 +20,19 @@ public sealed class ManagedMenuItemDto
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; }
     public int? Stock { get; set; }
+    public List<ManagedMenuItemChoiceGroupDto> ChoiceGroups { get; set; } = [];
+    public List<ManagedChannelPriceDto> ChannelPrices { get; set; } = [];
+}
+
+public sealed class ManagedMenuItemChoiceGroupDto
+{
+    public int ChoiceGroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
+    public int? MaxSelect { get; set; }
+    public int EffectiveMaxSelect { get; set; }
+    public bool IsRequired { get; set; }
+    public bool IsAvailable { get; set; }
 }
 
 public sealed class SaveCategoryRequest
@@ -58,6 +71,7 @@ public sealed class ManagedChoiceItemDto
     public string ChoiceName { get; set; } = string.Empty;
     public decimal ExtraPrice { get; set; }
     public bool IsAvailable { get; set; }
+    public List<ManagedChannelPriceDto> ChannelPrices { get; set; } = [];
 }
 
 public sealed class SaveChoiceGroupRequest
@@ -87,8 +101,16 @@ public sealed class AssignChoiceGroupRequest
 public sealed class SaveChannelPriceRequest
 {
     public int MenuItemId { get; set; }
+    public int? ChoiceItemId { get; set; }
     public int SalesChannelId { get; set; }
     public decimal ChannelExtraPrice { get; set; }
+}
+
+public sealed class SaveSalesChannelRequest
+{
+    public int? SalesChannelId { get; set; }
+    public string ChannelCode { get; set; } = string.Empty;
+    public string ChannelName { get; set; } = string.Empty;
 }
 
 public sealed class ManagedSalesChannelDto
@@ -97,4 +119,12 @@ public sealed class ManagedSalesChannelDto
     public string ChannelCode { get; set; } = string.Empty;
     public string ChannelName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+}
+
+public sealed class ManagedChannelPriceDto
+{
+    public int SalesChannelId { get; set; }
+    public string ChannelCode { get; set; } = string.Empty;
+    public string ChannelName { get; set; } = string.Empty;
+    public decimal ChannelExtraPrice { get; set; }
 }

@@ -37,6 +37,10 @@ public sealed class MenuManagementDao : IMenuManagementDao
     public Task<List<MenuItem>> GetItemsAsync(CancellationToken cancellationToken = default) =>
         _dbContext.MenuItems.AsNoTracking()
             .Include(item => item.Category)
+            .Include(item => item.MenuItemChoiceGroups)
+                .ThenInclude(assignment => assignment.ChoiceGroup)
+            .Include(item => item.ChannelPrices)
+                .ThenInclude(price => price.SalesChannel)
             .OrderBy(item => item.Category!.DisplayOrder)
             .ThenBy(item => item.Name)
             .ToListAsync(cancellationToken);
@@ -59,6 +63,8 @@ public sealed class MenuManagementDao : IMenuManagementDao
     public Task<List<ChoiceGroup>> GetChoiceGroupsAsync(CancellationToken cancellationToken = default) =>
         _dbContext.ChoiceGroups.AsNoTracking()
             .Include(group => group.ChoiceItems)
+                .ThenInclude(item => item.ChannelPrices)
+                    .ThenInclude(price => price.SalesChannel)
             .OrderBy(group => group.GroupName)
             .ToListAsync(cancellationToken);
 
@@ -116,6 +122,30 @@ public sealed class MenuManagementDao : IMenuManagementDao
 
     public Task AddMenuItemChannelPriceAsync(MenuItemChannelPrice price, CancellationToken cancellationToken = default) =>
         _dbContext.MenuItemChannelPrices.AddAsync(price, cancellationToken).AsTask();
+
+    public Task<SalesChannel?> GetSalesChannelAsync(int salesChannelId, CancellationToken cancellationToken = default) =>
+        _dbContext.SalesChannels.FirstOrDefaultAsync(channel => channel.SalesChannelId == salesChannelId, cancellationToken);
+
+    public Task<bool> SalesChannelCodeExistsAsync(string code, int? excludedId = null, CancellationToken cancellationToken = default)
+    {
+        string normalized = code.Trim().ToUpper();
+        return _dbContext.SalesChannels.AnyAsync(
+            channel => channel.ChannelCode.ToUpper() == normalized &&
+                       (!excludedId.HasValue || channel.SalesChannelId != excludedId.Value),
+            cancellationToken);
+    }
+
+    public Task AddSalesChannelAsync(SalesChannel channel, CancellationToken cancellationToken = default) =>
+        _dbContext.SalesChannels.AddAsync(channel, cancellationToken).AsTask();
+
+    public Task<ChoiceItemChannelPrice?> GetChoiceItemChannelPriceAsync(
+        int choiceItemId, int salesChannelId, CancellationToken cancellationToken = default) =>
+        _dbContext.ChoiceItemChannelPrices.FirstOrDefaultAsync(
+            price => price.ChoiceItemId == choiceItemId && price.SalesChannelId == salesChannelId,
+            cancellationToken);
+
+    public Task AddChoiceItemChannelPriceAsync(ChoiceItemChannelPrice price, CancellationToken cancellationToken = default) =>
+        _dbContext.ChoiceItemChannelPrices.AddAsync(price, cancellationToken).AsTask();
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _dbContext.SaveChangesAsync(cancellationToken);

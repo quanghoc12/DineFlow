@@ -30,5 +30,10 @@ public sealed class MenuManagementRepository : IMenuManagementRepository
     public Task<List<SalesChannel>> GetSalesChannelsAsync(CancellationToken cancellationToken = default) => _dao.GetSalesChannelsAsync(cancellationToken);
     public Task<MenuItemChannelPrice?> GetMenuItemChannelPriceAsync(int menuItemId, int salesChannelId, CancellationToken cancellationToken = default) => _dao.GetMenuItemChannelPriceAsync(menuItemId, salesChannelId, cancellationToken);
     public Task AddMenuItemChannelPriceAsync(MenuItemChannelPrice price, CancellationToken cancellationToken = default) => _dao.AddMenuItemChannelPriceAsync(price, cancellationToken);
+    public Task<SalesChannel?> GetSalesChannelAsync(int salesChannelId, CancellationToken cancellationToken = default) => _dao.GetSalesChannelAsync(salesChannelId, cancellationToken);
+    public Task<bool> SalesChannelCodeExistsAsync(string code, int? excludedId = null, CancellationToken cancellationToken = default) => _dao.SalesChannelCodeExistsAsync(code, excludedId, cancellationToken);
+    public Task AddSalesChannelAsync(SalesChannel channel, CancellationToken cancellationToken = default) => _dao.AddSalesChannelAsync(channel, cancellationToken);
+    public Task<ChoiceItemChannelPrice?> GetChoiceItemChannelPriceAsync(int choiceItemId, int salesChannelId, CancellationToken cancellationToken = default) => _dao.GetChoiceItemChannelPriceAsync(choiceItemId, salesChannelId, cancellationToken);
+    public Task AddChoiceItemChannelPriceAsync(ChoiceItemChannelPrice price, CancellationToken cancellationToken = default) => _dao.AddChoiceItemChannelPriceAsync(price, cancellationToken);
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) => _dao.SaveChangesAsync(cancellationToken);
 }

@@ -4,54 +4,249 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+
         <Grid Margin="0,0,0,18">
             <StackPanel>
                 <TextBlock Text="Quản lý thực đơn" FontSize="28" FontWeight="Bold" Foreground="#102A43" />
-                <TextBlock Text="Danh mục, giá bán, tồn kho và trạng thái món." Margin="0,6,0,0" Foreground="#627D98" />
+                <TextBlock Text="Danh mục, món, nhóm phụ và giá theo từng kênh bán." Margin="0,6,0,0" Foreground="#627D98" />
             </StackPanel>
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="Danh mục" Click="CategoryButton_Click" Padding="16,10" Margin="0,0,8,0" />
-                <Button Content="Lựa chọn &amp; giá kênh" Click="ChoicePricingButton_Click" Padding="16,10" Margin="0,0,8,0" />
-                <Button Content="+ Thêm món" Click="CreateButton_Click" Padding="16,10"
-                        Background="#2F80ED" Foreground="White" BorderThickness="0" />
-            </StackPanel>
+            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Text="{Binding ErrorMessage}" Foreground="#C53030" TextWrapping="Wrap" MaxWidth="520" />
         </Grid>
-        <Border Grid.Row="1" Background="White" CornerRadius="10,10,0,0" Padding="16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="270" />
-                    <ColumnDefinition Width="220" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Padding="10,7" ToolTip="Tìm món" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Categories}" DisplayMemberPath="CategoryName"
-                          SelectedItem="{Binding CategoryFilter}" Margin="10,0,0,0" Padding="8,6" />
-                <TextBlock Grid.Column="2" Text="{Binding ErrorMessage}" Foreground="#C53030"
-                           VerticalAlignment="Center" Margin="14,0" />
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
-                    <Button Content="Sửa" Click="EditButton_Click" Padding="14,7" Margin="0,0,8,0" />
-                    <Button Content="Mở / Tạm ngưng bán" Click="ToggleButton_Click" Padding="14,7" />
-                </StackPanel>
-            </Grid>
-        </Border>
-        <Border Grid.Row="2" Background="White" CornerRadius="0,0,10,10">
-            <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
-                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                      SelectionMode="Single" SelectionUnit="FullRow" BorderThickness="0"
-                      GridLinesVisibility="Horizontal">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Tên món" Binding="{Binding Name}" Width="1.5*" />
-                    <DataGridTextColumn Header="Danh mục" Binding="{Binding CategoryName}" Width="*" />
-                    <DataGridTextColumn Header="Giá" Binding="{Binding BasePrice, StringFormat={}{0:N0} ₫}" Width="130" />
-                    <DataGridTextColumn Header="Tồn kho" Binding="{Binding Stock}" Width="100" />
-                    <DataGridCheckBoxColumn Header="Đang bán" Binding="{Binding IsAvailable}" Width="100" />
-                    <DataGridTextColumn Header="Ảnh" Binding="{Binding ImageUrl}" Width="1.5*" />
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
+
+        <TabControl Grid.Row="1">
+            <TabItem Header="Danh mục">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
+
+                    <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tên danh mục" Binding="{Binding CategoryName}" Width="*" />
+                            <DataGridTextColumn Header="Mô tả" Binding="{Binding Description}" Width="1.5*" />
+                            <DataGridTextColumn Header="Thứ tự" Binding="{Binding DisplayOrder}" Width="90" />
+                            <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Column="1" Background="White" CornerRadius="10" Padding="16" Margin="16,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Thêm / điều chỉnh danh mục" FontWeight="Bold" FontSize="16" />
+                            <TextBlock Text="Tên danh mục" Margin="0,14,0,4" />
+                            <TextBox x:Name="CategoryNameBox" />
+                            <TextBlock Text="Mô tả" Margin="0,10,0,4" />
+                            <TextBox x:Name="CategoryDescriptionBox" Height="70" TextWrapping="Wrap" AcceptsReturn="True" />
+                            <TextBlock Text="Thứ tự hiển thị" Margin="0,10,0,4" />
+                            <TextBox x:Name="CategoryOrderBox" Text="0" />
+                            <WrapPanel Margin="0,16,0,0">
+                                <Button Content="Tạo mới" Click="NewCategory_Click" Margin="0,0,8,0" />
+                                <Button Content="Lưu" Click="SaveCategory_Click" Margin="0,0,8,0" />
+                                <Button Content="Ẩn / hiện" Click="ToggleCategory_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Thực đơn">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="380" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.ColumnSpan="2" Background="White" CornerRadius="10" Padding="12" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="260" />
+                                <ColumnDefinition Width="240" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm món" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding Categories}" DisplayMemberPath="CategoryName"
+                                      SelectedItem="{Binding CategoryFilter}" Margin="10,0,0,0" />
+                            <TextBlock Grid.Column="2" Text="Chọn món để sửa trạng thái hoặc gán nhóm phụ." VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#64748B" />
+                        </Grid>
+                    </Border>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tên món" Binding="{Binding Name}" Width="1.5*" />
+                            <DataGridTextColumn Header="Danh mục" Binding="{Binding CategoryName}" Width="*" />
+                            <DataGridTextColumn Header="Giá" Binding="{Binding BasePrice, StringFormat={}{0:N0} ₫}" Width="120" />
+                            <DataGridTextColumn Header="Tồn" Binding="{Binding Stock}" Width="80" />
+                            <DataGridCheckBoxColumn Header="Đang bán" Binding="{Binding IsAvailable}" Width="95" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <ScrollViewer Grid.Row="1" Grid.Column="1" Margin="16,0,0,0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Background="White" CornerRadius="10" Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Thêm / sửa món" FontWeight="Bold" FontSize="16" />
+                                    <TextBlock Text="Tên món" Margin="0,12,0,4" /><TextBox x:Name="ItemNameBox" />
+                                    <TextBlock Text="Danh mục" Margin="0,10,0,4" />
+                                    <ComboBox x:Name="ItemCategoryBox" ItemsSource="{Binding Categories}" DisplayMemberPath="CategoryName" />
+                                    <TextBlock Text="Giá cơ bản" Margin="0,10,0,4" /><TextBox x:Name="ItemPriceBox" Text="0" />
+                                    <TextBlock Text="Tồn kho (trống = không theo dõi)" Margin="0,10,0,4" /><TextBox x:Name="ItemStockBox" />
+                                    <TextBlock Text="Ảnh URL" Margin="0,10,0,4" /><TextBox x:Name="ItemImageBox" />
+                                    <TextBlock Text="Mô tả" Margin="0,10,0,4" />
+                                    <TextBox x:Name="ItemDescriptionBox" Height="70" TextWrapping="Wrap" AcceptsReturn="True" />
+                                    <CheckBox x:Name="ItemAvailableBox" Content="Đang bán" Margin="0,12,0,0" IsChecked="True" />
+                                    <WrapPanel Margin="0,16,0,0">
+                                        <Button Content="Tạo mới" Click="NewItem_Click" Margin="0,0,8,0" />
+                                        <Button Content="Lưu món" Click="SaveItem_Click" Margin="0,0,8,0" />
+                                        <Button Content="Mở / tạm ngưng" Click="ToggleItem_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="White" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Điều thêm nhóm phụ cho món" FontWeight="Bold" FontSize="16" />
+                                    <DataGrid ItemsSource="{Binding AssignedChoiceGroups}" SelectedItem="{Binding SelectedAssignedChoiceGroup}"
+                                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Height="130" Margin="0,10,0,10">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Nhóm" Binding="{Binding GroupName}" Width="*" />
+                                            <DataGridTextColumn Header="Max" Binding="{Binding EffectiveMaxSelect}" Width="70" />
+                                            <DataGridTextColumn Header="Thứ tự" Binding="{Binding DisplayOrder}" Width="70" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <ComboBox x:Name="AssignGroupBox" ItemsSource="{Binding ChoiceGroups}" DisplayMemberPath="GroupName" />
+                                    <TextBlock Text="Thứ tự" Margin="0,10,0,4" /><TextBox x:Name="AssignOrderBox" Text="0" />
+                                    <TextBlock Text="MaxSelect riêng (trống = mặc định)" Margin="0,10,0,4" /><TextBox x:Name="AssignMaxBox" />
+                                    <WrapPanel Margin="0,12,0,0">
+                                        <Button Content="Gán / cập nhật" Click="AssignGroup_Click" Margin="0,0,8,0" />
+                                        <Button Content="Bỏ gán" Click="RemoveAssignedGroup_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Nhóm phụ">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="380" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="220" />
+                    </Grid.RowDefinitions>
+
+                    <DataGrid ItemsSource="{Binding ChoiceGroups}" SelectedItem="{Binding SelectedChoiceGroup}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Nhóm phụ" Binding="{Binding GroupName}" Width="*" />
+                            <DataGridCheckBoxColumn Header="Bắt buộc" Binding="{Binding IsRequired}" Width="100" />
+                            <DataGridTextColumn Header="Max mặc định" Binding="{Binding MaxSelectDefault}" Width="120" />
+                            <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Column="1" Background="White" CornerRadius="10" Padding="16" Margin="16,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Thêm / sửa nhóm phụ" FontWeight="Bold" FontSize="16" />
+                            <TextBlock Text="Tên nhóm" Margin="0,12,0,4" /><TextBox x:Name="GroupNameBox" />
+                            <CheckBox x:Name="GroupRequiredBox" Content="Bắt buộc chọn đúng 1" Margin="0,12,0,0" />
+                            <TextBlock Text="MaxSelect mặc định" Margin="0,10,0,4" /><TextBox x:Name="GroupMaxBox" Text="1" />
+                            <WrapPanel Margin="0,16,0,0">
+                                <Button Content="Tạo mới" Click="NewChoiceGroup_Click" Margin="0,0,8,0" />
+                                <Button Content="Lưu nhóm" Click="SaveChoiceGroup_Click" Margin="0,0,8,0" />
+                                <Button Content="Ẩn / hiện" Click="ToggleChoiceGroup_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding ChoiceItems}" SelectedItem="{Binding SelectedChoiceItem}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Margin="0,14,0,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Lựa chọn phụ" Binding="{Binding ChoiceName}" Width="*" />
+                            <DataGridTextColumn Header="Giá thêm" Binding="{Binding ExtraPrice, StringFormat={}{0:N0} ₫}" Width="120" />
+                            <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="1" Grid.Column="1" Background="White" CornerRadius="10" Padding="16" Margin="16,14,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Lựa chọn trong nhóm" FontWeight="Bold" />
+                            <TextBlock Text="Tên lựa chọn" Margin="0,10,0,4" /><TextBox x:Name="ChoiceNameBox" />
+                            <TextBlock Text="Giá cộng thêm" Margin="0,10,0,4" /><TextBox x:Name="ChoiceExtraBox" Text="0" />
+                            <WrapPanel Margin="0,14,0,0">
+                                <Button Content="Thêm mới" Click="NewChoiceItem_Click" Margin="0,0,8,0" />
+                                <Button Content="Lưu" Click="SaveChoiceItem_Click" Margin="0,0,8,0" />
+                                <Button Content="Ẩn / hiện" Click="ToggleChoiceItem_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Kênh bán">
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.6*" />
+                        <ColumnDefinition Width="420" />
+                    </Grid.ColumnDefinitions>
+
+                    <DataGrid ItemsSource="{Binding SalesChannels}" SelectedItem="{Binding SelectedSalesChannel}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Mã kênh" Binding="{Binding ChannelCode}" Width="*" />
+                            <DataGridTextColumn Header="Tên kênh" Binding="{Binding ChannelName}" Width="1.4*" />
+                            <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}" Width="100" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <ScrollViewer Grid.Column="1" Margin="16,0,0,0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Background="White" CornerRadius="10" Padding="16">
+                                <StackPanel>
+                                    <TextBlock Text="Thêm / sửa kênh bán" FontWeight="Bold" FontSize="16" />
+                                    <TextBlock Text="Mã kênh" Margin="0,12,0,4" /><TextBox x:Name="ChannelCodeBox" />
+                                    <TextBlock Text="Tên kênh" Margin="0,10,0,4" /><TextBox x:Name="ChannelNameBox" />
+                                    <WrapPanel Margin="0,16,0,0">
+                                        <Button Content="Tạo mới" Click="NewChannel_Click" Margin="0,0,8,0" />
+                                        <Button Content="Lưu kênh" Click="SaveChannel_Click" Margin="0,0,8,0" />
+                                        <Button Content="Ẩn / hiện" Click="ToggleChannel_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="White" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Tiền theo kênh cho thực đơn" FontWeight="Bold" FontSize="16" />
+                                    <TextBlock Text="Chọn món ở tab Thực đơn và chọn kênh bên trái." Foreground="#64748B" TextWrapping="Wrap" Margin="0,6,0,10" />
+                                    <TextBlock Text="Giá cộng thêm của món" Margin="0,4,0,4" /><TextBox x:Name="MenuChannelPriceBox" Text="0" />
+                                    <Button Content="Lưu giá món theo kênh" Click="SaveMenuChannelPrice_Click" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="White" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Tiền theo kênh cho nhóm phụ" FontWeight="Bold" FontSize="16" />
+                                    <TextBlock Text="Chọn lựa chọn phụ ở tab Nhóm phụ và chọn kênh bên trái." Foreground="#64748B" TextWrapping="Wrap" Margin="0,6,0,10" />
+                                    <TextBlock Text="Giá cộng thêm của lựa chọn phụ" Margin="0,4,0,4" /><TextBox x:Name="ChoiceChannelPriceBox" Text="0" />
+                                    <Button Content="Lưu giá lựa chọn theo kênh" Click="SaveChoiceChannelPrice_Click" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

@@ -25,5 +25,10 @@ public interface IMenuManagementDao
     Task<List<SalesChannel>> GetSalesChannelsAsync(CancellationToken cancellationToken = default);
     Task<MenuItemChannelPrice?> GetMenuItemChannelPriceAsync(int menuItemId, int salesChannelId, CancellationToken cancellationToken = default);
     Task AddMenuItemChannelPriceAsync(MenuItemChannelPrice price, CancellationToken cancellationToken = default);
+    Task<SalesChannel?> GetSalesChannelAsync(int salesChannelId, CancellationToken cancellationToken = default);
+    Task<bool> SalesChannelCodeExistsAsync(string code, int? excludedId = null, CancellationToken cancellationToken = default);
+    Task AddSalesChannelAsync(SalesChannel channel, CancellationToken cancellationToken = default);
+    Task<ChoiceItemChannelPrice?> GetChoiceItemChannelPriceAsync(int choiceItemId, int salesChannelId, CancellationToken cancellationToken = default);
+    Task AddChoiceItemChannelPriceAsync(ChoiceItemChannelPrice price, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
