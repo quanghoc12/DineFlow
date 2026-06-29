@@ -188,8 +188,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="220" />
                     </Grid.RowDefinitions>
 
                     <DockPanel Margin="0,0,0,12" LastChildFill="False">
@@ -215,33 +213,6 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Content="Sửa" Tag="{Binding}" Click="EditChoiceGroupRow_Click" Padding="10,4" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <DockPanel Grid.Row="2" Margin="0,14,0,8" LastChildFill="False">
-                        <StackPanel>
-                            <TextBlock Text="Lựa chọn trong nhóm" FontWeight="Bold" />
-                            <TextBlock Text="Chọn một nhóm phụ phía trên để xem/thêm lựa chọn của nhóm đó."
-                                       Foreground="#64748B"
-                                       FontSize="12" />
-                        </StackPanel>
-                        <Button Content="+ Thêm lựa chọn" Click="AddChoiceItemButton_Click" DockPanel.Dock="Right"
-                                HorizontalAlignment="Right" Padding="14,8" />
-                    </DockPanel>
-
-                    <DataGrid Grid.Row="3" ItemsSource="{Binding ChoiceItems}" SelectedItem="{Binding SelectedChoiceItem}"
-                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Margin="0,14,0,0">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Lựa chọn phụ" Binding="{Binding ChoiceName}" Width="*" />
-                            <DataGridTextColumn Header="Giá thêm" Binding="{Binding ExtraPrice, StringFormat={}{0:N0} ₫}" Width="120" />
-                            <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
-                            <DataGridTemplateColumn Header="Thao tác" Width="90">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button Content="Sửa" Tag="{Binding}" Click="EditChoiceItemRow_Click" Padding="10,4" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

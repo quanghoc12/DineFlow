@@ -273,7 +273,7 @@ public partial class MenuManagementView : UserControl
 
         if (dialog.ShowDialog() == true)
         {
-            await _viewModel.SaveChoiceGroupAsync(dialog.Request);
+            await SaveChoiceGroupWithItemsAsync(dialog);
         }
     }
 
@@ -288,8 +288,32 @@ public partial class MenuManagementView : UserControl
 
             if (dialog.ShowDialog() == true)
             {
-                await _viewModel.SaveChoiceGroupAsync(dialog.Request);
+                await SaveChoiceGroupWithItemsAsync(dialog);
             }
+        }
+    }
+
+    private async Task SaveChoiceGroupWithItemsAsync(ChoiceGroupEditorWindow dialog)
+    {
+        await _viewModel.SaveChoiceGroupAsync(dialog.Request);
+        if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+
+        ManagedChoiceGroupDto? savedGroup = dialog.Request.ChoiceGroupId is { } groupId
+            ? _viewModel.ChoiceGroups.FirstOrDefault(group => group.ChoiceGroupId == groupId)
+            : _viewModel.ChoiceGroups.FirstOrDefault(group =>
+                group.GroupName.Equals(dialog.Request.GroupName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (savedGroup is null)
+        {
+            MessageBox.Show("Đã lưu nhóm nhưng không tìm thấy nhóm để lưu lựa chọn.", "Quản lý nhóm phụ");
+            return;
+        }
+
+        foreach (SaveChoiceItemRequest choiceRequest in dialog.ChoiceRequests)
+        {
+            choiceRequest.ChoiceGroupId = savedGroup.ChoiceGroupId;
+            await _viewModel.SaveChoiceItemAsync(choiceRequest);
+            if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
         }
     }
 
@@ -302,48 +326,6 @@ public partial class MenuManagementView : UserControl
         }
 
         await _viewModel.ToggleChoiceGroupAsync(group);
-    }
-
-    private async void AddChoiceItemButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.SelectedChoiceGroup is not { } group)
-        {
-            MessageBox.Show("Vui lòng chọn nhóm phụ trước khi thêm lựa chọn.", "Quản lý nhóm phụ");
-            return;
-        }
-
-        ChoiceItemEditorWindow dialog = new(group)
-        {
-            Owner = Window.GetWindow(this)
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            await _viewModel.SaveChoiceItemAsync(dialog.Request);
-        }
-    }
-
-    private async void EditChoiceItemRow_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is not ManagedChoiceItemDto item)
-        {
-            return;
-        }
-        if (_viewModel.SelectedChoiceGroup is not { } group)
-        {
-            MessageBox.Show("Vui lòng chọn nhóm phụ chứa lựa chọn cần sửa.", "Quản lý nhóm phụ");
-            return;
-        }
-
-        ChoiceItemEditorWindow dialog = new(group, item)
-        {
-            Owner = Window.GetWindow(this)
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            await _viewModel.SaveChoiceItemAsync(dialog.Request);
-        }        
     }
 
     private async void ToggleChoiceItem_Click(object sender, RoutedEventArgs e)
