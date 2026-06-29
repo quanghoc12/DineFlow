@@ -88,6 +88,11 @@ public partial class ChoiceGroupEditorWindow : Window
 
     private void ApplyGroupKindState()
     {
+        if (MaxSelectTextBox is null)
+        {
+            return;
+        }
+
         if (TypeRadioButton.IsChecked == true)
         {
             MaxSelectTextBox.Text = "1";

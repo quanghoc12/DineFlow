@@ -266,22 +266,9 @@ public partial class MenuManagementView : UserControl
 
     private async void AddChoiceGroupButton_Click(object sender, RoutedEventArgs e)
     {
-        ChoiceGroupEditorWindow dialog = new()
+        try
         {
-            Owner = Window.GetWindow(this)
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            await SaveChoiceGroupWithItemsAsync(dialog);
-        }
-    }
-
-    private async void EditChoiceGroupRow_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is ManagedChoiceGroupDto group)
-        {
-            ChoiceGroupEditorWindow dialog = new(group)
+            ChoiceGroupEditorWindow dialog = new()
             {
                 Owner = Window.GetWindow(this)
             };
@@ -289,6 +276,33 @@ public partial class MenuManagementView : UserControl
             if (dialog.ShowDialog() == true)
             {
                 await SaveChoiceGroupWithItemsAsync(dialog);
+            }
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Không thể mở nhóm phụ");
+        }
+    }
+
+    private async void EditChoiceGroupRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ManagedChoiceGroupDto group)
+        {
+            try
+            {
+                ChoiceGroupEditorWindow dialog = new(group)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    await SaveChoiceGroupWithItemsAsync(dialog);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message, "Không thể mở nhóm phụ");
             }
         }
     }
