@@ -1,0 +1,26 @@
+<Window x:Class="DineFlow.WPFApp.Features.Management.Tables.QrPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mã QR bàn"
+        Width="430"
+        Height="540"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="28" HorizontalAlignment="Center">
+        <TextBlock x:Name="TitleText" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+        <TextBlock x:Name="AreaText" Foreground="#627D98" Margin="0,6,0,20" HorizontalAlignment="Center" />
+        <Border BorderBrush="#D9E2EC" BorderThickness="1" Padding="14">
+            <Image x:Name="QrImage" Width="280" Height="280" />
+        </Border>
+        <TextBox x:Name="UrlText"
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 Margin="0,18,0,14"
+                 Width="350"
+                 Padding="8" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Content="Copy URL" Click="CopyButton_Click" Padding="16,8" Margin="0,0,8,0" />
+            <Button Content="Đóng" Click="CloseButton_Click" Padding="16,8" />
+        </StackPanel>
+    </StackPanel>
+</Window>

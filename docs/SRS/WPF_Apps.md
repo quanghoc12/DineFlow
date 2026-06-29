@@ -28,7 +28,7 @@ Member 5 owns report/dashboard/statistics flow.
 |---|---|---|  
 | Member 1 | Auth / User / Permission | Login, role, permission, current user |  
 | Member 2 | Table / QR | Dining table master data, QR token, table status contract |  
-| Member 3 | Menu / Category / Stock / Add-on | Category, menu item, stock, add-on configuration |  
+| Member 3 | Menu / Category / Stock / Choice Group | Category, menu item, stock, choice group and choice item configuration |  
 | Member 4 | Session / Order / Request / Bill / Payment | Full operation flow from order to payment |  
 | Member 5 | Dashboard / Report / Revenue | Statistics, top selling items, revenue, Admin payment method correction |
 
@@ -110,7 +110,7 @@ Payments
 One table has at most one active session.  
 Order is auto accepted if valid.  
 OrderItems save snapshot data.  
-Add-ons are saved as OrderItems with ParentOrderItemId.  
+Selected choices are saved in OrderItemSelectedChoices, not as child OrderItems.  
 Order accepted must be added to default bill.  
 Bill Paid is locked.  
 Only Unpaid bill can be split or paid.  
@@ -192,25 +192,25 @@ Rules:
 \`\`\`text  
 Customer Web sends tableToken, clientToken and items.  
 System validates QR and table.  
-System validates menu item and stock.  
-System creates session, order and order items.  
+System validates menu item, selected choices and stock.  
+System creates session, order, order items and selected choice snapshots.  
 System adds items to default bill.  
 System sends realtime print event.  
 \`\`\`
 
 \---
 
-**\#\# FR-COMMON-002: Add-on order flow**
+**\#\# FR-COMMON-002: Choice selection order flow**
 
 Owner: Member 3 and Member 4
 
 Rules:
 
 \`\`\`text  
-Member 3 defines which add-ons belong to which main dish.  
-Member 4 validates selected add-ons through Member 3 contract.  
-Add-ons are saved as OrderItems linked to main OrderItem.  
-Add-ons are included in bill and payment.  
+Member 3 defines reusable ChoiceGroups, ChoiceItems and MenuItemChoiceGroups.  
+Member 4 validates selected choices through Member 3 contract.  
+Selected choices are saved as OrderItemSelectedChoices linked to the OrderItem.  
+Selected choice extra prices are included in bill and payment.  
 \`\`\`
 
 \---
@@ -241,8 +241,8 @@ Rules:
 Staff selects Unpaid bill.  
 Staff selects payment method.  
 System creates Payment.  
-System updates Bill.Status \= Paid.  
-Payment.Amount \= Bill.FinalAmount.  
+System updates Bill.Status \= Paid only when total paid reaches Bill.FinalAmount.  
+SUM(Payments.Amount) must not exceed Bill.FinalAmount.  
 Session closes if all active bills are Paid or Cancelled.  
 \`\`\`
 
@@ -286,13 +286,15 @@ Amount and bill total must not change.
 | \`Users\` | Member 1 | Auth and audit user |  
 | \`DiningTables\` | Member 2 | Table and QR master data |  
 | \`Categories\` | Member 3 | Menu grouping |  
-| \`MenuItems\` | Member 3 | Main items and add-on items |  
-| \`MenuAddonGroups\` | Member 3 | Add-on groups for main dishes |  
-| \`MenuAddonOptions\` | Member 3 | Add-on choices |  
+| \`MenuItems\` | Member 3 | Main orderable dishes/drinks |  
+| \`ChoiceGroups\` | Member 3 | Reusable option groups for menu items |  
+| \`ChoiceItems\` | Member 3 | Choices inside a choice group |  
+| \`MenuItemChoiceGroups\` | Member 3 | Assignment of choice groups to menu items |  
 | \`TableSessions\` | Member 4 | Active serving session |  
 | \`TableSessionCustomers\` | Member 4 | Customer device in session |  
 | \`Orders\` | Member 4 | Order header |  
-| \`OrderItems\` | Member 4 | Main and add-on order item snapshots |  
+| \`OrderItems\` | Member 4 | Ordered menu item snapshots |  
+| \`OrderItemSelectedChoices\` | Member 4 | Selected choice snapshots for each order item |  
 | \`ServiceRequests\` | Member 4 | Call staff/payment request |  
 | \`Bills\` | Member 4 | Bill header |  
 | \`BillDetails\` | Member 4 | Bill item snapshots |  
@@ -325,7 +327,8 @@ SetTableAvailable
 \`\`\`text  
 GetMenuItemSnapshot  
 ValidateOrderableItems  
-ValidateAddonsForOrder  
+ValidateMenuItemChoices  
+GetChoiceSnapshotsForOrder  
 ReserveStockForOrder  
 RollbackStockForCancelledOrder  
 \`\`\`
@@ -4699,9 +4702,11 @@ Vì vậy Member 3 cần cung cấp contract nội bộ cho Member 4:
 
 \`\`\`text  
 ValidateOrderableItems  
+ValidateMenuItemChoices  
 ReserveStockForOrder  
 RollbackStockForCancelledOrder  
 GetMenuItemSnapshot  
+GetChoiceSnapshotsForOrder  
 \`\`\`
 
 \---
@@ -5747,7 +5752,13 @@ Input:
   "items": \[  
     {  
       "menuItemId": 10,  
-      "quantity": 2  
+      "quantity": 2,  
+      "selectedChoices": \[  
+        {  
+          "choiceGroupId": 3,  
+          "choiceItemIds": \[7, 8\]  
+        }  
+      \]  
     }  
   \]  
 }  
@@ -5763,9 +5774,19 @@ Output:
       "menuItemId": 10,  
       "itemName": "Cơm gà",  
       "quantity": 2,  
-      "unitPrice": 45000,  
-      "totalPrice": 90000,  
-      "trackStock": true  
+      "basePrice": 45000,  
+      "selectedChoices": \[  
+        {  
+          "choiceGroupId": 3,  
+          "groupName": "Món phụ",  
+          "choiceItemId": 7,  
+          "choiceName": "Trứng ốp la",  
+          "extraPrice": 10000  
+        }  
+      \],  
+      "unitPrice": 55000,  
+      "totalPrice": 110000,  
+      "stock": 8  
     }  
   \],  
   "invalidItems": \[\]  
@@ -5791,14 +5812,44 @@ Rule:
 
 \`\`\`text  
 Món phải tồn tại.  
-Món phải IsActive \= true.  
 Món phải IsAvailable \= true.  
-Category phải IsActive \= true.  
 Quantity \> 0\.  
-Nếu TrackStock \= true, AvailableQuantity phải đủ.  
+Nếu Stock có giá trị, Stock phải đủ số lượng order.  
+ChoiceGroup phải được gán cho MenuItem qua MenuItemChoiceGroups.  
+ChoiceGroup và ChoiceItem phải IsAvailable \= true.  
+Nếu ChoiceGroup.IsRequired \= true, phải chọn ít nhất một choice trong group đó.  
+Số choice được chọn không vượt MenuItemChoiceGroup.MaxSelect hoặc ChoiceGroup.MaxSelectDefault.  
 \`\`\`
 
-**\#\# 12.2. Reserve stock for order**
+**\#\# 12.2. Validate menu item choices**
+
+Member 4 có thể gọi riêng khi cần validate giỏ hàng trước khi submit.
+
+Input:
+
+\`\`\`text  
+MenuItemId  
+List of ChoiceGroupId \+ ChoiceItemId  
+\`\`\`
+
+Output:
+
+\`\`\`text  
+IsValid  
+Validated selected choice snapshots  
+Invalid groups/items with reason  
+\`\`\`
+
+Rule:
+
+\`\`\`text  
+Không tin dữ liệu tên/giá choice từ client.  
+Luôn lấy GroupNameSnapshot, ChoiceNameSnapshot và ExtraPriceSnapshot từ Member 3.  
+MaxSelect ưu tiên MenuItemChoiceGroups.MaxSelect nếu có cấu hình.  
+Nếu không có override, dùng ChoiceGroups.MaxSelectDefault.  
+\`\`\`
+
+**\#\# 12.3. Reserve stock for order**
 
 Member 4 gọi trong transaction tạo order.
 
@@ -5811,14 +5862,14 @@ List of MenuItemId \+ Quantity
 Rule:
 
 \`\`\`text  
-Chỉ trừ món TrackStock \= true.  
-Kiểm tra lại AvailableQuantity ngay trước khi trừ.  
+Chỉ trừ món có Stock khác null.  
+Kiểm tra lại Stock ngay trước khi trừ.  
 Dùng RowVersion/concurrency để tránh oversell.  
 Nếu không đủ stock, throw lỗi và rollback transaction.  
 Nếu trừ về 0, set IsAvailable \= false.  
 \`\`\`
 
-**\#\# 12.3. Rollback stock for cancelled order**
+**\#\# 12.4. Rollback stock for cancelled order**
 
 Member 4 gọi khi cancel order.
 
@@ -5831,13 +5882,13 @@ List of OrderItem snapshot: MenuItemId, Quantity
 Rule:
 
 \`\`\`text  
-Chỉ rollback món TrackStock \= true.  
-AvailableQuantity \+= Quantity.  
+Chỉ rollback món có Stock khác null.  
+Stock \+= Quantity.  
 Không chỉnh giá/tên món.  
 Không chỉnh OrderItems snapshot.  
 \`\`\`
 
-**\#\# 12.4. Get menu item snapshot**
+**\#\# 12.5. Get menu item snapshot**
 
 Member 4 gọi để tạo \`OrderItems\`.
 
@@ -5845,9 +5896,9 @@ Output gồm:
 
 \`\`\`text  
 MenuItemId  
-ItemName  
-UnitPrice  
-TrackStock  
+MenuItemNameSnapshot  
+BasePriceSnapshot  
+Stock  
 \`\`\`
 
 Rule:
@@ -5855,6 +5906,27 @@ Rule:
 \`\`\`text  
 Client không được tự gửi ItemName/UnitPrice để lưu DB.  
 Service phải lấy snapshot từ MenuItems tại thời điểm order.  
+\`\`\`
+
+**\#\# 12.6. Get choice snapshots for order**
+
+Member 4 gọi để tạo \`OrderItemSelectedChoices\`.
+
+Output gồm:
+
+\`\`\`text  
+ChoiceGroupId  
+ChoiceItemId  
+GroupNameSnapshot  
+ChoiceNameSnapshot  
+ExtraPriceSnapshot  
+\`\`\`
+
+Rule:
+
+\`\`\`text  
+Client không được tự gửi GroupName/ChoiceName/ExtraPrice để lưu DB.  
+Service phải lấy snapshot từ ChoiceGroups và ChoiceItems tại thời điểm order.  
 \`\`\`
 
 \---
@@ -6198,12 +6270,12 @@ Member 3 hoàn thành khi:
 \`\`\`text  
 1\. Admin login.  
 2\. Admin tạo category "Đồ uống".  
-3\. Admin tạo món "Trà đào" giá 30000, TrackStock \= true, AvailableQuantity \= 10\.  
+3\. Admin tạo món "Trà đào" BasePrice \= 30000, Stock \= 10\.  
 4\. Staff login.  
 5\. Staff cập nhật stock Trà đào còn 5\.  
 6\. Customer Web gọi /api/customer/menu và thấy Trà đào đang bán.  
 7\. Member 4 gọi ValidateOrderableItems với Trà đào x2.  
-8\. Member 3 trả snapshot ItemName \+ UnitPrice \+ stock hợp lệ.  
+8\. Member 3 trả MenuItemNameSnapshot \+ BasePriceSnapshot \+ stock hợp lệ.  
 9\. Member 4 tạo order và gọi ReserveStockForOrder.  
 10\. Stock còn 3\.  
 11\. Staff đánh dấu hết món.  
@@ -6217,8 +6289,8 @@ Member 3 hoàn thành khi:
 **\*\*Project:\*\*** QR Food Ordering Management System    
 **\*\*Owner:\*\*** Member 4    
 **\*\*Document type:\*\*** Module SRS / Business Rules / Contracts    
-**\*\*Version:\*\*** 2.0 — After scope reassignment    
-**\*\*Main change:\*\*** Member 4 now owns the full operation flow from session/order to bill, payment and split bill.
+**\*\*Version:\*\*** 2.1 — After menu choice model update    
+**\*\*Main change:\*\*** Member 4 owns the full operation flow from session/order to bill, payment and split bill. Menu add-ons are replaced by reusable choice groups and selected choices.
 
 \---
 
@@ -6231,6 +6303,7 @@ Customer scans QR
 → Customer sends order / call staff / payment request  
 → System creates or gets TableSession  
 → System creates Order and OrderItems  
+→ System stores selected choices for each OrderItem  
 → System coordinates stock reservation  
 → System creates or updates Bill and BillDetails  
 → WPF receives print/request notification  
@@ -6251,12 +6324,14 @@ TableSessions
 TableSessionCustomers  
 Orders  
 OrderItems  
+OrderItemSelectedChoices  
 ServiceRequests  
 Order print status  
 Order reprint  
 Order cancel  
 Bills  
 BillDetails  
+Payments  
 Split bill  
 Move bill item  
 Payment confirmation  
@@ -6269,7 +6344,7 @@ Realtime events for order/request/payment/session
 \`\`\`text  
 Users / login / role / permission master data          → Member 1  
 DiningTables / QR master data                         → Member 2  
-Categories / MenuItems / Stock master data / Add-ons  → Member 3  
+Categories / MenuItems / Stock / Choice master data   → Member 3  
 Dashboard / revenue / statistics / top selling report → Member 5  
 Admin correction of paid payment method               → Member 5  
 \`\`\`
@@ -6291,6 +6366,7 @@ TableSessions
 TableSessionCustomers  
 Orders  
 OrderItems  
+OrderItemSelectedChoices  
 ServiceRequests  
 Bills  
 BillDetails  
@@ -6303,6 +6379,8 @@ Member 4 reads from these tables through contracts:
 Users           → for current user and audit  
 DiningTables    → for table status through Member 2 contract  
 MenuItems       → for item snapshot and stock through Member 3 contract  
+ChoiceGroups    → for group rule validation and snapshot through Member 3 contract  
+ChoiceItems     → for selected choice validation and snapshot through Member 3 contract  
 Categories      → indirectly through menu display only  
 \`\`\`
 
@@ -6374,7 +6452,7 @@ Represents one submitted order.
 | \`OrderSource\` | string | \`CustomerWeb\`, \`StaffApp\` |  
 | \`ClientToken\` | string? | Required if source is Customer Web |  
 | \`Status\` | string | \`Accepted\`, \`Cancelled\` |  
-| \`PrintStatus\` | string | \`PendingPrint\`, \`Printed\`, \`PrintFailed\` |  
+| \`PrintStatus\` | string? | Null means waiting/not printed yet; otherwise \`Printed\`, \`PrintFailed\` |  
 | \`CustomerNote\` | string? | General customer note |  
 | \`SystemNote\` | string? | Internal note |  
 | \`CancelReason\` | string? | Required when cancelled |  
@@ -6383,50 +6461,147 @@ Represents one submitted order.
 | \`CancelledAt\` | datetime? | Cancel time |  
 | \`PrintedAt\` | datetime? | Print success time |  
 | \`PrintError\` | string? | Print failure message |  
-| \`PrintRetryCount\` | int | Must be \>= 0 |  
 | \`CreatedBy\` | int? FK | Staff user if created from WPF |  
-| \`CancelledBy\` | int? FK | Staff/Admin user |
+| \`CancelledBy\` | int? FK | Reserved for system/internal cancellation before bill merge |
 
 \---
 
 \#\# 4.4. OrderItems
 
-Represents item snapshots in an order. Main dishes and add-ons are both stored here.
+Represents ordered menu item snapshots in an order. Only the main selected menu item is stored here. Selected side choices are stored in \`OrderItemSelectedChoices\`.
 
 | Field | Type | Rule |  
 |---|---|---|  
 | \`OrderItemId\` | int PK | Primary key |  
 | \`OrderId\` | int FK | FK to \`Orders\` |  
 | \`MenuItemId\` | int FK | FK to \`MenuItems\` |  
-| \`SessionCustomerId\` | int? FK | Customer owner |  
-| \`ParentOrderItemId\` | int? FK | Null for main item, points to main item for add-on |  
-| \`LineType\` | string | \`Main\`, \`Addon\` |  
-| \`ItemName\` | string | Snapshot from \`MenuItems.ItemName\` |  
+| \`MenuItemNameSnapshot\` | string | Snapshot from menu item name |  
+| \`BasePriceSnapshot\` | decimal | Snapshot from menu item base price |  
 | \`Quantity\` | int | Must be \> 0 |  
-| \`UnitPrice\` | decimal | Must be \>= 0 |  
-| \`TotalPrice\` | decimal | \`Quantity \* UnitPrice\` |  
 | \`Note\` | string? | Item note |  
 | \`CreatedAt\` | datetime | Created time |
 
 Snapshot rule:
 
 \`\`\`text  
-Customer Web must not send ItemName, UnitPrice or TotalPrice for saving.  
-Member 4 must get snapshot from Member 3\.  
+Customer Web must not send MenuItemNameSnapshot, BasePriceSnapshot, UnitPrice or TotalPrice for saving.  
+Member 4 must get MenuItemNameSnapshot and BasePriceSnapshot from Member 3\.  
 Old orders must not change when Admin edits menu name or price.  
 \`\`\`
 
-Add-on rule:
+Merge quantity rule:
 
 \`\`\`text  
-Main item: ParentOrderItemId \= null, LineType \= Main.  
-Add-on item: ParentOrderItemId \= main OrderItemId, LineType \= Addon.  
-Add-on must belong to the selected main dish through Member 3 add-on contract.  
+Within the same Order, two requested items are the same order line only when:
+    MenuItemId is the same.
+    Selected ChoiceGroupId/ChoiceItemId set is the same.
+    Note is the same after trimming, or both notes are empty.
+
+If all conditions match, increase OrderItems.Quantity.
+If any selected ChoiceItem differs, create a separate OrderItem.
+If Note differs, create a separate OrderItem to avoid losing kitchen instruction.
+\`\`\`
+
+Staff WPF order rule:
+
+\`\`\`text
+Staff can create an order for the current active TableSession from WPF.
+If the table has no active session, the system creates one for that table.
+Staff order uses OrderSource = StaffApp and CreatedBy = current staff user.
+SessionCustomerId and ClientToken are null for staff-created orders.
+
+When staff adds the same menu item from the selection display:
+    Same MenuItemId + same selected ChoiceGroupId/ChoiceItemId set + same Note
+        => increase Quantity on the same order line.
+    Any different selected ChoiceItem, choice group set, or Note
+        => create a separate order line.
+
+After the order is accepted, the system creates/updates the default bill for that TableSession.
+BillDetails are merged with the same payable snapshot rule:
+    MenuItemId + ChoiceSummary + UnitPrice + Note.
+\`\`\`
+
+Choice set comparison rule:
+
+\`\`\`text  
+Client does not send any technical merge key.
+Service compares selected ChoiceGroupId and ChoiceItemId pairs.
+Group and item ids must be sorted before comparing.
+Example:
+    Size XL, Topping black pearl + flan
+    Normalized choice set = "1:3|2:7,9"
+
+No selected choices:
+    Normalized choice set = ""
+\`\`\`
+
+\#\# 4.5. OrderItemSelectedChoices
+
+Represents selected choice snapshots for one ordered menu item.
+
+| Field | Type | Rule |  
+|---|---|---|  
+| \`OrderItemSelectedChoiceId\` | int PK | Primary key |  
+| \`OrderItemId\` | int FK | FK to \`OrderItems\` |  
+| \`ChoiceGroupId\` | int FK | FK to \`ChoiceGroups\` |  
+| \`ChoiceItemId\` | int FK | FK to \`ChoiceItems\` |  
+| \`GroupNameSnapshot\` | string | Snapshot from choice group name |  
+| \`ChoiceNameSnapshot\` | string | Snapshot from choice item name |  
+| \`ExtraPriceSnapshot\` | decimal | Snapshot from choice item extra price |  
+| \`CreatedAt\` | datetime | Created time |
+
+Choice rule:
+
+\`\`\`text  
+ChoiceGroup must be assigned to the selected MenuItem through MenuItemChoiceGroups.  
+ChoiceGroup.IsAvailable and ChoiceItem.IsAvailable must be true at order time.  
+If ChoiceGroup.IsRequired \= true, customer must select exactly one choice in that group for MVP.  
+If ChoiceGroup.IsRequired \= false, customer may skip the group or select multiple choices up to max-select.  
+EffectiveMaxSelect = MenuItemChoiceGroup.MaxSelect if configured; otherwise ChoiceGroup.MaxSelectDefault.  
+Selected count per group must be <= EffectiveMaxSelect.  
+Each selected choice must belong to the selected group.  
+Order total must use snapshots: (BasePriceSnapshot + selected ExtraPriceSnapshot sum) * Quantity.  
+\`\`\`
+
+Choice validation examples:
+
+| Menu item | Choice group | IsRequired | MaxSelectDefault | MenuItemChoiceGroup.MaxSelect | Effective rule |  
+|---|---|---:|---:|---:|---|  
+| Any milk tea | Size | true | 1 | null | Must select exactly 1: M, X, or XL |  
+| Trà sữa thái xanh | Topping | false | 3 | null | Can skip, or select up to 3 toppings |  
+| Trà sữa hồng trà | Topping | false | 3 | 2 | Can skip, or select up to 2 toppings |
+
+\---
+
+\#\# 4.6. Price Snapshot And Line Total Logic
+
+Member 4 must calculate all order and bill money from trusted snapshots, not from client payload.
+
+\`\`\`text  
+SelectedChoiceExtraTotal = SUM(OrderItemSelectedChoices.ExtraPriceSnapshot)  
+LineUnitPrice = OrderItems.BasePriceSnapshot + SelectedChoiceExtraTotal  
+LineTotal = LineUnitPrice * OrderItems.Quantity  
+\`\`\`
+
+Example:
+
+| Menu item | BasePriceSnapshot | Selected choices | Quantity | LineUnitPrice | LineTotal |  
+|---|---:|---|---:|---:|---:|  
+| Cơm gà | 45000 | Trứng ốp la +10000, Canh thêm +5000 | 2 | 60000 | 120000 |
+
+Rules:
+
+\`\`\`text  
+OrderItems do not need UnitPrice/TotalPrice columns if BillDetails stores final payable snapshot.  
+BillDetails.UnitPrice = LineUnitPrice at bill creation time.  
+BillDetails.TotalPrice = BillDetails.UnitPrice * BillDetails.Quantity.  
+If staff adjusts bill detail quantity before payment, recalculate bill total.  
+If adjusted item has stock tracking, WPF should ask whether to restore stock.  
 \`\`\`
 
 \---
 
-\#\# 4.5. ServiceRequests
+\#\# 4.7. ServiceRequests
 
 Represents customer requests from Customer Web.
 
@@ -6455,7 +6630,7 @@ Pending → Confirmed → Completed
 
 \---
 
-\#\# 4.6. Bills
+\#\# 4.8. Bills
 
 Represents one bill inside a table session.
 
@@ -6489,7 +6664,7 @@ Cancelled bill is not included in revenue.
 
 \---
 
-\#\# 4.7. BillDetails
+\#\# 4.9. BillDetails
 
 Represents item rows inside a bill.
 
@@ -6497,35 +6672,36 @@ Represents item rows inside a bill.
 |---|---|---|  
 | \`BillDetailId\` | int PK | Primary key |  
 | \`BillId\` | int FK | FK to \`Bills\` |  
-| \`OrderItemId\` | int FK | Source order item |  
 | \`MenuItemId\` | int FK | Menu item id |  
-| \`SessionCustomerId\` | int? FK | Customer owner |  
-| \`CustomerDisplayName\` | string? | Snapshot customer name |  
-| \`ItemName\` | string | Snapshot item name |  
+| \`ItemName\` | string | Snapshot menu item name |  
+| \`ChoiceSummary\` | string? | Snapshot selected choices for bill display/printing |  
+| \`Note\` | string? | Snapshot order item note used for display and merge |  
 | \`Quantity\` | int | Must be \> 0 |  
-| \`UnitPrice\` | decimal | Must be \>= 0 |  
+| \`UnitPrice\` | decimal | Base price plus selected choice extra prices |  
 | \`TotalPrice\` | decimal | \`Quantity \* UnitPrice\` |  
 | \`CreatedAt\` | datetime | Created time |
 
 Rule:
 
 \`\`\`text  
-BillDetails use snapshots from OrderItems, not latest MenuItems.  
+BillDetails are bill payment snapshots derived from accepted order lines, not direct links to OrderItems.  
+BillDetails may merge multiple accepted order lines when MenuItemId, ChoiceSummary, UnitPrice and Note are the same.  
+BillDetails must include selected choice snapshots from OrderItemSelectedChoices through ChoiceSummary.  
 BillDetails must not be edited after bill is Paid.  
 \`\`\`
 
 \---
 
-\#\# 4.8. Payments
+\#\# 4.10. Payments
 
 Represents payment information of a bill.
 
 | Field | Type | Rule |  
 |---|---|---|  
 | \`PaymentId\` | int PK | Primary key |  
-| \`BillId\` | int FK unique | One bill has at most one payment |  
-| \`PaymentMethod\` | string | \`Cash\`, \`BankTransfer\`, \`Card\`, \`EWallet\` |  
-| \`Amount\` | decimal | Must equal \`Bill.FinalAmount\` |  
+| \`BillId\` | int FK | A bill can have multiple payments |  
+| \`PaymentMethod\` | string | \`Cash\`, \`BankTransfer\`, \`Card\` |  
+| \`Amount\` | decimal | Must be \> 0 and total paid for bill must not exceed \`Bill.FinalAmount\` |  
 | \`PaidAt\` | datetime | Payment time |  
 | \`ConfirmedBy\` | int FK | Staff/Admin who confirmed |  
 | \`UpdatedAt\` | datetime? | Used by Member 5 Admin correction |  
@@ -6535,7 +6711,7 @@ Represents payment information of a bill.
 Rule:
 
 \`\`\`text  
-Member 4 creates payment and confirms bill as Paid.  
+Member 4 creates payment records and confirms bill as Paid when total paid reaches Bill.FinalAmount.  
 Member 5 may update only PaymentMethod, UpdatedAt, UpdatedBy, ChangeReason if Admin correction is needed.  
 \`\`\`
 
@@ -6566,29 +6742,61 @@ When new session is created, call Member 2 to set table status \= Occupied.
 
 Input:
 
-\`\`\`text  
-TableToken  
-ClientToken  
-DisplayName optional  
-CustomerNote optional  
-Items:  
-\- MenuItemId  
-\- Quantity  
-\- Note optional  
-\- Addons optional  
+\`\`\`json  
+{  
+  "tableToken": "qr-token",  
+  "clientToken": "browser-device-token",  
+  "displayName": "Khách A",  
+  "customerNote": "Ít cay",  
+  "items": \[  
+    {  
+      "menuItemId": 10,  
+      "quantity": 2,  
+      "note": "Không hành",  
+      "selectedChoices": \[  
+        {  
+          "choiceGroupId": 3,  
+          "choiceItemIds": \[7, 8\]  
+        }  
+      \]  
+    }  
+  \]  
+}  
 \`\`\`
 
 Rules:
 
 \`\`\`text  
 Validate QR through Member 2\.  
-Validate menu item and add-ons through Member 3\.  
-Get snapshots from Member 3\.  
-Reserve stock through Member 3\.  
-Create Order and OrderItems.  
-Add OrderItems to default Bill.  
+Validate menu item, assigned choice groups and selected choices through Member 3\.  
+Get MenuItemNameSnapshot/BasePriceSnapshot from Member 3\.  
+Get GroupNameSnapshot/ChoiceNameSnapshot/ExtraPriceSnapshot from Member 3\.  
+Reserve stock through Member 3 for accepted items.  
+Create Order, OrderItems and OrderItemSelectedChoices for accepted items only.  
+Create or update default Bill and BillDetails from snapshots.  
 Commit transaction.  
 Send realtime events after commit.  
+Rejected items are returned in response and are not saved.  
+If all items are rejected, no Orders row is created.  
+\`\`\`
+
+Transaction order:
+
+\`\`\`text  
+1\. Validate QR/table and get or create active TableSession.  
+2\. Create or get TableSessionCustomer by ClientToken.  
+3\. Validate menu items, stock and selected choices.  
+4\. Split accepted and rejected items.  
+5\. If all items are rejected, return response without creating Order.  
+6\. Reserve stock for accepted items.  
+7\. Insert Orders.  
+8\. Insert OrderItems.  
+9\. Insert OrderItemSelectedChoices for each OrderItem.  
+10\. Get or create default unpaid Bill.  
+11\. Insert or merge BillDetails using calculated LineUnitPrice and LineTotal.  
+12\. Recalculate Bills.SubTotal and Bills.FinalAmount.  
+13\. Commit transaction.  
+14\. Publish realtime order/print/bill events after commit.  
 \`\`\`
 
 Output:
@@ -6597,9 +6805,9 @@ Output:
 OrderId  
 OrderCode  
 TableSessionId  
-AcceptedItems  
-RejectedItems if partial accept is used  
-PrintStatus \= PendingPrint  
+AcceptedItems with selected choice snapshots  
+RejectedItems if validation fails or partial accept is used  
+PrintStatus \= null until WPF marks Printed or PrintFailed  
 \`\`\`
 
 \---
@@ -6616,6 +6824,10 @@ Table must be active.
 Session is created if needed.  
 OrderSource \= StaffApp.  
 CreatedBy \= CurrentUserId.  
+Staff order uses the same MenuItem/Choice validation rules as Customer Web order.  
+Staff cannot override snapshot names or prices manually.  
+Staff can increase quantity from an existing displayed line when MenuItemId, selected choices and Note are the same.  
+Staff can also add from menu/selection display; if any selected choice or Note differs, create a separate order item line.  
 \`\`\`
 
 \---
@@ -6625,7 +6837,7 @@ CreatedBy \= CurrentUserId.
 Flow:
 
 \`\`\`text  
-Order created with PrintStatus \= PendingPrint  
+Order created with PrintStatus \= null  
 → API sends OrderPrintRequested event  
 → WPF receives event  
 → WPF prints using local printer  
@@ -6637,22 +6849,24 @@ Rules:
 \`\`\`text  
 API does not print directly.  
 WPF is responsible for local printer.  
-PrintRetryCount increases on failed print.  
+If print succeeds, WPF sets PrintStatus \= Printed and PrintedAt \= now.  
+If print fails, WPF sets PrintStatus \= PrintFailed and saves PrintError.  
+Reprint is allowed from PrintFailed or Printed orders if staff requests it.  
 \`\`\`
 
 \---
 
-\#\# FR-M4-005: Cancel order
+\#\# FR-M4-005: System cancel order before bill merge
 
 Rules:
 
 \`\`\`text  
-Only Accepted order can be cancelled.  
-Cancel reason is required.  
-Rollback stock through Member 3\.  
-Remove or reduce related BillDetails.  
-Recalculate affected bills.  
-Transaction is required.  
+Order cancellation is system-only and can happen only before accepted items are merged into bill.  
+Typical reasons: transaction failure after stock reservation, print/order workflow rollback, or item invalidation before commit.  
+Staff/Admin must not manually cancel an accepted order after it has been merged into bill.  
+Rollback stock through Member 3 when cancellation happens before bill merge.  
+OrderItemSelectedChoices remain as history snapshots if the cancelled order was already persisted.  
+To remove or reduce payable quantity after bill merge, staff adjusts BillDetails instead of cancelling order.  
 \`\`\`
 
 \---
@@ -6696,14 +6910,35 @@ Rules:
 
 \`\`\`text  
 Get or create default bill.  
-Create BillDetails from OrderItems snapshot.  
+Create or merge BillDetails from OrderItems snapshot and OrderItemSelectedChoices snapshot.  
+BillDetails.ChoiceSummary stores a readable snapshot such as "Món phụ: Trứng ốp la, Canh thêm".  
+BillDetails.UnitPrice = BasePriceSnapshot + selected ExtraPriceSnapshot sum.  
+Merge target BillDetail when MenuItemId, ChoiceSummary, UnitPrice and Note are the same.  
 Recalculate bill totals.  
 Default bill must be Unpaid.  
 \`\`\`
 
 \---
 
-\#\# FR-M4-009: View bills in session
+\#\# FR-M4-009: Adjust bill detail quantity
+
+Staff/Admin can reduce quantity or remove a bill detail before payment.
+
+Rules:
+
+\`\`\`text
+Only Unpaid bill can be adjusted.
+Quantity must stay >= 0.
+If adjusted quantity = 0, remove BillDetail.
+If related MenuItem.Stock is not null, WPF asks staff whether to restore stock.
+Recalculate Bill.SubTotal and Bill.FinalAmount after adjustment.
+Do not update OrderItems or OrderItemSelectedChoices.
+Paid bill cannot be adjusted.
+\`\`\`
+
+\---
+
+\#\# FR-M4-010: View bills in session
 
 WPF must show:
 
@@ -6713,12 +6948,12 @@ Bill details
 Total amount  
 Bill status  
 Payment information if paid  
-Group by customer if needed  
+No customer display name is required on BillDetails.  
 \`\`\`
 
 \---
 
-\#\# FR-M4-010: Split bill
+\#\# FR-M4-011: Split bill
 
 Staff/Admin can split a bill by moving quantity from source bill to new or existing target bill.
 
@@ -6735,26 +6970,28 @@ Paid bill cannot be split.
 
 \---
 
-\#\# FR-M4-011: Move item between bills
+\#\# FR-M4-012: Move item between bills
 
 Rules:
 
 \`\`\`text  
 Both bills must be Unpaid.  
 Both bills must belong to same TableSession.  
-If target bill already has same OrderItemId, merge quantity.  
+If target bill already has same MenuItemId, ChoiceSummary, UnitPrice and Note, merge quantity.  
 If source detail quantity becomes 0, remove source detail.  
+ChoiceSummary and UnitPrice must stay unchanged when moving between bills.  
 \`\`\`
 
 \---
 
-\#\# FR-M4-012: Confirm payment
+\#\# FR-M4-013: Confirm payment
 
 Input:
 
 \`\`\`text  
 BillId  
 PaymentMethod  
+Amount  
 CurrentUserId  
 \`\`\`
 
@@ -6764,16 +7001,16 @@ Rules:
 Bill must be Unpaid.  
 Bill must have at least one detail.  
 PaymentMethod must be valid.  
-Payment.Amount \= Bill.FinalAmount.  
+Amount must be \> 0\.  
+Existing paid amount + Amount must be \<= Bill.FinalAmount.  
 Create Payment.  
-Set Bill.Status \= Paid.  
-Set Bill.PaidAt \= now.  
+If total paid amount reaches Bill.FinalAmount, set Bill.Status \= Paid and Bill.PaidAt \= now.  
 If all active bills in session are Paid or Cancelled, close session.  
 \`\`\`
 
 \---
 
-\#\# FR-M4-013: Close session after payment
+\#\# FR-M4-014: Close session after payment
 
 Rules:
 
@@ -6793,15 +7030,20 @@ DiningTables.Status \= Available through Member 2 contract.
 BR-M4-001: One table has at most one active session.  
 BR-M4-002: Customer Web must send ClientToken.  
 BR-M4-003: Customer Web must not send price/name for database saving.  
-BR-M4-004: OrderItems and BillDetails must use snapshot data.  
+BR-M4-004: OrderItems, OrderItemSelectedChoices and BillDetails must use snapshot data.  
 BR-M4-005: Stock reservation and order creation must be in one transaction.  
 BR-M4-006: Order accepted must be added to default bill.  
 BR-M4-007: Bill Paid is locked.  
-BR-M4-008: Only Unpaid bill can be split or paid.  
-BR-M4-009: Payment amount must equal Bill.FinalAmount.  
-BR-M4-010: One bill has at most one payment.  
+BR-M4-008: Only Unpaid bill can be adjusted, split or paid.  
+BR-M4-009: Total payment amount of a bill must not exceed Bill.FinalAmount.  
+BR-M4-010: One bill can have multiple payments.  
 BR-M4-011: Revenue data is generated by Member 5 but based on paid bills from Member 4\.  
 BR-M4-012: Member 5 can correct only PaymentMethod after payment if Admin.  
+BR-M4-013: Selected choices must be valid for the ordered MenuItem at order time.  
+BR-M4-014: Required choice groups and max-select limits are enforced before saving order.  
+BR-M4-015: Bill line unit price equals BasePriceSnapshot plus selected ExtraPriceSnapshot sum.  
+BR-M4-016: Staff does not manually cancel accepted orders after bill merge; staff adjusts BillDetails instead.  
+BR-M4-017: BillDetails are merged by MenuItemId, ChoiceSummary, UnitPrice and Note, not by OrderItemId.  
 \`\`\`
 
 \---
@@ -6829,7 +7071,60 @@ CreateOrderResponse CreateStaffOrder(CreateStaffOrderRequest request, int curren
 List\<OrderSummaryDto\> GetOrders(OrderFilter filter);  
 OrderDetailDto GetOrderDetail(int orderId);  
 List\<OrderSummaryDto\> GetOrdersBySession(int tableSessionId);  
-void CancelOrder(int orderId, CancelOrderRequest request, int currentUserId);  
+void SystemCancelOrderBeforeBillMerge(int orderId, string systemReason);  
+\`\`\`
+
+Required DTO shape for order creation:
+
+\`\`\`csharp  
+public class CreateCustomerOrderRequest
+{
+    public string TableToken { get; set; }
+    public string ClientToken { get; set; }
+    public string? DisplayName { get; set; }
+    public string? CustomerNote { get; set; }
+    public List\<CreateOrderItemRequest\> Items { get; set; }
+}
+
+public class CreateOrderItemRequest
+{
+    public int MenuItemId { get; set; }
+    public int Quantity { get; set; }
+    public string? Note { get; set; }
+    public List\<SelectedChoiceGroupRequest\> SelectedChoices { get; set; }
+}
+
+public class SelectedChoiceGroupRequest
+{
+    public int ChoiceGroupId { get; set; }
+    public List\<int\> ChoiceItemIds { get; set; }
+}
+\`\`\`
+
+Order detail output must include selected choice snapshots:
+
+\`\`\`csharp  
+public class OrderItemDetailDto
+{
+    public int OrderItemId { get; set; }
+    public int MenuItemId { get; set; }
+    public string MenuItemNameSnapshot { get; set; }
+    public decimal BasePriceSnapshot { get; set; }
+    public int Quantity { get; set; }
+    public string? Note { get; set; }
+    public List\<OrderItemSelectedChoiceDto\> SelectedChoices { get; set; }
+    public decimal LineUnitPrice { get; set; }
+    public decimal LineTotal { get; set; }
+}
+
+public class OrderItemSelectedChoiceDto
+{
+    public int ChoiceGroupId { get; set; }
+    public int ChoiceItemId { get; set; }
+    public string GroupNameSnapshot { get; set; }
+    public string ChoiceNameSnapshot { get; set; }
+    public decimal ExtraPriceSnapshot { get; set; }
+}
 \`\`\`
 
 \#\# 7.3. IOrderPrintService
@@ -6838,7 +7133,7 @@ void CancelOrder(int orderId, CancelOrderRequest request, int currentUserId);
 void MarkPrinted(int orderId, int currentUserId);  
 void MarkPrintFailed(int orderId, MarkPrintFailedRequest request, int currentUserId);  
 void RequestReprint(int orderId, int currentUserId);  
-List\<OrderSummaryDto\> GetPendingPrintOrders();  
+List\<OrderSummaryDto\> GetWaitingPrintOrders();  
 \`\`\`
 
 \#\# 7.4. IServiceRequestService
@@ -6857,9 +7152,21 @@ BillDto GetOrCreateDefaultBill(int tableSessionId, int? createdBy);
 BillDto GetBillById(int billId);  
 List\<BillSummaryDto\> GetBillsBySession(int tableSessionId);  
 BillDto AddOrderItemsToDefaultBill(AddOrderItemsToBillRequest request);  
-void RemoveOrReduceBillDetailsForCancelledOrder(int orderId);  
+BillDto AdjustBillDetailQuantity(AdjustBillDetailQuantityRequest request, int currentUserId);  
 BillDto RecalculateBillTotal(int billId);  
 void CancelUnpaidBill(int billId, string reason, int currentUserId);  
+\`\`\`
+
+BillDetails created by Member 4 must include:
+
+\`\`\`text  
+MenuItemId  
+ItemName = OrderItems.MenuItemNameSnapshot  
+ChoiceSummary from OrderItemSelectedChoices snapshots  
+Note = OrderItems.Note  
+Quantity = OrderItems.Quantity  
+UnitPrice = BasePriceSnapshot + SUM(ExtraPriceSnapshot)  
+TotalPrice = Quantity * UnitPrice  
 \`\`\`
 
 \#\# 7.6. ISplitBillService
@@ -6875,7 +7182,7 @@ bool ValidateSplitQuantity(int billDetailId, int quantityToMove);
 
 \`\`\`csharp  
 PaymentDto ConfirmPayment(ConfirmPaymentRequest request, int currentUserId);  
-PaymentDto GetPaymentByBillId(int billId);  
+List\<PaymentDto\> GetPaymentsByBillId(int billId);  
 bool HasUnpaidBills(int tableSessionId);  
 \`\`\`
 
@@ -6896,6 +7203,8 @@ PaymentDto UpdatePaymentMethodByAdmin(UpdatePaymentMethodRequest request, int ad
 \#\# Customer APIs
 
 \`\`\`text  
+GET  /api/customer/menu
+GET  /api/customer/menu/{menuItemId}
 POST /api/customer/orders  
 POST /api/customer/service-requests/call-staff  
 POST /api/customer/service-requests/payment-request  
@@ -6908,10 +7217,15 @@ GET  /api/customer/orders/{orderCode}
 GET  /api/staff/orders  
 GET  /api/staff/orders/{id}  
 POST /api/staff/orders  
-PUT  /api/staff/orders/{id}/cancel  
+GET  /api/staff/orders/waiting-print
 PUT  /api/staff/orders/{id}/mark-printed  
 PUT  /api/staff/orders/{id}/mark-print-failed  
 POST /api/staff/orders/{id}/reprint
+
+GET  /api/staff/menu
+GET  /api/staff/menu/{menuItemId}
+GET  /api/staff/tables
+GET  /api/staff/tables/{tableId}/current-session
 
 GET  /api/staff/requests  
 PUT  /api/staff/requests/{id}/confirm  
@@ -6919,12 +7233,18 @@ PUT  /api/staff/requests/{id}/complete
 
 GET  /api/staff/sessions/{id}  
 GET  /api/staff/sessions/active
+POST /api/staff/sessions/{id}/close-if-completed
 
 GET  /api/staff/bills/session/{tableSessionId}  
 GET  /api/staff/bills/{billId}  
+POST /api/staff/bills/session/{tableSessionId}/default
+PUT  /api/staff/bills/details/{billDetailId}/quantity  
 POST /api/staff/bills/split  
 POST /api/staff/bills/move-item  
+POST /api/staff/bills/session/{tableSessionId}/empty
+DELETE /api/staff/bills/{billId}
 POST /api/staff/payments/confirm  
+GET  /api/staff/payments/bill/{billId}
 \`\`\`
 
 \---
@@ -6964,12 +7284,13 @@ WPF catches exceptions and displays friendly messages.
 \[ \] Customer can send valid order.  
 \[ \] Order creates session if needed.  
 \[ \] Order items save snapshot.  
-\[ \] Add-ons are linked to main order item.  
+\[ \] Selected choices are saved as OrderItemSelectedChoices.  
 \[ \] Stock is reserved correctly.  
 \[ \] Default bill is created and updated.  
 \[ \] WPF receives print request.  
 \[ \] Staff can mark print success/failure.  
-\[ \] Staff can cancel order and rollback stock/bill.  
+\[ \] System can cancel order before bill merge when workflow fails.  
+\[ \] Staff can reduce/remove BillDetails on Unpaid bill and optionally restore stock.  
 \[ \] Customer can call staff.  
 \[ \] Customer can request payment.  
 \[ \] Staff can split bill.  
@@ -7292,7 +7613,7 @@ Rules:
 Only Admin can do this.  
 Bill must be Paid.  
 Payment must exist.  
-NewPaymentMethod must be Cash, BankTransfer, Card, or EWallet.  
+NewPaymentMethod must be Cash, BankTransfer, or Card.  
 ChangeReason is required.  
 Only PaymentMethod and correction audit fields can be updated.  
 Amount must not change.  
@@ -7475,7 +7796,7 @@ BR-M5-012: Average bill value \= TotalRevenue / PaidBillCount; if count \= 0, av
 | Field | Type | Rule |  
 |---|---|---|  
 | \`BillId\` | int | Required, bill must be Paid |  
-| \`NewPaymentMethod\` | string | Cash / BankTransfer / Card / EWallet |  
+| \`NewPaymentMethod\` | string | Cash / BankTransfer / Card |  
 | \`ChangeReason\` | string | Required |
 
 \---
@@ -7611,8 +7932,8 @@ Service must check Admin again even if UI hides the button.
 
 **\*\*Project:\*\*** QR Food Ordering Management System    
 **\*\*Document type:\*\*** Database contract \+ Mermaid ERD for draw.io import    
-**\*\*Version:\*\*** 2.0    
-**\*\*Scope:\*\*** Full database after adding Menu Add-on and moving Bill/Payment/Split Bill to Member 4\.
+**\*\*Version:\*\*** 2.1    
+**\*\*Scope:\*\*** Full database after replacing menu add-ons with ChoiceGroup/ChoiceItem and moving Bill/Payment/Split Bill to Member 4\.
 
 \---
 
@@ -7680,41 +8001,42 @@ erDiagram
     MENU\_ITEMS {  
         INT MenuItemId PK  
         INT CategoryId FK  
-        STRING ItemName  
+        STRING Name  
         STRING Description  
-        DECIMAL Price  
+        DECIMAL BasePrice  
         STRING ImageUrl  
-        BOOL IsActive  
         BOOL IsAvailable  
-        BOOL TrackStock  
-        INT AvailableQuantity  
-        BOOL CanOrderStandalone  
+        INT Stock  
         BINARY RowVersion  
         DATETIME CreatedAt  
         DATETIME UpdatedAt  
     }
 
-    MENU\_ADDON\_GROUPS {  
-        INT MenuAddonGroupId PK  
-        INT ParentMenuItemId FK  
+    CHOICE\_GROUPS {  
+        INT ChoiceGroupId PK  
         STRING GroupName  
+        BOOL IsAvailable  
         BOOL IsRequired  
-        INT MinSelect  
-        INT MaxSelect  
-        INT DisplayOrder  
-        BOOL IsActive  
+        INT MaxSelectDefault  
         DATETIME CreatedAt  
         DATETIME UpdatedAt  
     }
 
-    MENU\_ADDON\_OPTIONS {  
-        INT MenuAddonOptionId PK  
-        INT MenuAddonGroupId FK  
-        INT AddonMenuItemId FK  
-        DECIMAL ExtraPriceOverride  
-        BOOL IsDefault  
+    CHOICE\_ITEMS {  
+        INT ChoiceItemId PK  
+        INT ChoiceGroupId FK  
+        STRING ChoiceName  
+        DECIMAL ExtraPrice  
+        BOOL IsAvailable  
+        DATETIME CreatedAt  
+        DATETIME UpdatedAt  
+    }
+
+    MENU\_ITEM\_CHOICE\_GROUPS {  
+        INT MenuItemId PK_FK  
+        INT ChoiceGroupId PK_FK  
         INT DisplayOrder  
-        BOOL IsActive  
+        INT MaxSelect  
         DATETIME CreatedAt  
         DATETIME UpdatedAt  
     }
@@ -7754,7 +8076,6 @@ erDiagram
         DATETIME CancelledAt  
         DATETIME PrintedAt  
         STRING PrintError  
-        INT PrintRetryCount  
         INT CreatedBy FK  
         INT CancelledBy FK  
     }
@@ -7763,16 +8084,23 @@ erDiagram
         INT OrderItemId PK  
         INT OrderId FK  
         INT MenuItemId FK  
-        INT SessionCustomerId FK  
-        INT ParentOrderItemId FK  
-        STRING LineType  
-        STRING ItemName  
+        STRING MenuItemNameSnapshot  
+        DECIMAL BasePriceSnapshot  
         INT Quantity  
-        DECIMAL UnitPrice  
-        DECIMAL TotalPrice  
         STRING Note  
         DATETIME CreatedAt  
         DATETIME UpdatedAt  
+    }
+
+    ORDER\_ITEM\_SELECTED\_CHOICES {  
+        INT OrderItemSelectedChoiceId PK  
+        INT OrderItemId FK  
+        INT ChoiceGroupId FK  
+        INT ChoiceItemId FK  
+        STRING GroupNameSnapshot  
+        STRING ChoiceNameSnapshot  
+        DECIMAL ExtraPriceSnapshot  
+        DATETIME CreatedAt  
     }
 
     SERVICE\_REQUESTS {  
@@ -7814,11 +8142,10 @@ erDiagram
     BILL\_DETAILS {  
         INT BillDetailId PK  
         INT BillId FK  
-        INT OrderItemId FK  
         INT MenuItemId FK  
-        INT SessionCustomerId FK  
-        STRING CustomerDisplayName  
         STRING ItemName  
+        STRING ChoiceSummary  
+        STRING Note  
         INT Quantity  
         DECIMAL UnitPrice  
         DECIMAL TotalPrice  
@@ -7827,7 +8154,7 @@ erDiagram
 
     PAYMENTS {  
         INT PaymentId PK  
-        INT BillId FK\_UK  
+        INT BillId FK  
         STRING PaymentMethod  
         DECIMAL Amount  
         DATETIME PaidAt  
@@ -7851,9 +8178,9 @@ erDiagram
     DINING\_TABLES ||--o{ TABLE\_SESSIONS : has
 
     CATEGORIES ||--o{ MENU\_ITEMS : contains  
-    MENU\_ITEMS ||--o{ MENU\_ADDON\_GROUPS : parent\_item\_has  
-    MENU\_ADDON\_GROUPS ||--o{ MENU\_ADDON\_OPTIONS : contains  
-    MENU\_ITEMS ||--o{ MENU\_ADDON\_OPTIONS : addon\_item
+    MENU\_ITEMS ||--o{ MENU\_ITEM\_CHOICE\_GROUPS : has  
+    CHOICE\_GROUPS ||--o{ MENU\_ITEM\_CHOICE\_GROUPS : assigned\_to  
+    CHOICE\_GROUPS ||--o{ CHOICE\_ITEMS : contains
 
     TABLE\_SESSIONS ||--o{ TABLE\_SESSION\_CUSTOMERS : has  
     TABLE\_SESSIONS ||--o{ ORDERS : has  
@@ -7863,15 +8190,14 @@ erDiagram
 
     ORDERS ||--o{ ORDER\_ITEMS : contains  
     MENU\_ITEMS ||--o{ ORDER\_ITEMS : ordered\_as  
-    TABLE\_SESSION\_CUSTOMERS ||--o{ ORDER\_ITEMS : owns  
-    ORDER\_ITEMS ||--o{ ORDER\_ITEMS : parent\_addon
+    ORDER\_ITEMS ||--o{ ORDER\_ITEM\_SELECTED\_CHOICES : has  
+    CHOICE\_GROUPS ||--o{ ORDER\_ITEM\_SELECTED\_CHOICES : selected\_group  
+    CHOICE\_ITEMS ||--o{ ORDER\_ITEM\_SELECTED\_CHOICES : selected\_choice
 
     TABLE\_SESSIONS ||--o{ BILLS : has  
     BILLS ||--o{ BILL\_DETAILS : contains  
-    ORDER\_ITEMS ||--o{ BILL\_DETAILS : billed\_from  
     MENU\_ITEMS ||--o{ BILL\_DETAILS : billed\_item  
-    TABLE\_SESSION\_CUSTOMERS ||--o{ BILL\_DETAILS : customer\_group  
-    BILLS ||--o| PAYMENTS : paid\_by  
+    BILLS ||--o{ PAYMENTS : paid\_by  
 \`\`\`
 
 \---
@@ -7943,74 +8269,98 @@ Owned by Member 3\.
 Purpose:
 
 \`\`\`text  
-Store both main dishes and add-on dishes.  
+Store orderable dishes/drinks.  
 \`\`\`
 
 Important fields:
 
 \`\`\`text  
-IsActive: item exists in menu operation.  
+Name: menu item display name.  
+BasePrice: base price before selected choices.  
 IsAvailable: item can be ordered now.  
-TrackStock: item uses stock quantity.  
-AvailableQuantity: stock count if TrackStock \= true.  
-CanOrderStandalone: true for normal menu item, false for add-on-only item.  
+Stock: nullable stock count. Null means stock is not tracked.  
 \`\`\`
 
 Example:
 
-| ItemName | CanOrderStandalone | Meaning |  
-|---|---:|---|  
-| Cơm gà | true | Customer can order directly |  
-| Trứng ốp la | false | Only selectable as add-on |  
-| Trà đào | true | Customer can order directly |
+| Name | BasePrice | Stock | Meaning |  
+|---|---:|---:|---|  
+| Cơm gà | 45000 | 20 | Orderable item with stock tracking |  
+| Trà đào | 30000 | null | Orderable item without stock tracking |
 
 \---
 
-**\#\# 3.5. MenuAddonGroups**
+**\#\# 3.5. ChoiceGroups**
 
 Owned by Member 3\.
 
 Purpose:
 
 \`\`\`text  
-Define add-on groups for a main dish.  
+Define reusable side-choice groups that can be assigned to many menu items.  
 \`\`\`
 
 Example:
 
 \`\`\`text  
-ParentMenuItem \= Cơm gà  
-GroupName \= Món phụ thêm  
-MinSelect \= 0  
-MaxSelect \= 3  
+GroupName \= Topping  
+IsRequired \= false  
+MaxSelectDefault \= 3  
+\`\`\`
+
+Selection meaning:
+
+\`\`\`text  
+IsRequired = true:
+    Group bắt buộc chọn.
+    MVP rule: phải chọn đúng 1 choice.
+    Ví dụ Size: M, X, XL.
+
+IsRequired = false:
+    Group không bắt buộc.
+    Khách có thể không chọn choice nào.
+    Nếu có chọn, số lượng choice không được vượt max-select hiệu lực.
+    Ví dụ Topping: chân châu đen, chân châu trắng, flan, hạt chia.
+
+MaxSelectDefault:
+    Giới hạn chọn mặc định của group.
+    Được dùng khi MenuItemChoiceGroups không cấu hình MaxSelect riêng cho món đó.
 \`\`\`
 
 \---
 
-**\#\# 3.6. MenuAddonOptions**
+**\#\# 3.6. ChoiceItems and MenuItemChoiceGroups**
 
 Owned by Member 3\.
 
 Purpose:
 
 \`\`\`text  
-Define which menu items are allowed as add-ons in a group.  
+ChoiceItems define selectable choices inside a group.  
+MenuItemChoiceGroups assign choice groups to menu items and optionally override max-select per menu item.  
 \`\`\`
 
 Example:
 
 \`\`\`text  
-Cơm gà → Món phụ thêm → Trứng ốp la  
-Cơm gà → Món phụ thêm → Canh thêm  
+Trà sữa thái xanh → Topping → chân châu đen (+5000), flan (+7000), hạt chia (+5000)  
+Trà sữa hồng trà → Topping → chân châu đen (+5000), flan (+7000), hạt chia (+5000)  
 \`\`\`
 
-\`ExtraPriceOverride\` rule:
+\`MaxSelect\` rule:
 
 \`\`\`text  
-null: use MenuItems.Price.  
-0: free add-on, useful for combo.  
-positive value: override add-on price.  
+MenuItemChoiceGroups.MaxSelect overrides ChoiceGroups.MaxSelectDefault for that menu item.  
+If no override is configured, use ChoiceGroups.MaxSelectDefault.  
 \`\`\`
+
+Example:
+
+| MenuItem | ChoiceGroup | ChoiceGroup.MaxSelectDefault | MenuItemChoiceGroups.MaxSelect | EffectiveMaxSelect | Meaning |  
+|---|---|---:|---:|---:|---|  
+| Trà sữa thái xanh | Topping | 3 | null | 3 | Giữ default, chọn tối đa 3 topping |  
+| Trà sữa hồng trà | Topping | 3 | 2 | 2 | Override riêng cho món này, chọn tối đa 2 topping |  
+| Trà sữa bất kỳ | Size | 1 | null | 1 | Group required, buộc chọn đúng 1 size |
 
 \---
 
@@ -8065,7 +8415,8 @@ Important rule:
 
 \`\`\`text  
 Order.Status \= Accepted or Cancelled.  
-Order.PrintStatus \= PendingPrint, Printed, or PrintFailed.  
+Order.PrintStatus \= null, Printed, or PrintFailed.  
+Null means order is waiting for first print attempt.  
 \`\`\`
 
 \---
@@ -8077,23 +8428,21 @@ Owned by Member 4\.
 Purpose:
 
 \`\`\`text  
-Snapshot lines of ordered items.  
+Snapshot lines of ordered menu items. Selected choices are saved separately.  
 \`\`\`
 
-Main/add-on structure:
+Choice snapshot structure:
 
 \`\`\`text  
-Main item: ParentOrderItemId \= null, LineType \= Main.  
-Add-on item: ParentOrderItemId points to main OrderItemId, LineType \= Addon.  
+OrderItems stores MenuItemNameSnapshot and BasePriceSnapshot.  
+OrderItemSelectedChoices stores GroupNameSnapshot, ChoiceNameSnapshot and ExtraPriceSnapshot.  
 \`\`\`
 
 Example:
 
-| OrderItemId | ParentOrderItemId | LineType | ItemName |  
-|---:|---:|---|---|  
-| 1 | null | Main | Cơm gà |  
-| 2 | 1 | Addon | Trứng ốp la |  
-| 3 | 1 | Addon | Canh thêm |
+| OrderItemId | MenuItemNameSnapshot | BasePriceSnapshot | Selected choices |  
+|---:|---|---:|---|  
+| 1 | Cơm gà | 45000 | Trứng ốp la (+10000), Canh thêm (+5000) |
 
 \---
 
@@ -8156,7 +8505,9 @@ Snapshot item rows inside a bill.
 Important rule:
 
 \`\`\`text  
-BillDetails are created from OrderItems snapshot.  
+BillDetails are bill payment snapshots derived from accepted OrderItems.  
+They do not store OrderItemId, SessionCustomerId or CustomerDisplayName.  
+They can merge multiple order lines when MenuItemId, ChoiceSummary, UnitPrice and Note match.  
 They must not use latest MenuItems price/name.  
 \`\`\`
 
@@ -8169,14 +8520,15 @@ Core creation is owned by Member 4\. Admin correction is owned by Member 5\.
 Purpose:
 
 \`\`\`text  
-Payment record for one paid bill.  
+Payment record for one payment attempt/confirmation of a bill.  
 \`\`\`
 
 Important rules:
 
 \`\`\`text  
-One bill has at most one payment.  
-Payment.Amount \= Bills.FinalAmount.  
+One bill can have multiple payments.  
+SUM(Payments.Amount) for a bill must not exceed Bills.FinalAmount.  
+Bill is Paid when SUM(Payments.Amount) equals Bills.FinalAmount.  
 Member 5 can correct only PaymentMethod if Admin.  
 \`\`\`
 
@@ -8190,12 +8542,14 @@ Member 5 can correct only PaymentMethod if Admin.
 | \`DiningTables\` | Member 2 | Member 2, status via contract |  
 | \`Categories\` | Member 3 | Member 3 |  
 | \`MenuItems\` | Member 3 | Member 3 |  
-| \`MenuAddonGroups\` | Member 3 | Member 3 |  
-| \`MenuAddonOptions\` | Member 3 | Member 3 |  
+| \`ChoiceGroups\` | Member 3 | Member 3 |  
+| \`ChoiceItems\` | Member 3 | Member 3 |  
+| \`MenuItemChoiceGroups\` | Member 3 | Member 3 |  
 | \`TableSessions\` | Member 4 | Member 4 |  
 | \`TableSessionCustomers\` | Member 4 | Member 4 |  
 | \`Orders\` | Member 4 | Member 4 |  
 | \`OrderItems\` | Member 4 | Member 4 |  
+| \`OrderItemSelectedChoices\` | Member 4 | Member 4 |  
 | \`ServiceRequests\` | Member 4 | Member 4 |  
 | \`Bills\` | Member 4 | Member 4 |  
 | \`BillDetails\` | Member 4 | Member 4 |  
@@ -8210,13 +8564,15 @@ UNIQUE Users.Username
 UNIQUE DiningTables.QrToken  
 UNIQUE Orders.OrderCode  
 UNIQUE Bills.BillCode  
-UNIQUE Payments.BillId  
 UNIQUE TableSessionCustomers(TableSessionId, ClientToken)  
+PK MenuItemChoiceGroups(MenuItemId, ChoiceGroupId)  
 UNIQUE active TableSession per TableId where Status in Open/WaitingPayment  
-CHECK Price \>= 0  
+CHECK BasePrice \>= 0  
+CHECK ExtraPrice \>= 0  
+CHECK Stock IS NULL OR Stock \>= 0  
 CHECK Quantity \> 0  
 CHECK TotalPrice \= Quantity \* UnitPrice should be enforced by service  
-CHECK Payment.Amount \= Bill.FinalAmount should be enforced by service  
+CHECK SUM(Payments.Amount) <= Bill.FinalAmount should be enforced by service  
 \`\`\`
 
 \---

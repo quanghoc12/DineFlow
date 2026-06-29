@@ -1,0 +1,233 @@
+erDiagram
+    USERS {
+        int UserId PK
+        string Username UK
+        string PasswordHash
+        string FullName
+        string Role
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    DINING_TABLES {
+        int TableId PK
+        string TableName
+        string Area
+        string QrToken UK
+        string Status
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CATEGORIES {
+        int CategoryId PK
+        string CategoryName
+        string Description
+        int DisplayOrder
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEMS {
+        int MenuItemId PK
+        int CategoryId FK
+        string Name
+        string Description
+        decimal BasePrice
+        string ImageUrl
+        bool IsAvailable
+        int Stock "nullable; null means no stock tracking"
+        binary RowVersion
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_GROUPS {
+        int ChoiceGroupId PK
+        string GroupName
+        bool IsAvailable
+        bool IsRequired "true means must select exactly 1 in MVP"
+        int MaxSelectDefault
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_ITEMS {
+        int ChoiceItemId PK
+        int ChoiceGroupId FK
+        string ChoiceName
+        decimal ExtraPrice
+        bool IsAvailable
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEM_CHOICE_GROUPS {
+        int MenuItemId PK, FK
+        int ChoiceGroupId PK, FK
+        int DisplayOrder
+        int MaxSelect "nullable override; null uses ChoiceGroup.MaxSelectDefault"
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    TABLE_SESSIONS {
+        int TableSessionId PK
+        int TableId FK
+        datetime StartedAt
+        datetime EndedAt
+        string Status "Open, WaitingPayment, Closed, Cancelled"
+        int OpenedBy FK
+        int ClosedBy FK
+    }
+
+    TABLE_SESSION_CUSTOMERS {
+        int SessionCustomerId PK
+        int TableSessionId FK
+        string ClientToken
+        string DisplayName
+        datetime CreatedAt
+    }
+
+    ORDERS {
+        int OrderId PK
+        int TableSessionId FK
+        int SessionCustomerId FK "nullable for staff order"
+        string OrderCode UK
+        string OrderSource "CustomerWeb, StaffApp"
+        string ClientToken
+        string Status "Accepted, Cancelled"
+        string PrintStatus "nullable; Printed, PrintFailed"
+        string CustomerNote
+        string SystemNote
+        string CancelReason
+        datetime CreatedAt
+        datetime UpdatedAt
+        datetime CancelledAt
+        datetime PrintedAt
+        string PrintError
+        int CreatedBy FK
+        int CancelledBy FK
+    }
+
+    ORDER_ITEMS {
+        int OrderItemId PK
+        int OrderId FK
+        int MenuItemId FK
+        string MenuItemNameSnapshot
+        decimal BasePriceSnapshot
+        int Quantity
+        string Note
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    ORDER_ITEM_SELECTED_CHOICES {
+        int OrderItemSelectedChoiceId PK
+        int OrderItemId FK
+        int ChoiceGroupId FK
+        int ChoiceItemId FK
+        string GroupNameSnapshot
+        string ChoiceNameSnapshot
+        decimal ExtraPriceSnapshot
+        datetime CreatedAt
+    }
+
+    SERVICE_REQUESTS {
+        int RequestId PK
+        int TableSessionId FK
+        int SessionCustomerId FK "nullable if created by staff/system"
+        string ClientToken
+        string RequestType "CallStaff, PaymentRequest"
+        string Reason
+        string PaymentMethod
+        string Message
+        string Status "Pending, Confirmed, Completed"
+        datetime CreatedAt
+        datetime ConfirmedAt
+        datetime CompletedAt
+        int ConfirmedBy FK
+        int CompletedBy FK
+    }
+
+    BILLS {
+        int BillId PK
+        string BillCode UK
+        int TableSessionId FK
+        int BillNo
+        string BillName
+        bool IsDefault
+        string Status "Unpaid, Paid, Cancelled"
+        decimal SubTotal
+        decimal DiscountAmount
+        decimal FinalAmount
+        datetime CreatedAt
+        int CreatedBy FK
+        datetime PaidAt
+        datetime CancelledAt
+        int CancelledBy FK
+        string CancelReason
+    }
+
+    BILL_DETAILS {
+        int BillDetailId PK
+        int BillId FK
+        int MenuItemId FK
+        string ItemName
+        string ChoiceSummary
+        string Note
+        int Quantity
+        decimal UnitPrice
+        decimal TotalPrice
+        datetime CreatedAt
+    }
+
+    PAYMENTS {
+        int PaymentId PK
+        int BillId FK
+        string PaymentMethod "Cash, BankTransfer, Card"
+        decimal Amount
+        datetime PaidAt
+        int ConfirmedBy FK
+        datetime UpdatedAt
+        int UpdatedBy FK
+        string ChangeReason
+    }
+
+    USERS ||--o{ TABLE_SESSIONS : opens
+    USERS ||--o{ TABLE_SESSIONS : closes
+    USERS ||--o{ ORDERS : creates
+    USERS ||--o{ ORDERS : cancels
+    USERS ||--o{ SERVICE_REQUESTS : confirms
+    USERS ||--o{ SERVICE_REQUESTS : completes
+    USERS ||--o{ BILLS : creates
+    USERS ||--o{ BILLS : cancels
+    USERS ||--o{ PAYMENTS : confirms
+    USERS ||--o{ PAYMENTS : corrects
+
+    DINING_TABLES ||--o{ TABLE_SESSIONS : has
+
+    CATEGORIES ||--o{ MENU_ITEMS : contains
+    MENU_ITEMS ||--o{ MENU_ITEM_CHOICE_GROUPS : has
+    CHOICE_GROUPS ||--o{ MENU_ITEM_CHOICE_GROUPS : assigned_to
+    CHOICE_GROUPS ||--o{ CHOICE_ITEMS : contains
+
+    TABLE_SESSIONS ||--o{ TABLE_SESSION_CUSTOMERS : has
+    TABLE_SESSIONS ||--o{ ORDERS : has
+    TABLE_SESSION_CUSTOMERS ||--o{ ORDERS : places
+    TABLE_SESSIONS ||--o{ SERVICE_REQUESTS : has
+    TABLE_SESSION_CUSTOMERS ||--o{ SERVICE_REQUESTS : sends
+
+    ORDERS ||--o{ ORDER_ITEMS : contains
+    MENU_ITEMS ||--o{ ORDER_ITEMS : ordered_as
+    ORDER_ITEMS ||--o{ ORDER_ITEM_SELECTED_CHOICES : has
+    CHOICE_GROUPS ||--o{ ORDER_ITEM_SELECTED_CHOICES : selected_group
+    CHOICE_ITEMS ||--o{ ORDER_ITEM_SELECTED_CHOICES : selected_choice
+
+    TABLE_SESSIONS ||--o{ BILLS : has
+    BILLS ||--o{ BILL_DETAILS : contains
+    MENU_ITEMS ||--o{ BILL_DETAILS : billed_item
+    BILLS ||--o{ PAYMENTS : paid_by

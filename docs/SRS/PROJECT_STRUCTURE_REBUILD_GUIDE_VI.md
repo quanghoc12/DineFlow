@@ -256,8 +256,8 @@ TableSessions 1 -- N ServiceRequests
 TableSessions 1 -- N Bills
 Categories 1 -- N MenuItems
 Orders 1 -- N OrderItems
-OrderItems 1 -- N BillDetails
 Bills 1 -- N BillDetails
+MenuItems 1 -- N BillDetails
 Bills 1 -- N Payments
 ```
 
@@ -265,6 +265,7 @@ Quy tac moi:
 
 - Mot ban thuoc mot khu vuc.
 - Mot khu vuc co nhieu ban.
+- BillDetails la snapshot tinh tien, khong luu OrderItemId.
 - Mot bill co the co nhieu payment records.
 - `Payments.BillId` khong unique.
 

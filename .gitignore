@@ -1,6 +1,9 @@
 # Build outputs
 bin/
 obj/
+.tmp-*/
+artifacts/
+.runlogs/
 .vs/
 *.user
 *.suo
@@ -12,6 +15,10 @@ obj/
 
 # VS Code
 .vscode/
+
+# Local agent/runtime state
+.agents/
+.codex/
 
 # Env / secrets
 .env

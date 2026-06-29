@@ -1,0 +1,114 @@
+<UserControl x:Class="DineFlow.WPFApp.Features.Operations.OrderManagement.Components.TableCardControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="138"
+             Height="138"
+             Margin="0,0,18,16">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DineFlow.WPFApp;component/Features/Operations/OrderManagement/Styles/OrderManagement.TableStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Button Width="138"
+                Height="138"
+                Margin="0"
+                Style="{StaticResource TableTileStyle}"
+                Click="RootButton_Click">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="43" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Width="40"
+                        Height="40"
+                        HorizontalAlignment="Center"
+                        Background="#DDEBFF"
+                        BorderBrush="#BFD8FB"
+                        BorderThickness="1"
+                        CornerRadius="20">
+                    <Image Width="29" Height="24" Stretch="Uniform">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source"
+                                        Value="/DineFlow.WPFApp;component/Assets/TableCards/occupied-table.png" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="Available">
+                                        <Setter Property="Source"
+                                                Value="/DineFlow.WPFApp;component/Assets/TableCards/available-chair.png" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                </Border>
+
+                <TextBlock Grid.Row="1"
+                           Margin="0,4,0,0"
+                           Text="{Binding TableName}"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Foreground="#12233D"
+                           TextAlignment="Center" />
+
+                <TextBlock Grid.Row="2"
+                           Margin="0,5,0,0"
+                           Text="{Binding DisplayStatus}"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#66758A" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="Available">
+                                    <Setter Property="Foreground" Value="#20A447" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="WaitingPayment">
+                                    <Setter Property="Foreground" Value="#D98B00" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <TextBlock Grid.Row="4"
+                           Text="{Binding TotalText}"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Foreground="#0866E5"
+                           TextAlignment="Center" />
+            </Grid>
+        </Button>
+
+        <Border IsHitTestVisible="False" CornerRadius="14">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSelectedTag}" Value="Active">
+                            <Setter Property="BorderBrush" Value="#2F80ED" />
+                            <Setter Property="BorderThickness" Value="2" />
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect Color="#2F80ED"
+                                                      BlurRadius="16"
+                                                      ShadowDepth="0"
+                                                      Opacity="0.28" />
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+        </Border>
+    </Grid>
+</UserControl>

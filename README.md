@@ -69,7 +69,7 @@ docker compose up -d postgres
 Default local connection:
 
 ```text
-Host=localhost;Port=5432;Database=dineflow;Username=dineflow_user;Password=dineflow_password
+Host=localhost;Port=5433;Database=dineflow;Username=dineflow_user;Password=dineflow_password
 ```
 
 ### 2. Restore .NET
