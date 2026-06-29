@@ -1,0 +1,26 @@
+<Window x:Class="DineFlow.WPFApp.Features.Management.Menu.ChoiceItemEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Lựa chọn phụ" Width="420" Height="300" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="28">
+        <TextBlock x:Name="HeadingText" Text="Thêm lựa chọn" FontSize="22" FontWeight="Bold" />
+        <TextBlock x:Name="HintText"
+                   Text="Lựa chọn sẽ được thêm vào nhóm phụ đang chọn."
+                   Foreground="#64748B"
+                   TextWrapping="Wrap"
+                   Margin="0,8,0,0" />
+
+        <TextBlock Text="Tên lựa chọn" Margin="0,18,0,6" FontWeight="SemiBold" />
+        <TextBox x:Name="ChoiceNameTextBox" Padding="9,6" />
+
+        <TextBlock Text="Giá cộng thêm" Margin="0,13,0,6" FontWeight="SemiBold" />
+        <TextBox x:Name="ExtraPriceTextBox" Text="0" Padding="9,6" />
+
+        <TextBlock x:Name="ErrorText" Foreground="#C53030" Margin="0,8,0,0" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Hủy" Click="CancelButton_Click" Padding="15,7" Margin="0,0,8,0" />
+            <Button Content="Lưu" Click="SaveButton_Click" Padding="15,7" />
+        </StackPanel>
+    </StackPanel>
+</Window>

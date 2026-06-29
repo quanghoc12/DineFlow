@@ -1,0 +1,31 @@
+<Window x:Class="DineFlow.WPFApp.Features.Management.Menu.ChoiceGroupEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nhóm phụ" Width="440" Height="360" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="28">
+        <TextBlock x:Name="HeadingText" Text="Thêm nhóm phụ" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="Nhóm bắt buộc dùng cho size/đá: khách phải chọn đúng 1. Nhóm không bắt buộc dùng cho topping/add-on: khách được chọn nhiều theo MaxSelect."
+                   Foreground="#64748B"
+                   TextWrapping="Wrap"
+                   Margin="0,8,0,0" />
+
+        <TextBlock Text="Tên nhóm" Margin="0,18,0,6" FontWeight="SemiBold" />
+        <TextBox x:Name="GroupNameTextBox" Padding="9,6" />
+
+        <CheckBox x:Name="RequiredCheckBox"
+                  Content="Bắt buộc chọn đúng 1"
+                  Margin="0,14,0,0"
+                  Checked="RequiredCheckBox_Changed"
+                  Unchecked="RequiredCheckBox_Changed" />
+
+        <TextBlock Text="MaxSelect mặc định" Margin="0,13,0,6" FontWeight="SemiBold" />
+        <TextBox x:Name="MaxSelectTextBox" Text="1" Padding="9,6" />
+
+        <TextBlock x:Name="ErrorText" Foreground="#C53030" Margin="0,8,0,0" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Hủy" Click="CancelButton_Click" Padding="15,7" Margin="0,0,8,0" />
+            <Button Content="Lưu" Click="SaveButton_Click" Padding="15,7" />
+        </StackPanel>
+    </StackPanel>
+</Window>
