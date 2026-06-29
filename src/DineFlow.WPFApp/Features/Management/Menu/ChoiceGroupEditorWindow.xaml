@@ -13,7 +13,7 @@
 
         <StackPanel>
             <TextBlock x:Name="HeadingText" Text="Thêm nhóm phụ" FontSize="22" FontWeight="Bold" />
-            <TextBlock Text="Type = chọn đúng 1 lựa chọn. Option = chọn nhiều lựa chọn, giới hạn bởi MaxSelect."
+            <TextBlock Text="Nhóm Loại = chọn đúng 1 lựa chọn. Nhóm Lựa chọn = chọn nhiều lựa chọn, giới hạn bởi MaxSelect."
                        Foreground="#64748B"
                        TextWrapping="Wrap"
                        Margin="0,8,0,0" />
@@ -27,15 +27,20 @@
 
             <StackPanel>
                 <TextBlock Text="Tên nhóm" Margin="0,0,0,6" FontWeight="SemiBold" />
-                <TextBox x:Name="GroupNameTextBox" Padding="9,6" />
+                <TextBox x:Name="GroupNameTextBox" Padding="9,6" LostFocus="GroupNameTextBox_LostFocus" />
+                <TextBlock x:Name="GroupNameValidationText"
+                           Foreground="#C53030"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Margin="0,5,0,0" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Margin="18,0,0,0">
-                <TextBlock Text="Loại nhóm" Margin="0,0,0,6" FontWeight="SemiBold" />
+                <TextBlock Text="Nhóm" Margin="0,0,0,6" FontWeight="SemiBold" />
                 <WrapPanel>
-                    <RadioButton x:Name="TypeRadioButton" Content="Type" IsChecked="True"
+                    <RadioButton x:Name="TypeRadioButton" Content="Loại" IsChecked="True"
                                  Checked="GroupKind_Changed" Margin="0,0,18,0" />
-                    <RadioButton x:Name="OptionRadioButton" Content="Option"
+                    <RadioButton x:Name="OptionRadioButton" Content="Lựa chọn"
                                  Checked="GroupKind_Changed" />
                 </WrapPanel>
                 <TextBlock Text="MaxSelect" Margin="0,13,0,6" FontWeight="SemiBold" />

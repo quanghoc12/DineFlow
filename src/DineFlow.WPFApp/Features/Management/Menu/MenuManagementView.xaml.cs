@@ -268,7 +268,7 @@ public partial class MenuManagementView : UserControl
     {
         try
         {
-            ChoiceGroupEditorWindow dialog = new()
+            ChoiceGroupEditorWindow dialog = new(_viewModel.ChoiceGroups)
             {
                 Owner = Window.GetWindow(this)
             };
@@ -290,7 +290,7 @@ public partial class MenuManagementView : UserControl
         {
             try
             {
-                ChoiceGroupEditorWindow dialog = new(group)
+                ChoiceGroupEditorWindow dialog = new(_viewModel.ChoiceGroups, group)
                 {
                     Owner = Window.GetWindow(this)
                 };

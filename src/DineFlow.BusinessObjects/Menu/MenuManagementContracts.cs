@@ -61,6 +61,7 @@ public sealed class ManagedChoiceGroupDto
     public string GroupName { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }
     public bool IsRequired { get; set; }
+    public string GroupKindLabel => IsRequired ? "Loại" : "Lựa chọn";
     public int MaxSelectDefault { get; set; }
     public List<ManagedChoiceItemDto> Items { get; set; } = [];
 }

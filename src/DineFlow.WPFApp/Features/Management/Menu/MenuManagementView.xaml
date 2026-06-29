@@ -193,7 +193,7 @@
                     <DockPanel Margin="0,0,0,12" LastChildFill="False">
                         <StackPanel>
                             <TextBlock Text="Nhóm phụ" FontSize="18" FontWeight="Bold" />
-                            <TextBlock Text="Nhóm bắt buộc dùng cho các lựa chọn phải chọn đúng 1 như size, đá. Nhóm không bắt buộc cho chọn nhiều lựa chọn theo MaxSelect."
+                            <TextBlock Text="Nhóm Loại dùng cho các lựa chọn phải chọn đúng 1 như size, đá. Nhóm Lựa chọn dùng cho topping/add-on, cho chọn nhiều theo MaxSelect."
                                        Foreground="#64748B"
                                        TextWrapping="Wrap"
                                        Margin="0,4,0,0" />
@@ -206,7 +206,7 @@
                               AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Nhóm phụ" Binding="{Binding GroupName}" Width="*" />
-                            <DataGridCheckBoxColumn Header="Bắt buộc" Binding="{Binding IsRequired}" Width="100" />
+                            <DataGridTextColumn Header="Nhóm" Binding="{Binding GroupKindLabel}" Width="120" />
                             <DataGridTextColumn Header="Max mặc định" Binding="{Binding MaxSelectDefault}" Width="120" />
                             <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsAvailable}" Width="100" />
                             <DataGridTemplateColumn Header="Thao tác" Width="90">

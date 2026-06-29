@@ -8,12 +8,14 @@ namespace DineFlow.WPFApp.Features.Management.Menu;
 public partial class ChoiceGroupEditorWindow : Window
 {
     private readonly ManagedChoiceGroupDto? _group;
+    private readonly IReadOnlyList<ManagedChoiceGroupDto> _existingGroups;
     private EditableChoiceItem? _editingChoiceItem;
 
-    public ChoiceGroupEditorWindow(ManagedChoiceGroupDto? group = null)
+    public ChoiceGroupEditorWindow(IEnumerable<ManagedChoiceGroupDto> existingGroups, ManagedChoiceGroupDto? group = null)
     {
         InitializeComponent();
         _group = group;
+        _existingGroups = existingGroups.ToList();
 
         foreach (EditableChoiceItem item in group?.Items.Select(item => new EditableChoiceItem
             {
@@ -51,11 +53,7 @@ public partial class ChoiceGroupEditorWindow : Window
         bool isRequired = TypeRadioButton.IsChecked == true;
         int maxSelect = 1;
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            ErrorText.Text = "Tên nhóm không được để trống.";
-            return;
-        }
+        if (!ValidateGroupName()) return;
 
         if (!isRequired &&
             (!int.TryParse(MaxSelectTextBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out maxSelect) ||
@@ -83,6 +81,33 @@ public partial class ChoiceGroupEditorWindow : Window
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private void GroupNameTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        ValidateGroupName();
+    }
+
+    private bool ValidateGroupName()
+    {
+        string name = GroupNameTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            GroupNameValidationText.Text = "Tên nhóm không được để trống.";
+            return false;
+        }
+
+        bool duplicated = _existingGroups.Any(group =>
+            group.ChoiceGroupId != (_group?.ChoiceGroupId ?? 0) &&
+            group.GroupName.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (duplicated)
+        {
+            GroupNameValidationText.Text = "Tên nhóm đã tồn tại. Vui lòng chọn tên khác trước khi lưu.";
+            return false;
+        }
+
+        GroupNameValidationText.Text = string.Empty;
+        return true;
+    }
 
     private void GroupKind_Changed(object sender, RoutedEventArgs e) => ApplyGroupKindState();
 
