@@ -27,7 +27,7 @@ public class MenuReadDao : IMenuReadDao
         string normalizedCode = channelCode.Trim().ToUpper();
 
         return _dbContext.SalesChannels
-            .FirstOrDefaultAsync(x => x.ChannelCode == normalizedCode && x.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(x => x.ChannelCode == normalizedCode && x.IsActive && !x.IsDeleted, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MenuItem>> GetCatalogItemsAsync(
@@ -44,7 +44,7 @@ public class MenuReadDao : IMenuReadDao
                     .ThenInclude(x => x!.ChoiceItems)
                         .ThenInclude(x => x.ChannelPrices)
             .AsSplitQuery()
-            .Where(x => x.Category != null && x.Category.IsActive);
+            .Where(x => x.Category != null && x.Category.IsActive && !x.IsDeleted);
 
         if (availableOnly)
         {
@@ -80,7 +80,7 @@ public class MenuReadDao : IMenuReadDao
                     .ThenInclude(x => x!.ChoiceItems)
                         .ThenInclude(x => x.ChannelPrices)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.MenuItemId == menuItemId && x.Category != null && x.Category.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(x => x.MenuItemId == menuItemId && x.Category != null && x.Category.IsActive && !x.IsDeleted, cancellationToken);
     }
 
     public Task<MenuItem?> GetMenuItemByIdAsync(int menuItemId, CancellationToken cancellationToken = default)

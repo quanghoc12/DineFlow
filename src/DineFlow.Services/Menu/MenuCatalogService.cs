@@ -79,6 +79,7 @@ public class MenuCatalogService : IMenuCatalogService
             ImageUrl = item.ImageUrl,
             IsAvailable = item.IsAvailable,
             Stock = item.Stock,
+            IsOutOfStock = item.IsOutOfStock || item.Stock == 0,
             ChoiceGroups = item.MenuItemChoiceGroups
                 .Where(x => x.ChoiceGroup != null && x.ChoiceGroup.IsAvailable)
                 .OrderBy(x => x.DisplayOrder)

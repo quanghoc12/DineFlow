@@ -5,7 +5,9 @@ namespace DineFlow.DataAccessObjects.Tables;
 public interface ITableManagementDao
 {
     Task<List<DiningTable>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<List<DiningTable>> GetAllForUpdateAsync(CancellationToken cancellationToken = default);
     Task<List<Area>> GetAreasAsync(CancellationToken cancellationToken = default);
+    Task<List<Area>> GetAreasForUpdateAsync(CancellationToken cancellationToken = default);
     Task<Area?> GetAreaAsync(int areaId, CancellationToken cancellationToken = default);
     Task<Area?> GetAreaByNameAsync(string name, CancellationToken cancellationToken = default);
     Task<bool> AreaNameExistsAsync(string name, int? excludedAreaId = null, CancellationToken cancellationToken = default);

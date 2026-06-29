@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Tables;
+using DineFlow.BusinessObjects.Auth;
 using DineFlow.Repositories.Tables;
 using DineFlow.Services.Auth;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +19,7 @@ public sealed class TableManagementService : ITableManagementService
     {
         _repository = repository;
         _currentUser = currentUser;
-        _customerWebBaseUrl = configuration["CustomerWeb:BaseUrl"]?.TrimEnd('/')
+        _customerWebBaseUrl = configuration["CustomerWeb:BaseUrl"]?.Trim().TrimEnd('/')
             ?? "http://localhost:5173";
     }
 
@@ -54,6 +55,7 @@ public sealed class TableManagementService : ITableManagementService
         }
 
         DateTime now = DateTime.UtcNow;
+        List<Area> areas = await _repository.GetAreasForUpdateAsync(cancellationToken);
         Area area;
         if (request.AreaId is null)
         {
@@ -66,6 +68,7 @@ public sealed class TableManagementService : ITableManagementService
                 UpdatedAt = now
             };
             await _repository.AddAreaAsync(area, cancellationToken);
+            areas.Add(area);
         }
         else
         {
@@ -76,6 +79,7 @@ public sealed class TableManagementService : ITableManagementService
             area.UpdatedAt = now;
         }
 
+        RebuildAreaOrders(areas, area, request.DisplayOrder, now);
         await _repository.SaveChangesAsync(cancellationToken);
         return MapArea(area);
     }
@@ -111,6 +115,7 @@ public sealed class TableManagementService : ITableManagementService
             TableName = name,
             AreaId = areaEntity?.AreaId,
             Area = area,
+            DisplayOrder = request.DisplayOrder,
             QrToken = await GenerateUniqueTokenAsync(cancellationToken),
             Status = TableStatuses.Available,
             IsActive = true,
@@ -118,6 +123,7 @@ public sealed class TableManagementService : ITableManagementService
             UpdatedAt = now
         };
         await _repository.AddAsync(table, cancellationToken);
+        await RebuildTableOrdersAsync(table, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
         return Map(table);
     }
@@ -138,7 +144,9 @@ public sealed class TableManagementService : ITableManagementService
         table.TableName = name;
         table.AreaId = areaEntity?.AreaId;
         table.Area = area;
+        table.DisplayOrder = request.DisplayOrder;
         table.UpdatedAt = DateTime.UtcNow;
+        await RebuildTableOrdersAsync(table, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
     }
 
@@ -178,11 +186,12 @@ public sealed class TableManagementService : ITableManagementService
     private void EnsureAdmin()
     {
         if (!_currentUser.IsAuthenticated ||
-            !_currentUser.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            !AuthRoles.CanManage(_currentUser.User!.Role))
         {
-            throw new UnauthorizedAccessException("Chỉ Admin được quản lý bàn và mã QR.");
+            throw new UnauthorizedAccessException("Chỉ Admin hoặc Chủ nhà hàng được quản lý bàn và mã QR.");
         }
     }
+
 
     private async Task<DiningTable> FindAsync(int tableId, CancellationToken cancellationToken) =>
         await _repository.GetByIdAsync(tableId, cancellationToken)
@@ -243,9 +252,10 @@ public sealed class TableManagementService : ITableManagementService
         AreaId = table.AreaId,
         Area = table.AreaEntity?.AreaName ?? table.Area,
         QrToken = table.QrToken,
-        QrUrl = $"{_customerWebBaseUrl}?t={Uri.EscapeDataString(table.QrToken)}",
+        QrUrl = $"{_customerWebBaseUrl}/table/{Uri.EscapeDataString(table.QrToken)}",
         Status = table.Status,
-        IsActive = table.IsActive
+        IsActive = table.IsActive,
+        DisplayOrder = table.DisplayOrder
     };
 
     private static ManagedAreaDto MapArea(Area area) => new()
@@ -253,6 +263,50 @@ public sealed class TableManagementService : ITableManagementService
         AreaId = area.AreaId,
         AreaName = area.AreaName,
         DisplayOrder = area.DisplayOrder,
-        IsActive = area.IsActive
+        IsActive = area.IsActive,
+        TableCount = area.DiningTables.Count
     };
+
+    private static void RebuildAreaOrders(
+        List<Area> areas, Area target, int requestedOrder, DateTime now)
+    {
+        List<Area> ordered = areas
+            .Where(area => !ReferenceEquals(area, target))
+            .OrderBy(area => area.DisplayOrder)
+            .ThenBy(area => area.AreaName)
+            .ToList();
+        ordered.Insert(Math.Clamp(requestedOrder, 0, ordered.Count), target);
+        for (int index = 0; index < ordered.Count; index++)
+        {
+            ordered[index].DisplayOrder = index;
+            ordered[index].UpdatedAt = now;
+        }
+    }
+
+    private async Task RebuildTableOrdersAsync(
+        DiningTable target, CancellationToken cancellationToken)
+    {
+        List<DiningTable> allTables = await _repository.GetAllForUpdateAsync(cancellationToken);
+        if (!allTables.Contains(target))
+            allTables.Add(target);
+
+        string targetAreaKey = target.AreaId?.ToString() ?? $"legacy:{target.Area}";
+        foreach (IGrouping<string, DiningTable> areaTables in allTables.GroupBy(
+                     table => table.AreaId?.ToString() ?? $"legacy:{table.Area}"))
+        {
+            List<DiningTable> ordered = areaTables
+                .Where(table => !ReferenceEquals(table, target))
+                .OrderBy(table => table.DisplayOrder)
+                .ThenBy(table => table.TableName)
+                .ToList();
+            if (areaTables.Key == targetAreaKey)
+                ordered.Insert(Math.Clamp(target.DisplayOrder, 0, ordered.Count), target);
+
+            for (int index = 0; index < ordered.Count; index++)
+            {
+                ordered[index].DisplayOrder = index;
+                ordered[index].UpdatedAt = DateTime.UtcNow;
+            }
+        }
+    }
 }

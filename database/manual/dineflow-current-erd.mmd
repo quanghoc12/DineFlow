@@ -10,13 +10,24 @@ erDiagram
         datetime UpdatedAt
     }
 
+    AREAS {
+        int AreaId PK
+        string AreaName UK
+        int DisplayOrder
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
     DINING_TABLES {
         int TableId PK
         string TableName
-        string Area
+        int AreaId FK "nullable"
+        string Area "legacy/display area"
         string QrToken UK
-        string Status
+        string Status "Available, Occupied, WaitingPayment"
         bool IsActive
+        int DisplayOrder
         datetime CreatedAt
         datetime UpdatedAt
     }
@@ -39,8 +50,9 @@ erDiagram
         decimal BasePrice
         string ImageUrl
         bool IsAvailable
+        bool IsDeleted
+        bool IsOutOfStock
         int Stock "nullable; null means no stock tracking"
-        binary RowVersion
         datetime CreatedAt
         datetime UpdatedAt
     }
@@ -49,7 +61,7 @@ erDiagram
         int ChoiceGroupId PK
         string GroupName
         bool IsAvailable
-        bool IsRequired "true means must select exactly 1 in MVP"
+        bool IsRequired
         int MaxSelectDefault
         datetime CreatedAt
         datetime UpdatedAt
@@ -69,7 +81,33 @@ erDiagram
         int MenuItemId PK, FK
         int ChoiceGroupId PK, FK
         int DisplayOrder
-        int MaxSelect "nullable override; null uses ChoiceGroup.MaxSelectDefault"
+        int MaxSelect "nullable override"
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    SALES_CHANNELS {
+        int SalesChannelId PK
+        string ChannelCode UK "unique when IsDeleted=false"
+        string ChannelName
+        bool IsActive
+        bool IsDeleted
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEM_CHANNEL_PRICES {
+        int MenuItemId PK, FK
+        int SalesChannelId PK, FK
+        decimal ChannelExtraPrice
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_ITEM_CHANNEL_PRICES {
+        int ChoiceItemId PK, FK
+        int SalesChannelId PK, FK
+        decimal ChannelExtraPrice
         datetime CreatedAt
         datetime UpdatedAt
     }
@@ -79,9 +117,9 @@ erDiagram
         int TableId FK
         datetime StartedAt
         datetime EndedAt
-        string Status "Open, WaitingPayment, Closed, Cancelled"
-        int OpenedBy FK
-        int ClosedBy FK
+        string Status "Browsing, Open, WaitingPayment, Closed, Cancelled"
+        int OpenedBy FK "nullable"
+        int ClosedBy FK "nullable"
     }
 
     TABLE_SESSION_CUSTOMERS {
@@ -96,11 +134,13 @@ erDiagram
         int OrderId PK
         int TableSessionId FK
         int SessionCustomerId FK "nullable for staff order"
+        int SalesChannelId FK
         string OrderCode UK
-        string OrderSource "CustomerWeb, StaffApp"
+        string OrderSource
+        string ExternalOrderCode
         string ClientToken
-        string Status "Accepted, Cancelled"
-        string PrintStatus "nullable; Printed, PrintFailed"
+        string Status
+        string PrintStatus
         string CustomerNote
         string SystemNote
         string CancelReason
@@ -109,8 +149,8 @@ erDiagram
         datetime CancelledAt
         datetime PrintedAt
         string PrintError
-        int CreatedBy FK
-        int CancelledBy FK
+        int CreatedBy FK "nullable"
+        int CancelledBy FK "nullable"
     }
 
     ORDER_ITEMS {
@@ -119,6 +159,8 @@ erDiagram
         int MenuItemId FK
         string MenuItemNameSnapshot
         decimal BasePriceSnapshot
+        decimal ChannelExtraPriceSnapshot
+        decimal FinalUnitPriceSnapshot
         int Quantity
         string Note
         datetime CreatedAt
@@ -133,30 +175,33 @@ erDiagram
         string GroupNameSnapshot
         string ChoiceNameSnapshot
         decimal ExtraPriceSnapshot
+        decimal ChannelExtraPriceSnapshot
+        decimal FinalExtraPriceSnapshot
         datetime CreatedAt
     }
 
     SERVICE_REQUESTS {
         int RequestId PK
         int TableSessionId FK
-        int SessionCustomerId FK "nullable if created by staff/system"
+        int SessionCustomerId FK "nullable"
         string ClientToken
         string RequestType "CallStaff, PaymentRequest"
         string Reason
         string PaymentMethod
         string Message
-        string Status "Pending, Confirmed, Completed"
+        string Status
         datetime CreatedAt
         datetime ConfirmedAt
-        datetime CompletedAt
-        int ConfirmedBy FK
-        int CompletedBy FK
+        int ConfirmedBy FK "nullable"
     }
 
     BILLS {
         int BillId PK
         string BillCode UK
         int TableSessionId FK
+        int SalesChannelId FK
+        string SalesChannelCodeSnapshot
+        string SalesChannelNameSnapshot
         int BillNo
         string BillName
         bool IsDefault
@@ -165,10 +210,10 @@ erDiagram
         decimal DiscountAmount
         decimal FinalAmount
         datetime CreatedAt
-        int CreatedBy FK
+        int CreatedBy FK "nullable"
         datetime PaidAt
         datetime CancelledAt
-        int CancelledBy FK
+        int CancelledBy FK "nullable"
         string CancelReason
     }
 
@@ -176,24 +221,44 @@ erDiagram
         int BillDetailId PK
         int BillId FK
         int MenuItemId FK
+        int SalesChannelId FK
         string ItemName
         string ChoiceSummary
         string Note
         int Quantity
+        int NotifiedQuantity
+        decimal BasePriceSnapshot
+        decimal MenuItemChannelExtraPriceSnapshot
+        decimal ChoiceExtraPriceSnapshot
         decimal UnitPrice
         decimal TotalPrice
         datetime CreatedAt
     }
 
+    BILL_DETAIL_ADJUSTMENTS {
+        int BillDetailAdjustmentId PK
+        int BillId FK
+        int BillDetailId FK
+        int MenuItemId FK
+        string ItemName
+        int QuantityBefore
+        int QuantityAfter
+        int ChangedQuantity
+        string ChangeType
+        string Reason
+        datetime CreatedAt
+        int CreatedBy FK
+    }
+
     PAYMENTS {
         int PaymentId PK
         int BillId FK
-        string PaymentMethod "Cash, BankTransfer, Card"
+        string PaymentMethod
         decimal Amount
         datetime PaidAt
         int ConfirmedBy FK
         datetime UpdatedAt
-        int UpdatedBy FK
+        int UpdatedBy FK "nullable"
         string ChangeReason
     }
 
@@ -202,18 +267,25 @@ erDiagram
     USERS ||--o{ ORDERS : creates
     USERS ||--o{ ORDERS : cancels
     USERS ||--o{ SERVICE_REQUESTS : confirms
-    USERS ||--o{ SERVICE_REQUESTS : completes
     USERS ||--o{ BILLS : creates
     USERS ||--o{ BILLS : cancels
+    USERS ||--o{ BILL_DETAIL_ADJUSTMENTS : creates
     USERS ||--o{ PAYMENTS : confirms
-    USERS ||--o{ PAYMENTS : corrects
+    USERS ||--o{ PAYMENTS : updates
 
+    AREAS ||--o{ DINING_TABLES : contains
     DINING_TABLES ||--o{ TABLE_SESSIONS : has
 
     CATEGORIES ||--o{ MENU_ITEMS : contains
     MENU_ITEMS ||--o{ MENU_ITEM_CHOICE_GROUPS : has
     CHOICE_GROUPS ||--o{ MENU_ITEM_CHOICE_GROUPS : assigned_to
     CHOICE_GROUPS ||--o{ CHOICE_ITEMS : contains
+
+    SALES_CHANNELS ||--o{ MENU_ITEM_CHANNEL_PRICES : prices
+    SALES_CHANNELS ||--o{ CHOICE_ITEM_CHANNEL_PRICES : prices
+    SALES_CHANNELS ||--o{ ORDERS : source_for
+    MENU_ITEMS ||--o{ MENU_ITEM_CHANNEL_PRICES : has
+    CHOICE_ITEMS ||--o{ CHOICE_ITEM_CHANNEL_PRICES : has
 
     TABLE_SESSIONS ||--o{ TABLE_SESSION_CUSTOMERS : has
     TABLE_SESSIONS ||--o{ ORDERS : has
@@ -228,6 +300,11 @@ erDiagram
     CHOICE_ITEMS ||--o{ ORDER_ITEM_SELECTED_CHOICES : selected_choice
 
     TABLE_SESSIONS ||--o{ BILLS : has
+    SALES_CHANNELS ||--o{ BILLS : channel_for
     BILLS ||--o{ BILL_DETAILS : contains
     MENU_ITEMS ||--o{ BILL_DETAILS : billed_item
+    SALES_CHANNELS ||--o{ BILL_DETAILS : priced_by
+    BILLS ||--o{ BILL_DETAIL_ADJUSTMENTS : records
+    BILL_DETAILS ||--o{ BILL_DETAIL_ADJUSTMENTS : adjusted_detail
+    MENU_ITEMS ||--o{ BILL_DETAIL_ADJUSTMENTS : adjusted_item
     BILLS ||--o{ PAYMENTS : paid_by

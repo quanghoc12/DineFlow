@@ -77,6 +77,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Area).HasMaxLength(100).IsRequired();
             entity.Property(x => x.QrToken).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.DisplayOrder).HasDefaultValue(0);
 
             entity.HasOne(x => x.AreaEntity)
                 .WithMany(x => x.DiningTables)
@@ -101,6 +102,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Description).HasMaxLength(1000);
             entity.Property(x => x.BasePrice).HasPrecision(18, 2);
             entity.Property(x => x.ImageUrl).HasMaxLength(1000);
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
 
             entity.HasOne(x => x.Category)
                 .WithMany(x => x.MenuItems)
@@ -127,9 +129,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SalesChannel>(entity =>
         {
             entity.HasKey(x => x.SalesChannelId);
-            entity.HasIndex(x => x.ChannelCode).IsUnique();
+            entity.HasIndex(x => x.ChannelCode).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
             entity.Property(x => x.ChannelCode).HasMaxLength(50).IsRequired();
             entity.Property(x => x.ChannelName).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
         });
 
         modelBuilder.Entity<MenuItemChannelPrice>(entity =>
@@ -304,6 +307,8 @@ public class AppDbContext : DbContext
                 .IsUnique()
                 .HasFilter("\"IsDefault\" = TRUE AND \"Status\" = 'Unpaid'");
             entity.Property(x => x.BillCode).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.SalesChannelCodeSnapshot).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.SalesChannelNameSnapshot).HasMaxLength(120).IsRequired();
             entity.Property(x => x.BillName).HasMaxLength(120).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
             entity.Property(x => x.SubTotal).HasPrecision(18, 2);
@@ -314,6 +319,11 @@ public class AppDbContext : DbContext
             entity.HasOne(x => x.TableSession)
                 .WithMany(x => x.Bills)
                 .HasForeignKey(x => x.TableSessionId);
+
+            entity.HasOne(x => x.SalesChannel)
+                .WithMany()
+                .HasForeignKey(x => x.SalesChannelId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<BillDetail>(entity =>
@@ -324,6 +334,9 @@ public class AppDbContext : DbContext
             entity.Property(x => x.ItemName).HasMaxLength(150).IsRequired();
             entity.Property(x => x.ChoiceSummary).HasMaxLength(500);
             entity.Property(x => x.Note).HasMaxLength(300);
+            entity.Property(x => x.BasePriceSnapshot).HasPrecision(18, 2);
+            entity.Property(x => x.MenuItemChannelExtraPriceSnapshot).HasPrecision(18, 2);
+            entity.Property(x => x.ChoiceExtraPriceSnapshot).HasPrecision(18, 2);
             entity.Property(x => x.UnitPrice).HasPrecision(18, 2);
             entity.Property(x => x.TotalPrice).HasPrecision(18, 2);
 
@@ -334,6 +347,11 @@ public class AppDbContext : DbContext
             entity.HasOne(x => x.MenuItem)
                 .WithMany(x => x.BillDetails)
                 .HasForeignKey(x => x.MenuItemId);
+
+            entity.HasOne<DineFlow.BusinessObjects.Menu.SalesChannel>()
+                .WithMany()
+                .HasForeignKey(x => x.SalesChannelId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<BillDetailAdjustment>(entity =>

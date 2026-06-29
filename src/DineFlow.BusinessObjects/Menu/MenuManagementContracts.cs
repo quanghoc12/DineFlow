@@ -19,7 +19,17 @@ public sealed class ManagedMenuItemDto
     public decimal BasePrice { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; }
+    public bool IsDeleted { get; set; }
     public int? Stock { get; set; }
+    // Stored out-of-stock flag from DB (admin explicit mark)
+    public bool IsOutOfStockStored { get; set; }
+    public bool IsTrackingStock => Stock.HasValue;
+    // Effective: OOS if stock==0 (one-way link) OR if admin explicitly marked OOS
+    public bool IsOutOfStock => Stock == 0 || IsOutOfStockStored;
+    public string StockStatusLabel => Stock is null
+        ? (IsOutOfStockStored ? "Hết món" : "Không theo dõi")
+        : Stock == 0 ? "Hết món" : Stock.Value.ToString();
+    public string VisibilityStatusLabel => IsDeleted ? "Đã xóa" : IsAvailable ? "Hoạt động" : "Tạm ngưng";
     public List<ManagedMenuItemChoiceGroupDto> ChoiceGroups { get; set; } = [];
     public List<ManagedChannelPriceDto> ChannelPrices { get; set; } = [];
 }
@@ -52,6 +62,7 @@ public sealed class SaveMenuItemRequest
     public decimal BasePrice { get; set; }
     public string? ImageUrl { get; set; }
     public int? Stock { get; set; }
+    public bool IsOutOfStock { get; set; }
     public bool IsAvailable { get; set; }
 }
 

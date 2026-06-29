@@ -6,6 +6,6 @@ public interface ISplitBillService
     Task<BillDto> SplitBillBatchAsync(SplitBillBatchRequest request, int currentUserId, CancellationToken cancellationToken = default);
     Task<BillDto> MergeBillAsync(MergeBillRequest request, int currentUserId, CancellationToken cancellationToken = default);
     Task<BillDto> MoveItemToBillAsync(MoveBillItemRequest request, int currentUserId, CancellationToken cancellationToken = default);
-    Task<BillDto> CreateEmptyBillForSessionAsync(int tableSessionId, string billName, int currentUserId, CancellationToken cancellationToken = default);
+    Task<BillDto> CreateEmptyBillForSessionAsync(int tableSessionId, string billName, int currentUserId, int? salesChannelId = null, CancellationToken cancellationToken = default);
     Task<bool> ValidateSplitQuantityAsync(int billDetailId, int quantityToMove, CancellationToken cancellationToken = default);
 }

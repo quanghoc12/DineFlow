@@ -6,7 +6,7 @@ namespace DineFlow.Services.Auth;
 public sealed class UserService : IUserService
 {
     private static readonly HashSet<string> AllowedRoles =
-        new(StringComparer.OrdinalIgnoreCase) { "Admin", "Staff" };
+        new(StringComparer.OrdinalIgnoreCase) { AuthRoles.Owner, AuthRoles.Admin, AuthRoles.Staff };
 
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
@@ -34,6 +34,8 @@ public sealed class UserService : IUserService
         EnsureAdmin();
         Validate(request.Username, request.FullName, request.Role);
         ValidatePassword(request.Password);
+        if (!IsOwner() && AuthRoles.IsOwner(request.Role))
+            throw new UnauthorizedAccessException("Chỉ Chủ nhà hàng được tạo tài khoản Chủ nhà hàng.");
 
         if (await _userRepository.UsernameExistsAsync(request.Username, cancellationToken: cancellationToken))
         {
@@ -59,6 +61,7 @@ public sealed class UserService : IUserService
         EnsureAdmin();
         Validate(request.Username, request.FullName, request.Role);
         User user = await FindUserAsync(request.UserId, cancellationToken);
+        EnsureRoleChangeAllowed(user, request.Role);
 
         if (await _userRepository.UsernameExistsAsync(
                 request.Username,
@@ -68,19 +71,12 @@ public sealed class UserService : IUserService
             throw new InvalidOperationException("Tên đăng nhập đã tồn tại.");
         }
 
-        if (user.IsActive &&
-            user.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
-            !request.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
-            await _userRepository.CountActiveAdminsAsync(cancellationToken) <= 1)
-        {
-            throw new InvalidOperationException("Không thể đổi vai trò của Admin hoạt động cuối cùng.");
-        }
-
         user.Username = request.Username.Trim();
         user.FullName = request.FullName.Trim();
         user.Role = NormalizeRole(request.Role);
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
+        RefreshCurrentSession(user);
     }
 
     public async Task SetActiveAsync(
@@ -91,32 +87,29 @@ public sealed class UserService : IUserService
         EnsureAdmin();
         User user = await FindUserAsync(userId, cancellationToken);
 
-        if (!isActive && user.UserId == _currentUserService.User?.UserId)
-        {
-            throw new InvalidOperationException("Bạn không thể khóa tài khoản đang đăng nhập.");
-        }
-
-        if (!isActive &&
-            user.IsActive &&
-            user.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
-            await _userRepository.CountActiveAdminsAsync(cancellationToken) <= 1)
-        {
-            throw new InvalidOperationException("Không thể khóa Admin hoạt động cuối cùng.");
-        }
+        if (!IsOwner() && (AuthRoles.IsAdmin(user.Role) || AuthRoles.IsOwner(user.Role)))
+            throw new UnauthorizedAccessException("Admin không được khóa tài khoản Admin hoặc Chủ nhà hàng.");
 
         user.IsActive = isActive;
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
+        if (!isActive && user.UserId == _currentUserService.User?.UserId)
+            _currentUserService.Logout();
     }
 
     public async Task ResetPasswordAsync(
         int userId,
+        string currentPassword,
         string newPassword,
         CancellationToken cancellationToken = default)
     {
         EnsureAdmin();
         ValidatePassword(newPassword);
         User user = await FindUserAsync(userId, cancellationToken);
+        if (!IsOwner() && !_passwordHasher.Verify(currentPassword, user.PasswordHash))
+        {
+            throw new InvalidOperationException("Mật khẩu cũ không chính xác.");
+        }
         user.PasswordHash = _passwordHasher.Hash(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
@@ -125,10 +118,26 @@ public sealed class UserService : IUserService
     private void EnsureAdmin()
     {
         if (!_currentUserService.IsAuthenticated ||
-            !_currentUserService.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            !AuthRoles.CanManage(_currentUserService.User!.Role))
         {
-            throw new UnauthorizedAccessException("Chỉ Admin được quản lý người dùng.");
+            throw new UnauthorizedAccessException("Chỉ Admin hoặc Chủ nhà hàng được quản lý người dùng.");
         }
+    }
+
+    private bool IsOwner() =>
+        AuthRoles.IsOwner(_currentUserService.User?.Role);
+
+    private void EnsureRoleChangeAllowed(User target, string requestedRole)
+    {
+        if (IsOwner()) return;
+
+        if (AuthRoles.IsOwner(target.Role))
+            throw new UnauthorizedAccessException("Admin không được thay đổi vai trò Chủ nhà hàng.");
+
+        bool sameRole = target.Role.Equals(requestedRole, StringComparison.OrdinalIgnoreCase);
+        bool promotesStaff = AuthRoles.IsStaff(target.Role) && AuthRoles.IsAdmin(requestedRole);
+        if (!sameRole && !promotesStaff)
+            throw new UnauthorizedAccessException("Admin chỉ được phép chuyển Staff lên Admin.");
     }
 
     private async Task<User> FindUserAsync(int userId, CancellationToken cancellationToken)
@@ -151,7 +160,7 @@ public sealed class UserService : IUserService
 
         if (!AllowedRoles.Contains(role))
         {
-            throw new InvalidOperationException("Vai trò chỉ có thể là Admin hoặc Staff.");
+            throw new InvalidOperationException("Vai trò chỉ có thể là Chủ nhà hàng, Admin hoặc Staff.");
         }
     }
 
@@ -163,8 +172,19 @@ public sealed class UserService : IUserService
         }
     }
 
-    private static string NormalizeRole(string role) =>
-        role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "Staff";
+    private static string NormalizeRole(string role) => AuthRoles.Normalize(role);
+
+    private void RefreshCurrentSession(User user)
+    {
+        if (user.UserId != _currentUserService.User?.UserId) return;
+        _currentUserService.Login(new CurrentUser
+        {
+            UserId = user.UserId,
+            Username = user.Username,
+            FullName = user.FullName,
+            Role = user.Role
+        });
+    }
 
     private static UserSummary Map(User user) => new()
     {

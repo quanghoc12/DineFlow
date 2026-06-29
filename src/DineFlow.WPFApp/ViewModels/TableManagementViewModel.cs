@@ -22,6 +22,7 @@ public sealed class TableManagementViewModel : BaseViewModel
 
     public ObservableCollection<ManagedTableDto> Tables { get; } = [];
     public ObservableCollection<string> Areas { get; } = [];
+    public ObservableCollection<ManagedAreaDto> ManagedAreas { get; } = [];
 
     public ManagedTableDto? SelectedTable
     {
@@ -68,6 +69,11 @@ public sealed class TableManagementViewModel : BaseViewModel
     public Task LoadAsync() => ExecuteAsync(async () =>
     {
         _allTables = (await _service.GetAllAsync()).ToList();
+        ManagedAreas.Clear();
+        foreach (ManagedAreaDto area in await _service.GetAreasAsync())
+        {
+            ManagedAreas.Add(area);
+        }
         string selectedArea = AreaFilter;
         Areas.Clear();
         Areas.Add(string.Empty);
@@ -79,20 +85,35 @@ public sealed class TableManagementViewModel : BaseViewModel
         ApplyFilter();
     });
 
-    public Task CreateAsync(string tableName, string area) =>
+    public Task CreateAsync(string tableName, ManagedAreaDto area, int displayOrder) =>
         ExecuteAndReloadAsync(() => _service.CreateAsync(new CreateManagedTableRequest
         {
             TableName = tableName,
-            Area = area
+            AreaId = area.AreaId,
+            Area = area.AreaName,
+            DisplayOrder = displayOrder
         }));
 
-    public Task UpdateAsync(ManagedTableDto table, string tableName, string area) =>
+    public Task UpdateAsync(ManagedTableDto table, string tableName, ManagedAreaDto area, int displayOrder) =>
         ExecuteAndReloadAsync(() => _service.UpdateAsync(new UpdateManagedTableRequest
         {
             TableId = table.TableId,
             TableName = tableName,
-            Area = area
+            AreaId = area.AreaId,
+            Area = area.AreaName,
+            DisplayOrder = displayOrder
         }));
+
+    public Task SaveAreaAsync(ManagedAreaDto? area, string name, int displayOrder) =>
+        ExecuteAndReloadAsync(() => _service.SaveAreaAsync(new SaveAreaRequest
+        {
+            AreaId = area?.AreaId,
+            AreaName = name,
+            DisplayOrder = displayOrder
+        }));
+
+    public Task ToggleAreaActiveAsync(ManagedAreaDto area) =>
+        ExecuteAndReloadAsync(() => _service.SetAreaActiveAsync(area.AreaId, !area.IsActive));
 
     public Task ToggleActiveAsync(ManagedTableDto table) =>
         ExecuteAndReloadAsync(() => _service.SetActiveAsync(table.TableId, !table.IsActive));

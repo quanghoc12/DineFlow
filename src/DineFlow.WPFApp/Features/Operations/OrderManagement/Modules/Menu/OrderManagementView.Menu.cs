@@ -34,7 +34,9 @@ public partial class OrderManagementView
             item.ChoiceGroups
                 .OrderBy(x => x.DisplayOrder)
                 .Select(MapChoiceGroup)
-                .ToList());
+                .ToList(),
+            item.ImageUrl,
+            item.IsOutOfStock);
     }
 
     private static ChoiceGroupCard MapChoiceGroup(MenuItemChoiceGroupDto group)
@@ -87,9 +89,9 @@ public partial class OrderManagementView
         if (category == "All")
         {
             AllCategoryButton.Tag = "Active";
-            foreach (Button sibling in FindSiblingButtons(AllCategoryButton))
+            foreach (FilterOption option in CategoryFilterOptions)
             {
-                sibling.Tag = null;
+                option.IsActive = false;
             }
 
             ApplyMenuFilters();
@@ -97,12 +99,10 @@ public partial class OrderManagementView
         }
 
         AllCategoryButton.Tag = null;
-        foreach (Button sibling in FindSiblingButtons(button))
+        foreach (FilterOption option in CategoryFilterOptions)
         {
-            sibling.Tag = null;
+            option.IsActive = string.Equals(option.Value, category, StringComparison.OrdinalIgnoreCase);
         }
-
-        button.Tag = "Active";
         ApplyMenuFilters();
     }
 
@@ -113,9 +113,24 @@ public partial class OrderManagementView
             return;
         }
 
+        if (item.IsOutOfStock)
+        {
+            ShowCustomMessageBox(
+                "Món này đang hết hàng, vui lòng mở bán lại trong Quản lý món trước khi thêm vào đơn.",
+                "Thêm món",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         if (!_usesApiData)
         {
-            EnsureSelectedBill();
+            ShowCustomMessageBox(
+                "Chưa kết nối được dữ liệu database. Vui lòng chạy API và tải lại màn Order trước khi thêm món.",
+                "Thêm món",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
         }
 
         AddMenuItemDialogResult? result = ShowAddMenuItemDialog(item);
@@ -242,7 +257,7 @@ public partial class OrderManagementView
                 {
                     TableId = table.TableId,
                     TargetBillId = targetBillId,
-                    SalesChannelCode = "DINE_IN",
+                    SalesChannelCode = GetSelectedBillSalesChannelCode(),
                     Items =
                     [
                         new CreateOrderItemRequest
@@ -276,33 +291,57 @@ public partial class OrderManagementView
             }
         }
 
-        BillPreview bill = EnsureSelectedBill();
-        string lineDescription = BuildBillLineDescription(choiceSummary, note);
-        BillLinePreview? existingLine = bill.Lines.FirstOrDefault(x =>
-            x.MenuItemId == item.MenuItemId &&
-            string.Equals(x.ChoiceSummary, lineDescription, StringComparison.Ordinal) &&
-            x.UnitPrice == unitPrice);
+        ShowCustomMessageBox(
+            "Chưa kết nối được dữ liệu database. Không thể thêm món bằng dữ liệu tạm.",
+            "Thêm món",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
 
-        if (existingLine is null)
+    private string GetSelectedBillSalesChannelCode()
+    {
+        string? channelCode = _selectedBill?.SelectedChannelCode;
+        return string.IsNullOrWhiteSpace(channelCode) ? "DINE_IN" : channelCode;
+    }
+
+    private async Task ReloadMenuCatalogForSelectedBillAsync()
+    {
+        if (!_usesApiData)
         {
-            bill.Lines.Add(new BillLinePreview(
-                0,
-                item.MenuItemId,
-                item.Name,
-                lineDescription,
-                quantity,
-                0,
-                unitPrice));
-        }
-        else
-        {
-            existingLine.Quantity += quantity;
-            existingLine.NotifyChanged();
+            return;
         }
 
-        _selectedTable?.MarkServing();
-        ApplyTableFilters();
-        RefreshBill();
+        string salesChannelCode = GetSelectedBillSalesChannelCode();
+        if (string.Equals(_loadedMenuSalesChannelCode, salesChannelCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            MenuCatalogDto catalog = await _apiClient.GetMenuCatalogAsync(salesChannelCode);
+            Dictionary<int, string> categoryNames = catalog.Categories
+                .ToDictionary(x => x.CategoryId, x => x.CategoryName);
+            Dictionary<int, int> categoryOrders = catalog.Categories
+                .ToDictionary(x => x.CategoryId, x => x.DisplayOrder);
+
+            List<MenuItemCard> loadedMenuItems = catalog.Items
+                .OrderBy(x => categoryOrders.TryGetValue(x.CategoryId, out int categoryOrder) ? categoryOrder : int.MaxValue)
+                .ThenBy(x => categoryNames.TryGetValue(x.CategoryId, out string? categoryName) ? categoryName : string.Empty)
+                .ThenBy(x => x.Name)
+                .Select(x => MapMenuItem(x, categoryNames))
+                .ToList();
+
+            _menuItems.Clear();
+            _menuItems.AddRange(loadedMenuItems);
+            _loadedMenuSalesChannelCode = salesChannelCode;
+            RebuildCategoryFilters(catalog.Categories);
+            ApplyMenuFilters();
+        }
+        catch
+        {
+            // Keep the previous catalog visible if channel-specific pricing cannot be loaded.
+        }
     }
 
     private void OpenChoiceSelection(MenuItemCard item)
@@ -386,99 +425,6 @@ public partial class OrderManagementView
 
         OnPropertyChanged(nameof(MenuPageText));
     }
-
-    private static List<MenuItemCard> CreateMockMenuItems()
-    {
-        List<ChoiceGroupCard> drinkGroups =
-        [
-            new ChoiceGroupCard("Size", true, 1, 1,
-            [
-                new ChoiceOptionCard("M", 0m),
-                new ChoiceOptionCard("L", 7000m),
-                new ChoiceOptionCard("XL", 12000m)
-            ]),
-            new ChoiceGroupCard("Đường", true, 1, 2,
-            [
-                new ChoiceOptionCard("0% đường", 0m),
-                new ChoiceOptionCard("50% đường", 0m),
-                new ChoiceOptionCard("100% đường", 0m)
-            ]),
-            new ChoiceGroupCard("Đá", true, 1, 3,
-            [
-                new ChoiceOptionCard("Không đá", 0m),
-                new ChoiceOptionCard("Ít đá", 0m),
-                new ChoiceOptionCard("Bình thường", 0m)
-            ])
-        ];
-
-        List<ChoiceGroupCard> teaWithToppingGroups =
-        [
-            .. drinkGroups,
-            new ChoiceGroupCard("Topping", false, 2, 4,
-            [
-                new ChoiceOptionCard("Trân châu đen", 7000m),
-                new ChoiceOptionCard("Thạch cà phê", 6000m),
-                new ChoiceOptionCard("Pudding trứng", 8000m)
-            ])
-        ];
-
-        List<ChoiceGroupCard> milkTeaGroups =
-        [
-            .. drinkGroups,
-            new ChoiceGroupCard("Topping", false, 3, 4,
-            [
-                new ChoiceOptionCard("Trân châu đen", 7000m),
-                new ChoiceOptionCard("Thạch cà phê", 6000m),
-                new ChoiceOptionCard("Pudding trứng", 8000m)
-            ])
-        ];
-
-        List<ChoiceGroupCard> coffeeGroups =
-        [
-            new ChoiceGroupCard("Đường", true, 1, 1,
-            [
-                new ChoiceOptionCard("0% đường", 0m),
-                new ChoiceOptionCard("50% đường", 0m),
-                new ChoiceOptionCard("100% đường", 0m)
-            ]),
-            new ChoiceGroupCard("Đá", true, 1, 2,
-            [
-                new ChoiceOptionCard("Không đá", 0m),
-                new ChoiceOptionCard("Ít đá", 0m),
-                new ChoiceOptionCard("Bình thường", 0m)
-            ])
-        ];
-
-        List<ChoiceGroupCard> spicyGroups =
-        [
-            new ChoiceGroupCard("Mức cay", true, 1, 1,
-            [
-                new ChoiceOptionCard("Không cay", 0m),
-                new ChoiceOptionCard("Cay vừa", 0m),
-                new ChoiceOptionCard("Rất cay", 0m)
-            ])
-        ];
-
-        return
-        [
-            new MenuItemCard(1, "MILANO", "Do uong", 30000m, "#F59E0B"),
-            new MenuItemCard(2, "APEROL SPRITZ", "Do uong", 30000m, "#F97316"),
-            new MenuItemCard(3, "CUBA LIBRE", "Do uong", 30000m, "#7C2D12"),
-            new MenuItemCard(4, "GIN FIZZ", "Do uong", 30000m, "#EAB308"),
-            new MenuItemCard(5, "BLOODY MARY", "Do uong", 30000m, "#DC2626"),
-            new MenuItemCard(6, "Cơm gà xối mỡ", "Mon chinh", 55000m, "#F97316"),
-            new MenuItemCard(7, "Mì bò cay", "Mon chinh", 65000m, "#EF4444", spicyGroups),
-            new MenuItemCard(8, "Bún thịt nướng", "Mon chinh", 50000m, "#84CC16"),
-            new MenuItemCard(9, "Cơm sườn trứng", "Mon chinh", 60000m, "#A16207"),
-            new MenuItemCard(10, "Trà đào", "Do uong", 30000m, "#FB923C", teaWithToppingGroups),
-            new MenuItemCard(11, "Trà sữa truyền thống", "Do uong", 35000m, "#A16207", milkTeaGroups),
-            new MenuItemCard(12, "Cà phê sữa", "Do uong", 28000m, "#78350F", coffeeGroups),
-            new MenuItemCard(13, "Khoai tây chiên", "Mon them", 35000m, "#EAB308"),
-            new MenuItemCard(14, "Salad nhỏ", "Mon them", 25000m, "#22C55E"),
-            new MenuItemCard(15, "Xúc xích Đức nướng", "Mon them", 125000m, "#B45309")
-        ];
-    }
-
 
     private string BuildPendingChoiceSummary()
     {

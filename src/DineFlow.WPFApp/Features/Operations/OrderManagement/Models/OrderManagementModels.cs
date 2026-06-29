@@ -43,6 +43,36 @@ internal sealed record AddMenuItemDialogResult(
         decimal UnitPrice,
         IReadOnlyList<SelectedChoiceGroupRequest> SelectedChoices);
 
+public sealed class FilterOption : INotifyPropertyChanged
+{
+    private bool _isActive;
+
+    public FilterOption(string value, string label)
+    {
+        Value = value;
+        Label = label;
+    }
+
+    public string Value { get; }
+    public string Label { get; }
+
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (_isActive == value) return;
+            _isActive = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsActive)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ActiveTag)));
+        }
+    }
+
+    public string ActiveTag => IsActive ? "Active" : string.Empty;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+}
+
 public sealed class PendingOrderCard
     {
         public PendingOrderCard(OrderDetailDto order, string tableName)
@@ -133,26 +163,35 @@ public sealed class ServiceRequestCard
 
 public sealed class TableCard : INotifyPropertyChanged
     {
-        private int _nextBillNo = 1;
-
         public TableCard(string tableName, string area, string status)
-            : this(0, null, tableName, area, status)
+            : this(0, null, tableName, area, status, int.MaxValue, 0)
         {
         }
 
-        public TableCard(int tableId, int? tableSessionId, string tableName, string area, string status)
+        public TableCard(
+            int tableId,
+            int? tableSessionId,
+            string tableName,
+            string area,
+            string status,
+            int areaDisplayOrder = int.MaxValue,
+            int tableDisplayOrder = 0)
         {
             TableId = tableId;
             TableSessionId = tableSessionId;
             TableName = tableName;
             Area = area;
             Status = status;
+            AreaDisplayOrder = areaDisplayOrder;
+            TableDisplayOrder = tableDisplayOrder;
         }
 
         public int TableId { get; }
         public int? TableSessionId { get; set; }
         public string TableName { get; }
         public string Area { get; }
+        public int AreaDisplayOrder { get; }
+        public int TableDisplayOrder { get; }
         public string Status { get; set; }
         public bool IsSelected { get; set; }
         public ObservableCollection<BillPreview> Bills { get; } = [];
@@ -173,27 +212,6 @@ public sealed class TableCard : INotifyPropertyChanged
             : OrderManagementFormatting.Money(Bills.Sum(x => x.Total));
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
-        public BillPreview CreateNextBill(bool isDefault = false)
-        {
-            if (isDefault || Bills.Count == 0)
-            {
-                foreach (BillPreview bill in Bills)
-                {
-                    bill.IsDefault = false;
-                    bill.NotifyChanged();
-                }
-
-                isDefault = true;
-            }
-
-            BillPreview newBill = new(0, _nextBillNo, $"Bill {_nextBillNo}", isDefault);
-            _nextBillNo++;
-            Bills.Add(newBill);
-            TableSessionId ??= _nextBillNo * -1;
-            MarkServing();
-            return newBill;
-        }
 
         public void MarkServing()
         {
@@ -224,14 +242,18 @@ public sealed class MenuItemCard
             string category,
             decimal price,
             string color,
-            IReadOnlyList<ChoiceGroupCard>? choiceGroups = null)
+            IReadOnlyList<ChoiceGroupCard>? choiceGroups = null,
+            string? imageUrl = null,
+            bool isOutOfStock = false)
         {
             MenuItemId = menuItemId;
             Name = name;
             Category = category;
             Price = price;
             Color = color;
+            ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl;
             ChoiceGroups = choiceGroups ?? [];
+            IsOutOfStock = isOutOfStock;
         }
 
         public int MenuItemId { get; }
@@ -239,7 +261,11 @@ public sealed class MenuItemCard
         public string Category { get; }
         public decimal Price { get; }
         public string Color { get; }
+        public string? ImageUrl { get; }
+        public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
         public IReadOnlyList<ChoiceGroupCard> ChoiceGroups { get; }
+        public bool IsOutOfStock { get; }
+        public bool IsOrderable => !IsOutOfStock;
         public string PriceText => OrderManagementFormatting.Money(Price);
         public string Initials => string.Join("", Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
     }
@@ -352,6 +378,44 @@ public sealed class BillPreview : INotifyPropertyChanged
             IsDefault = isDefault;
         }
 
+        private string _selectedChannelName = "Bảng giá chung";
+        private string _selectedChannelCode = "DINE_IN";
+        private int _selectedChannelId;
+
+        public int SelectedChannelId
+        {
+            get => _selectedChannelId;
+            set
+            {
+                if (_selectedChannelId == value) return;
+                _selectedChannelId = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelId)));
+            }
+        }
+
+        public string SelectedChannelCode
+        {
+            get => _selectedChannelCode;
+            set
+            {
+                string normalized = string.IsNullOrWhiteSpace(value) ? "DINE_IN" : value.Trim();
+                if (_selectedChannelCode == normalized) return;
+                _selectedChannelCode = normalized;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelCode)));
+            }
+        }
+
+        public string SelectedChannelName
+        {
+            get => _selectedChannelName;
+            set
+            {
+                if (_selectedChannelName == value) return;
+                _selectedChannelName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelName)));
+            }
+        }
+
         public int BillId { get; }
         public int BillNo { get; }
         public string BillName { get; private set; }
@@ -374,6 +438,9 @@ public sealed class BillPreview : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelectedTag)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Total)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelId)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelCode)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChannelName)));
         }
 
         public void CopyFrom(BillPreview source)
@@ -381,6 +448,9 @@ public sealed class BillPreview : INotifyPropertyChanged
             BillName = source.BillName;
             IsDefault = source.IsDefault;
             IsSelected = source.IsSelected;
+            SelectedChannelId = source.SelectedChannelId;
+            SelectedChannelCode = source.SelectedChannelCode;
+            SelectedChannelName = source.SelectedChannelName;
             Lines.Clear();
 
             foreach (BillLinePreview line in source.Lines)

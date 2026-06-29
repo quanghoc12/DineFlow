@@ -22,6 +22,7 @@ public interface IMenuManagementDao
     Task<MenuItemChoiceGroup?> GetAssignmentAsync(int menuItemId, int choiceGroupId, CancellationToken cancellationToken = default);
     Task AddAssignmentAsync(MenuItemChoiceGroup assignment, CancellationToken cancellationToken = default);
     void RemoveAssignment(MenuItemChoiceGroup assignment);
+    void RemoveCategory(Category category);
     Task<List<SalesChannel>> GetSalesChannelsAsync(CancellationToken cancellationToken = default);
     Task<MenuItemChannelPrice?> GetMenuItemChannelPriceAsync(int menuItemId, int salesChannelId, CancellationToken cancellationToken = default);
     Task AddMenuItemChannelPriceAsync(MenuItemChannelPrice price, CancellationToken cancellationToken = default);

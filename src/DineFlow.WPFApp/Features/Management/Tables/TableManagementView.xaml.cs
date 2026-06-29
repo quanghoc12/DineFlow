@@ -1,6 +1,6 @@
 using DineFlow.BusinessObjects.Tables;
-using DineFlow.WPFApp.ViewModels;
 using DineFlow.Services.Tables;
+using DineFlow.WPFApp.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,79 +21,65 @@ public partial class TableManagementView : UserControl
 
     public Task LoadAsync() => _viewModel.LoadAsync();
 
-    private async void AreaButton_Click(object sender, RoutedEventArgs e)
+    private void AreaTab_Click(object sender, RoutedEventArgs e)
     {
-        new AreaManagementWindow(_service) { Owner = Window.GetWindow(this) }.ShowDialog();
-        await _viewModel.LoadAsync();
+        AreaPanel.Visibility = Visibility.Visible;
+        TablePanel.Visibility = Visibility.Collapsed;
+        AreaTabButton.Tag = "Active";
+        TableTabButton.Tag = null;
+    }
+
+    private void TableTab_Click(object sender, RoutedEventArgs e)
+    {
+        AreaPanel.Visibility = Visibility.Collapsed;
+        TablePanel.Visibility = Visibility.Visible;
+        AreaTabButton.Tag = null;
+        TableTabButton.Tag = "Active";
+    }
+
+    private async void AddArea_Click(object sender, RoutedEventArgs e)
+    {
+        AreaEditorWindow dialog = new() { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true)
+            await _viewModel.SaveAreaAsync(null, dialog.AreaNameValue, dialog.DisplayOrderValue);
+    }
+
+    private async void EditArea_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ManagedAreaDto area) return;
+        AreaEditorWindow dialog = new(area) { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true)
+            await _viewModel.SaveAreaAsync(area, dialog.AreaNameValue, dialog.DisplayOrderValue);
+    }
+
+    private async void ToggleArea_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ManagedAreaDto area) return;
+        await _viewModel.ToggleAreaActiveAsync(area);
     }
 
     private async void CreateButton_Click(object sender, RoutedEventArgs e)
     {
-        TableEditorWindow dialog = new();
-        if (dialog.ShowDialog() == true)
-        {
-            await _viewModel.CreateAsync(dialog.TableNameValue, dialog.AreaValue);
-        }
+        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas)
+            { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true && dialog.AreaValue is { } area)
+            await _viewModel.CreateAsync(dialog.TableNameValue, area, dialog.DisplayOrderValue);
     }
 
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
+    private async void EditTableRow_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelection(out ManagedTableDto table)) return;
-        TableEditorWindow dialog = new(table);
-        if (dialog.ShowDialog() == true)
-        {
-            await _viewModel.UpdateAsync(table, dialog.TableNameValue, dialog.AreaValue);
-        }
+        if ((sender as FrameworkElement)?.Tag is not ManagedTableDto table) return;
+        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas, table)
+            { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true && dialog.AreaValue is { } area)
+            await _viewModel.UpdateAsync(table, dialog.TableNameValue, area, dialog.DisplayOrderValue);
+        else
+            await _viewModel.LoadAsync();
     }
 
-    private async void ToggleActiveButton_Click(object sender, RoutedEventArgs e)
+    private void PreviewQrRow_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelection(out ManagedTableDto table)) return;
-        string action = table.IsActive ? "khóa" : "mở lại";
-        if (MessageBox.Show(
-                $"Bạn có chắc muốn {action} bàn {table.TableName}?",
-                "Xác nhận",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question) == MessageBoxResult.Yes)
-        {
-            await _viewModel.ToggleActiveAsync(table);
-        }
-    }
-
-    private async void ResetQrButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelection(out ManagedTableDto table)) return;
-        if (MessageBox.Show(
-                "QR cũ sẽ mất hiệu lực ngay lập tức. Bạn có chắc muốn tạo lại?",
-                "Tạo lại QR",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning) == MessageBoxResult.Yes)
-        {
-            await _viewModel.ResetQrAsync(table);
-        }
-    }
-
-    private void PreviewQrButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelection(out ManagedTableDto table)) return;
+        if ((sender as FrameworkElement)?.Tag is not ManagedTableDto table) return;
         new QrPreviewWindow(table) { Owner = Window.GetWindow(this) }.ShowDialog();
-    }
-
-    private void CopyUrlButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelection(out ManagedTableDto table)) return;
-        Clipboard.SetText(table.QrUrl);
-    }
-
-    private bool TryGetSelection(out ManagedTableDto table)
-    {
-        if (_viewModel.SelectedTable is { } selected)
-        {
-            table = selected;
-            return true;
-        }
-        table = null!;
-        MessageBox.Show("Vui lòng chọn một bàn.", "Quản lý bàn");
-        return false;
     }
 }

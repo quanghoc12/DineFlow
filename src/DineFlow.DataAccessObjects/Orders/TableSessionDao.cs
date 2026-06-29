@@ -21,6 +21,7 @@ public class TableSessionDao : ITableSessionDao
         CancellationToken cancellationToken = default)
     {
         IQueryable<DiningTable> query = _dbContext.DiningTables
+            .Include(x => x.AreaEntity)
             .Include(x => x.TableSessions);
 
         if (activeOnly)
@@ -37,11 +38,13 @@ public class TableSessionDao : ITableSessionDao
         if (!string.IsNullOrWhiteSpace(area))
         {
             string normalizedArea = area.Trim();
-            query = query.Where(x => x.Area == normalizedArea);
+            query = query.Where(x => x.Area == normalizedArea || (x.AreaEntity != null && x.AreaEntity.AreaName == normalizedArea));
         }
 
         return await query
-            .OrderBy(x => x.Area)
+            .OrderBy(x => x.AreaEntity != null ? x.AreaEntity.DisplayOrder : int.MaxValue)
+            .ThenBy(x => x.AreaEntity != null ? x.AreaEntity.AreaName : x.Area)
+            .ThenBy(x => x.DisplayOrder)
             .ThenBy(x => x.TableName)
             .ToListAsync(cancellationToken);
     }

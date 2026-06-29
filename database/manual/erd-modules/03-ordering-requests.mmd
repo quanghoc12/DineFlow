@@ -1,0 +1,77 @@
+erDiagram
+    ORDERS {
+        int OrderId PK
+        int TableSessionId FK
+        int SessionCustomerId FK "nullable"
+        int SalesChannelId FK
+        string OrderCode UK
+        string OrderSource
+        string ExternalOrderCode
+        string ClientToken
+        string Status
+        string PrintStatus
+        string CustomerNote
+        string SystemNote
+        string CancelReason
+        datetime CreatedAt
+        datetime UpdatedAt
+        datetime CancelledAt
+        datetime PrintedAt
+        string PrintError
+        int CreatedBy FK "nullable"
+        int CancelledBy FK "nullable"
+    }
+
+    ORDER_ITEMS {
+        int OrderItemId PK
+        int OrderId FK
+        int MenuItemId FK
+        string MenuItemNameSnapshot
+        decimal BasePriceSnapshot
+        decimal ChannelExtraPriceSnapshot
+        decimal FinalUnitPriceSnapshot
+        int Quantity
+        string Note
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    ORDER_ITEM_SELECTED_CHOICES {
+        int OrderItemSelectedChoiceId PK
+        int OrderItemId FK
+        int ChoiceGroupId FK
+        int ChoiceItemId FK
+        string GroupNameSnapshot
+        string ChoiceNameSnapshot
+        decimal ExtraPriceSnapshot
+        decimal ChannelExtraPriceSnapshot
+        decimal FinalExtraPriceSnapshot
+        datetime CreatedAt
+    }
+
+    SERVICE_REQUESTS {
+        int RequestId PK
+        int TableSessionId FK
+        int SessionCustomerId FK "nullable"
+        string ClientToken
+        string RequestType "CallStaff, PaymentRequest"
+        string Reason
+        string PaymentMethod
+        string Message
+        string Status
+        datetime CreatedAt
+        datetime ConfirmedAt
+        int ConfirmedBy FK "nullable"
+    }
+
+    TABLE_SESSIONS ||--o{ TABLE_SESSION_CUSTOMERS : has
+    TABLE_SESSIONS ||--o{ ORDERS : has
+    TABLE_SESSION_CUSTOMERS ||--o{ ORDERS : places
+    SALES_CHANNELS ||--o{ ORDERS : source_for
+    ORDERS ||--o{ ORDER_ITEMS : contains
+    MENU_ITEMS ||--o{ ORDER_ITEMS : ordered_as
+    ORDER_ITEMS ||--o{ ORDER_ITEM_SELECTED_CHOICES : has
+    CHOICE_GROUPS ||--o{ ORDER_ITEM_SELECTED_CHOICES : selected_group
+    CHOICE_ITEMS ||--o{ ORDER_ITEM_SELECTED_CHOICES : selected_choice
+    TABLE_SESSIONS ||--o{ SERVICE_REQUESTS : has
+    TABLE_SESSION_CUSTOMERS ||--o{ SERVICE_REQUESTS : sends

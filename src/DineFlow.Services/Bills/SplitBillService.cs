@@ -1,6 +1,8 @@
 using DineFlow.BusinessObjects.Bills;
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.Repositories.Bills;
 using DineFlow.Repositories.Common;
+using DineFlow.Repositories.Menu;
 using DineFlow.Services.Common;
 using DineFlow.Services.Realtime;
 
@@ -8,16 +10,20 @@ namespace DineFlow.Services.Bills;
 
 public class SplitBillService : ISplitBillService
 {
+    private const string DefaultSalesChannelCode = "DINE_IN";
     private readonly IBillRepository _billRepository;
+    private readonly IMenuManagementRepository _menuManagementRepository;
     private readonly IRealtimeNotificationService _realtimeNotificationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public SplitBillService(
         IBillRepository billRepository,
+        IMenuManagementRepository menuManagementRepository,
         IRealtimeNotificationService realtimeNotificationService,
         IUnitOfWork unitOfWork)
     {
         _billRepository = billRepository;
+        _menuManagementRepository = menuManagementRepository;
         _realtimeNotificationService = realtimeNotificationService;
         _unitOfWork = unitOfWork;
     }
@@ -32,7 +38,7 @@ public class SplitBillService : ISplitBillService
             Bill sourceBill = await GetUnpaidBillAsync(request.SourceBillId, ct);
             Bill targetBill = request.TargetBillId.HasValue
                 ? await GetUnpaidBillAsync(request.TargetBillId.Value, ct)
-                : await CreateTargetBillAsync(sourceBill.TableSessionId, request.NewBillName, currentUserId, ct);
+                : await CreateTargetBillAsync(sourceBill.TableSessionId, request.NewBillName, currentUserId, sourceBill, ct);
 
             ValidateSourceBillWillRemainNonEmpty(sourceBill, new Dictionary<int, int>
             {
@@ -94,6 +100,7 @@ public class SplitBillService : ISplitBillService
         {
             Bill sourceBill = await GetUnpaidBillAsync(request.SourceBillId, ct);
             Bill targetBill = await GetUnpaidBillAsync(request.TargetBillId, ct);
+            EnsureSameSalesChannel(sourceBill, targetBill);
 
             if (sourceBill.BillId == targetBill.BillId)
             {
@@ -168,11 +175,15 @@ public class SplitBillService : ISplitBillService
         int tableSessionId,
         string billName,
         int currentUserId,
+        int? salesChannelId = null,
         CancellationToken cancellationToken = default)
     {
         BillDto dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            Bill bill = await CreateNewBillAsync(tableSessionId, billName, currentUserId, ct);
+            SalesChannel salesChannel = salesChannelId.HasValue
+                ? await ResolveSalesChannelByIdAsync(salesChannelId.Value, ct)
+                : await ResolveSalesChannelByCodeAsync(DefaultSalesChannelCode, ct);
+            Bill bill = await CreateNewBillAsync(tableSessionId, billName, currentUserId, salesChannel, ct);
             await _billRepository.AddBillAsync(bill, ct);
             await _unitOfWork.SaveChangesAsync(ct);
             return MapBill(bill);
@@ -207,9 +218,10 @@ public class SplitBillService : ISplitBillService
         int tableSessionId,
         string? billName,
         int currentUserId,
+        Bill sourceBill,
         CancellationToken cancellationToken)
     {
-        Bill bill = await CreateNewBillAsync(tableSessionId, billName, currentUserId, cancellationToken);
+        Bill bill = await CreateNewBillAsync(tableSessionId, billName, currentUserId, GetSalesChannelSnapshot(sourceBill), cancellationToken);
         await _billRepository.AddBillAsync(bill, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return bill;
@@ -223,7 +235,7 @@ public class SplitBillService : ISplitBillService
     {
         if (request.CreateNewBill)
         {
-            return await CreateTargetBillAsync(sourceBill.TableSessionId, request.NewBillName, currentUserId, cancellationToken);
+            return await CreateTargetBillAsync(sourceBill.TableSessionId, request.NewBillName, currentUserId, sourceBill, cancellationToken);
         }
 
         if (!request.TargetBillId.HasValue)
@@ -237,6 +249,7 @@ public class SplitBillService : ISplitBillService
         {
             throw new BusinessException("BILL_SESSION_MISMATCH", "Source and target bill must belong to the same table session.");
         }
+        EnsureSameSalesChannel(sourceBill, targetBill);
 
         return targetBill;
     }
@@ -245,6 +258,7 @@ public class SplitBillService : ISplitBillService
         int tableSessionId,
         string? billName,
         int currentUserId,
+        SalesChannel salesChannel,
         CancellationToken cancellationToken)
     {
         int nextBillNo = await _billRepository.GetNextBillNoAsync(tableSessionId, cancellationToken);
@@ -252,6 +266,9 @@ public class SplitBillService : ISplitBillService
         return new Bill
         {
             TableSessionId = tableSessionId,
+            SalesChannelId = salesChannel.SalesChannelId,
+            SalesChannelCodeSnapshot = salesChannel.ChannelCode,
+            SalesChannelNameSnapshot = salesChannel.ChannelName,
             BillCode = $"B{DateTime.UtcNow:yyyyMMddHHmmssfff}",
             BillNo = nextBillNo,
             BillName = string.IsNullOrWhiteSpace(billName) ? $"Bill {nextBillNo}" : billName.Trim(),
@@ -278,6 +295,7 @@ public class SplitBillService : ISplitBillService
         {
             throw new BusinessException("BILL_SESSION_MISMATCH", "Source and target bill must belong to the same table session.");
         }
+        EnsureSameSalesChannel(sourceBill, targetBill);
 
         BillDetail sourceDetail = sourceBill.BillDetails.FirstOrDefault(x => x.BillDetailId == billDetailId)
             ?? throw new BusinessException("BILL_DETAIL_NOT_FOUND", "Bill detail does not exist in source bill.");
@@ -360,11 +378,15 @@ public class SplitBillService : ISplitBillService
         {
             BillId = targetBillId,
             MenuItemId = sourceDetail.MenuItemId,
+            SalesChannelId = sourceDetail.SalesChannelId,
             ItemName = sourceDetail.ItemName,
             ChoiceSummary = Normalize(sourceDetail.ChoiceSummary),
             Note = Normalize(sourceDetail.Note),
             Quantity = quantity,
             NotifiedQuantity = Math.Min(sourceDetail.NotifiedQuantity, quantity),
+            BasePriceSnapshot = sourceDetail.BasePriceSnapshot,
+            MenuItemChannelExtraPriceSnapshot = sourceDetail.MenuItemChannelExtraPriceSnapshot,
+            ChoiceExtraPriceSnapshot = sourceDetail.ChoiceExtraPriceSnapshot,
             UnitPrice = sourceDetail.UnitPrice,
             TotalPrice = quantity * sourceDetail.UnitPrice,
             CreatedAt = DateTime.UtcNow
@@ -375,6 +397,7 @@ public class SplitBillService : ISplitBillService
     {
         return details.FirstOrDefault(x =>
             x.MenuItemId == incoming.MenuItemId &&
+            x.SalesChannelId == incoming.SalesChannelId &&
             Normalize(x.ChoiceSummary) == Normalize(incoming.ChoiceSummary) &&
             x.UnitPrice == incoming.UnitPrice &&
             Normalize(x.Note) == Normalize(incoming.Note));
@@ -398,6 +421,9 @@ public class SplitBillService : ISplitBillService
             BillId = bill.BillId,
             BillCode = bill.BillCode,
             TableSessionId = bill.TableSessionId,
+            SalesChannelId = bill.SalesChannelId,
+            SalesChannelCode = bill.SalesChannelCodeSnapshot,
+            SalesChannelName = bill.SalesChannelNameSnapshot,
             BillNo = bill.BillNo,
             BillName = bill.BillName,
             IsDefault = bill.IsDefault,
@@ -418,11 +444,15 @@ public class SplitBillService : ISplitBillService
             BillDetailId = detail.BillDetailId,
             BillId = detail.BillId,
             MenuItemId = detail.MenuItemId,
+            SalesChannelId = detail.SalesChannelId,
             ItemName = detail.ItemName,
             ChoiceSummary = detail.ChoiceSummary,
             Note = detail.Note,
             Quantity = detail.Quantity,
             NotifiedQuantity = detail.NotifiedQuantity,
+            BasePriceSnapshot = detail.BasePriceSnapshot,
+            MenuItemChannelExtraPriceSnapshot = detail.MenuItemChannelExtraPriceSnapshot,
+            ChoiceExtraPriceSnapshot = detail.ChoiceExtraPriceSnapshot,
             UnitPrice = detail.UnitPrice,
             TotalPrice = detail.TotalPrice
         };
@@ -448,6 +478,42 @@ public class SplitBillService : ISplitBillService
     {
         string? normalized = value?.Trim();
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+    }
+
+    private async Task<SalesChannel> ResolveSalesChannelByCodeAsync(string salesChannelCode, CancellationToken cancellationToken)
+    {
+        List<SalesChannel> channels = await _menuManagementRepository.GetSalesChannelsAsync(cancellationToken);
+        return channels.FirstOrDefault(channel =>
+                channel.ChannelCode.Equals(salesChannelCode, StringComparison.OrdinalIgnoreCase) &&
+                channel.IsActive &&
+                !channel.IsDeleted)
+            ?? throw new BusinessException("CHANNEL_NOT_FOUND", "Sales channel does not exist.");
+    }
+
+    private async Task<SalesChannel> ResolveSalesChannelByIdAsync(int salesChannelId, CancellationToken cancellationToken)
+    {
+        SalesChannel? channel = await _menuManagementRepository.GetSalesChannelAsync(salesChannelId, cancellationToken);
+        return channel is not null && channel.IsActive && !channel.IsDeleted
+            ? channel
+            : throw new BusinessException("CHANNEL_NOT_FOUND", "Sales channel does not exist.");
+    }
+
+    private static SalesChannel GetSalesChannelSnapshot(Bill bill) => new()
+    {
+        SalesChannelId = bill.SalesChannelId,
+        ChannelCode = bill.SalesChannelCodeSnapshot,
+        ChannelName = bill.SalesChannelNameSnapshot,
+        IsActive = true
+    };
+
+    private static void EnsureSameSalesChannel(Bill sourceBill, Bill targetBill)
+    {
+        if (sourceBill.SalesChannelId != targetBill.SalesChannelId)
+        {
+            throw new BusinessException(
+                "BILL_CHANNEL_MISMATCH",
+                "Source and target bill must use the same sales channel.");
+        }
     }
 
     private async Task NotifyBillChangedAsync(

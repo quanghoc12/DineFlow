@@ -234,11 +234,7 @@ public partial class OrderManagementView
                 }
                 else
                 {
-                    BillPreview targetBill = targetCombo.SelectedValue as BillPreview ?? _selectedTable.CreateNextBill();
-                    ApplySplit(_selectedBill, targetBill, selections);
-                    ReloadCurrentBills(_selectedTable);
-                    SetSelectedBill(targetBill);
-                    RefreshBill();
+                    throw new InvalidOperationException("Không thể tách bill bằng dữ liệu tạm. Vui lòng kết nối database.");
                 }
 
                 dialog.Close();

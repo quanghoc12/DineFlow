@@ -1,10 +1,11 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
@@ -18,9 +19,12 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
     private readonly StaffOrderApiClient _apiClient;
     private readonly StaffRealtimeClient _realtimeClient;
     private readonly PdfDemoPrintService _pdfPrintService;
+    private readonly IMenuManagementService _menuManagementService;
+    private readonly IBillService _billService;
     private readonly SemaphoreSlim _billReloadLock = new(1, 1);
     private readonly SemaphoreSlim _pendingOrdersReloadLock = new(1, 1);
     private readonly SemaphoreSlim _serviceRequestsReloadLock = new(1, 1);
+    private readonly SemaphoreSlim _apiReloadLock = new(1, 1);
     private readonly List<TableCard> _tables;
     private readonly List<MenuItemCard> _menuItems;
     private readonly HashSet<string> _selectedAreas = [];
@@ -30,6 +34,7 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
     private string? _selectedCategory;
     private bool _usesApiData;
     private bool _isAddingMenuItem;
+    private string _loadedMenuSalesChannelCode = "DINE_IN";
     private TableCard? _selectedTable;
     private BillPreview? _selectedBill;
     private MenuItemCard? _pendingChoiceItem;
@@ -37,6 +42,8 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
 
     public ObservableCollection<TableCard> FilteredTables { get; } = [];
     public ObservableCollection<MenuItemCard> FilteredMenuItems { get; } = [];
+    public ObservableCollection<FilterOption> AreaFilterOptions { get; } = [];
+    public ObservableCollection<FilterOption> CategoryFilterOptions { get; } = [];
     public ObservableCollection<BillPreview> CurrentBills { get; } = [];
     public ObservableCollection<BillLinePreview> CurrentBillLines { get; } = [];
     public ObservableCollection<PendingOrderCard> PendingOrders { get; } = [];
@@ -51,20 +58,23 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
     internal OrderManagementView(
         StaffOrderApiClient apiClient,
         StaffRealtimeClient realtimeClient,
-        PdfDemoPrintService pdfPrintService)
+        PdfDemoPrintService pdfPrintService,
+        IMenuManagementService menuManagementService,
+        IBillService billService)
     {
         _apiClient = apiClient;
         _realtimeClient = realtimeClient;
         _pdfPrintService = pdfPrintService;
+        _menuManagementService = menuManagementService;
+        _billService = billService;
         InitializeComponent();
-        _tables = CreateMockTables();
-        _menuItems = CreateMockMenuItems();
+        _tables = [];
+        _menuItems = [];
         DataContext = this;
 
         ApplyTableFilters();
         ApplyMenuFilters();
         RefreshBill();
-        _ = LoadFromApiAsync();
         RegisterRealtimeHandlers();
         Loaded += OrderManagementView_Loaded;
         Unloaded += OrderManagementView_Unloaded;
@@ -80,6 +90,8 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
         {
             // Realtime is a convenience layer; the manual refresh buttons remain available.
         }
+
+        await LoadFromApiAsync();
     }
 
     private async void OrderManagementView_Unloaded(object sender, RoutedEventArgs e)
@@ -89,6 +101,11 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
 
     private async Task LoadFromApiAsync()
     {
+        if (!await _apiReloadLock.WaitAsync(0))
+        {
+            return;
+        }
+
         try
         {
             IReadOnlyList<DiningTableDto> tables = await _apiClient.GetTablesAsync();
@@ -96,17 +113,25 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
 
             Dictionary<int, string> categoryNames = catalog.Categories
                 .ToDictionary(x => x.CategoryId, x => x.CategoryName);
+            Dictionary<int, int> categoryOrders = catalog.Categories
+                .ToDictionary(x => x.CategoryId, x => x.DisplayOrder);
 
             List<TableCard> loadedTables = [];
 
-            foreach (DiningTableDto tableDto in tables.OrderBy(x => x.Area).ThenBy(x => x.TableName))
+            foreach (DiningTableDto tableDto in tables
+                         .OrderBy(x => x.AreaDisplayOrder)
+                         .ThenBy(x => x.Area)
+                         .ThenBy(x => x.TableDisplayOrder)
+                         .ThenBy(x => x.TableName))
             {
                 TableCard table = new(
                     tableDto.TableId,
                     tableDto.CurrentTableSessionId,
                     tableDto.TableName,
                     tableDto.Area,
-                    tableDto.Status);
+                    tableDto.Status,
+                    tableDto.AreaDisplayOrder,
+                    tableDto.TableDisplayOrder);
 
                 if (tableDto.CurrentTableSessionId.HasValue)
                 {
@@ -117,21 +142,20 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
             }
 
             List<MenuItemCard> loadedMenuItems = catalog.Items
-                .OrderBy(x => categoryNames.TryGetValue(x.CategoryId, out string? categoryName) ? categoryName : string.Empty)
+                .OrderBy(x => categoryOrders.TryGetValue(x.CategoryId, out int categoryOrder) ? categoryOrder : int.MaxValue)
+                .ThenBy(x => categoryNames.TryGetValue(x.CategoryId, out string? categoryName) ? categoryName : string.Empty)
                 .ThenBy(x => x.Name)
                 .Select(x => MapMenuItem(x, categoryNames))
                 .ToList();
-
-            if (loadedTables.Count == 0 || loadedMenuItems.Count == 0)
-            {
-                return;
-            }
 
             _usesApiData = true;
             _tables.Clear();
             _tables.AddRange(loadedTables);
             _menuItems.Clear();
             _menuItems.AddRange(loadedMenuItems);
+            _loadedMenuSalesChannelCode = "DINE_IN";
+            RebuildAreaFilters();
+            RebuildCategoryFilters(catalog.Categories);
 
             _selectedTable = _selectedTable is null
                 ? null
@@ -157,7 +181,75 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
         catch
         {
             _usesApiData = false;
+            _tables.Clear();
+            _menuItems.Clear();
+            AreaFilterOptions.Clear();
+            CategoryFilterOptions.Clear();
+            FilteredTables.Clear();
+            FilteredMenuItems.Clear();
+            PendingOrders.Clear();
+            ServiceRequests.Clear();
+            CurrentBills.Clear();
+            CurrentBillLines.Clear();
+            _selectedTable = null;
+            _selectedBill = null;
+            SelectedTableHeaderButton.Content = "Không tải được dữ liệu";
+            RefreshBill();
+            OnPropertyChanged(nameof(MenuPageText));
         }
+        finally
+        {
+            _apiReloadLock.Release();
+        }
+    }
+
+    private void RebuildAreaFilters()
+    {
+        HashSet<string> availableAreas = _tables
+            .Select(x => x.Area)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        _selectedAreas.RemoveWhere(area => !availableAreas.Contains(area));
+
+        AreaFilterOptions.Clear();
+        foreach (FilterOption option in _tables
+                     .Where(x => !string.IsNullOrWhiteSpace(x.Area))
+                     .GroupBy(x => x.Area)
+                     .OrderBy(group => group.Min(x => x.AreaDisplayOrder))
+                     .ThenBy(group => group.Key)
+                     .Select(group => new FilterOption(group.Key, DisplayArea(group.Key))))
+        {
+            option.IsActive = _selectedAreas.Contains(option.Value);
+            AreaFilterOptions.Add(option);
+        }
+
+        AllAreaButton.Tag = _selectedAreas.Count == 0 ? "Active" : null;
+    }
+
+    private void RebuildCategoryFilters(IEnumerable<MenuCategoryDto> categories)
+    {
+        HashSet<string> availableCategories = categories
+            .Select(x => x.CategoryName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (_selectedCategory is not null && !availableCategories.Contains(_selectedCategory))
+        {
+            _selectedCategory = null;
+        }
+
+        CategoryFilterOptions.Clear();
+        foreach (MenuCategoryDto category in categories.OrderBy(x => x.DisplayOrder).ThenBy(x => x.CategoryName))
+        {
+            FilterOption option = new(category.CategoryName, category.CategoryName)
+            {
+                IsActive = string.Equals(_selectedCategory, category.CategoryName, StringComparison.OrdinalIgnoreCase)
+            };
+            CategoryFilterOptions.Add(option);
+        }
+
+        AllCategoryButton.Tag = string.IsNullOrWhiteSpace(_selectedCategory) ? "Active" : null;
     }
 
 

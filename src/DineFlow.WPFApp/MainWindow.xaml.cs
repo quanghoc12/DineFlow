@@ -3,9 +3,12 @@ using System.Windows.Controls;
 using DineFlow.WPFApp.Features.Operations.OrderManagement;
 using DineFlow.WPFApp.Services;
 using DineFlow.Services.Auth;
+using DineFlow.Services.Bills;
+using DineFlow.Services.Menu;
 using DineFlow.WPFApp.Views;
 using DineFlow.WPFApp.Features.Management.Tables;
 using DineFlow.WPFApp.Features.Management.Menu;
+using DineFlow.BusinessObjects.Auth;
 
 namespace DineFlow.WPFApp;
 
@@ -13,6 +16,8 @@ public partial class MainWindow : Window
 {
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuthService _authService;
+    private readonly IMenuManagementService _menuManagementService;
+    private readonly IBillService _billService;
     private readonly UserManagementView _userManagementView;
     private readonly TableManagementView _tableManagementView;
     private readonly MenuManagementView _menuManagementView;
@@ -20,12 +25,16 @@ public partial class MainWindow : Window
     public MainWindow(
         ICurrentUserService currentUserService,
         IAuthService authService,
+        IMenuManagementService menuManagementService,
+        IBillService billService,
         UserManagementView userManagementView,
         TableManagementView tableManagementView,
         MenuManagementView menuManagementView)
     {
         _currentUserService = currentUserService;
         _authService = authService;
+        _menuManagementService = menuManagementService;
+        _billService = billService;
         _userManagementView = userManagementView;
         _tableManagementView = tableManagementView;
         _menuManagementView = menuManagementView;
@@ -33,21 +42,19 @@ public partial class MainWindow : Window
         CurrentUserText.Text = string.IsNullOrWhiteSpace(_currentUserService.User?.FullName)
             ? _currentUserService.User?.Username ?? string.Empty
             : $"{_currentUserService.User.FullName} ({_currentUserService.User.Role})";
-        bool isAdmin = _currentUserService.User?.Role.Equals(
-            "Admin",
-            StringComparison.OrdinalIgnoreCase) == true;
-        AccountButton.IsEnabled = isAdmin;
-        AccountButton.ToolTip = isAdmin
+        bool canManage = HasManagementRole();
+        AccountButton.IsEnabled = canManage;
+        AccountButton.ToolTip = canManage
             ? "Quản lý tài khoản"
-            : "Chỉ Admin được sử dụng chức năng này";
-        TableButton.IsEnabled = isAdmin;
-        TableButton.ToolTip = isAdmin
+            : "Chỉ Admin hoặc Chủ nhà hàng được sử dụng chức năng này";
+        TableButton.IsEnabled = canManage;
+        TableButton.ToolTip = canManage
             ? "Quản lý bàn và mã QR"
-            : "Chỉ Admin được sử dụng chức năng này";
-        MenuButton.IsEnabled = isAdmin;
-        MenuButton.ToolTip = isAdmin
+            : "Chỉ Admin hoặc Chủ nhà hàng được sử dụng chức năng này";
+        MenuButton.IsEnabled = canManage;
+        MenuButton.ToolTip = canManage
             ? "Quản lý thực đơn"
-            : "Chỉ Admin được sử dụng chức năng này";
+            : "Chỉ Admin hoặc Chủ nhà hàng được sử dụng chức năng này";
         Loaded += MainWindow_Loaded;
         ShowOrderScreen();
     }
@@ -92,9 +99,9 @@ public partial class MainWindow : Window
 
     private async void MenuButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!_currentUserService.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        if (!HasManagementRole())
         {
-            MessageBox.Show("Chỉ Admin được quản lý thực đơn.", "Không có quyền");
+            MessageBox.Show("Chỉ Admin hoặc Chủ nhà hàng được quản lý thực đơn.", "Không có quyền");
             return;
         }
 
@@ -105,9 +112,9 @@ public partial class MainWindow : Window
 
     private async void TableButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!_currentUserService.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        if (!HasManagementRole())
         {
-            MessageBox.Show("Chỉ Admin được quản lý bàn và mã QR.", "Không có quyền");
+            MessageBox.Show("Chỉ Admin hoặc Chủ nhà hàng được quản lý bàn và mã QR.", "Không có quyền");
             return;
         }
 
@@ -118,9 +125,9 @@ public partial class MainWindow : Window
 
     private async void AccountButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!_currentUserService.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        if (!HasManagementRole())
         {
-            MessageBox.Show("Chỉ Admin được quản lý người dùng.", "Không có quyền");
+            MessageBox.Show("Chỉ Admin hoặc Chủ nhà hàng được quản lý người dùng.", "Không có quyền");
             return;
         }
 
@@ -129,12 +136,16 @@ public partial class MainWindow : Window
         await _userManagementView.LoadAsync();
     }
 
+    private bool HasManagementRole() => AuthRoles.CanManage(_currentUserService.User?.Role);
+
     private void ShowOrderScreen()
     {
         ScreenHost.Content = new OrderManagementView(
             new StaffOrderApiClient(),
             new StaffRealtimeClient(),
-            new PdfDemoPrintService());
+            new PdfDemoPrintService(),
+            _menuManagementService,
+            _billService);
         SetActiveButton(OrderButton);
     }
 

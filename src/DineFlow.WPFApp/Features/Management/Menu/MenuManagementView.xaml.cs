@@ -4,14 +4,13 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace DineFlow.WPFApp.Features.Management.Menu;
 
 public partial class MenuManagementView : UserControl
 {
     private readonly MenuManagementViewModel _viewModel;
-    private int? _editingCategoryId;
-
     public MenuManagementView(MenuManagementViewModel viewModel)
     {
         InitializeComponent();
@@ -28,240 +27,200 @@ public partial class MenuManagementView : UserControl
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedCategory)) FillCategoryForm();
-        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedItem))
-        {
-            FillItemForm();
-            FillChannelPriceForms();
-        }
-        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedChoiceGroup))
-        {
-            FillChannelPriceForms();
-        }
-        if (e.PropertyName == nameof(MenuManagementViewModel.SelectedChoiceItem))
-        {
-            FillChannelPriceForms();
-        }
         if (e.PropertyName == nameof(MenuManagementViewModel.SelectedSalesChannel)) FillChannelForm();
     }
 
     private void FillAllForms()
     {
-        FillCategoryForm();
-        FillItemForm();
         FillChannelForm();
-        FillChannelPriceForms();
-        BeginNewCategory();
-    }
-
-    private void FillCategoryForm()
-    {
-        ManagedCategoryDto? category = _viewModel.SelectedCategory;
-        if (category is null || category.CategoryId == 0) return;
-        BeginEditCategory(category);
-    }
-
-    private void FillItemForm()
-    {
-        ManagedMenuItemDto? item = _viewModel.SelectedItem;
-        if (item is null) return;
-        ItemNameBox.Text = item.Name;
-        ItemCategoryBox.SelectedItem = _viewModel.Categories.FirstOrDefault(category => category.CategoryId == item.CategoryId);
-        ItemPriceBox.Text = item.BasePrice.ToString(CultureInfo.InvariantCulture);
-        ItemStockBox.Text = item.Stock?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-        ItemImageBox.Text = item.ImageUrl ?? string.Empty;
-        ItemDescriptionBox.Text = item.Description ?? string.Empty;
-        ItemAvailableBox.IsChecked = item.IsAvailable;
     }
 
     private void FillChannelForm()
     {
+        if (SelectChannelNotice == null || DefaultChannelNotice == null || ChannelPricingTabs == null) return;
+
         ManagedSalesChannelDto? channel = _viewModel.SelectedSalesChannel;
-        if (channel is null) return;
-        ChannelCodeBox.Text = channel.ChannelCode;
-        ChannelNameBox.Text = channel.ChannelName;
-        FillChannelPriceForms();
-    }
-
-    private void FillChannelPriceForms()
-    {
-        MenuChannelPriceBox.Text = _viewModel.GetMenuItemChannelExtraPrice(
-            _viewModel.SelectedItem,
-            _viewModel.SelectedSalesChannel).ToString(CultureInfo.InvariantCulture);
-        ChoiceChannelPriceBox.Text = _viewModel.GetChoiceItemChannelExtraPrice(
-            _viewModel.SelectedChoiceItem,
-            _viewModel.SelectedSalesChannel).ToString(CultureInfo.InvariantCulture);
-    }
-
-    private void AddCategoryButton_Click(object sender, RoutedEventArgs e) => BeginNewCategory();
-
-    private void EditCategoryRow_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is ManagedCategoryDto category)
+        if (channel is null)
         {
-            BeginEditCategory(category);
-        }
-    }
-
-    private void NewCategory_Click(object sender, RoutedEventArgs e)
-    {
-        BeginNewCategory();
-    }
-
-    private void BeginNewCategory()
-    {
-        _editingCategoryId = null;
-        _viewModel.SelectedCategory = null;
-        CategoryFormTitle.Text = "Thêm danh mục mới";
-        CategoryFormHint.Text = "Thứ tự được gợi ý là cuối danh sách. Nếu nhập số đã tồn tại, các danh mục phía sau sẽ tự dịch xuống.";
-        CategoryToggleButton.IsEnabled = false;
-        CategoryNameBox.Clear();
-        CategoryDescriptionBox.Clear();
-        CategoryOrderBox.Text = GetNextCategoryOrder().ToString(CultureInfo.InvariantCulture);
-    }
-
-    private void BeginEditCategory(ManagedCategoryDto category)
-    {
-        _editingCategoryId = category.CategoryId;
-        _viewModel.SelectedCategory = category;
-        CategoryFormTitle.Text = $"Chỉnh sửa: {category.CategoryName}";
-        CategoryFormHint.Text = "Khi đổi thứ tự, các danh mục nằm giữa vị trí cũ và mới sẽ tự dịch chuyển để giữ thứ tự duy nhất.";
-        CategoryToggleButton.IsEnabled = true;
-        CategoryNameBox.Text = category.CategoryName;
-        CategoryDescriptionBox.Text = category.Description ?? string.Empty;
-        CategoryOrderBox.Text = category.DisplayOrder.ToString(CultureInfo.InvariantCulture);
-    }
-
-    private int GetNextCategoryOrder()
-    {
-        return _viewModel.EditableCategories.Count == 0
-            ? 0
-            : _viewModel.EditableCategories.Max(category => category.DisplayOrder) + 1;
-    }
-
-    private async void SaveCategory_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryParseInt(CategoryOrderBox.Text, "Thứ tự danh mục", out int order)) return;
-        await _viewModel.SaveCategoryAsync(new SaveCategoryRequest
-        {
-            CategoryId = _editingCategoryId,
-            CategoryName = CategoryNameBox.Text,
-            Description = CategoryDescriptionBox.Text,
-            DisplayOrder = order
-        });
-        if (string.IsNullOrEmpty(_viewModel.ErrorMessage))
-        {
-            BeginNewCategory();
-        }
-    }
-
-    private async void ToggleCategory_Click(object sender, RoutedEventArgs e)
-    {
-        if (_editingCategoryId is not { } categoryId)
-        {
-            MessageBox.Show("Vui lòng bấm Sửa ở một dòng danh mục trước.", "Quản lý danh mục");
+            SelectChannelNotice.Visibility = Visibility.Visible;
+            DefaultChannelNotice.Visibility = Visibility.Collapsed;
+            ChannelPricingTabs.Visibility = Visibility.Collapsed;
             return;
         }
 
-        ManagedCategoryDto? category = _viewModel.EditableCategories.FirstOrDefault(x => x.CategoryId == categoryId);
-        if (category is null)
-        {
-            MessageBox.Show("Không tìm thấy danh mục đang chỉnh sửa.", "Quản lý danh mục");
-            return;
-        }
+        bool isDefaultChannel = channel.ChannelCode == "TAI_QUAN" ||
+                               channel.ChannelName.ToLower().Contains("tại quán");
 
-        await _viewModel.ToggleCategoryAsync(category);
-        BeginNewCategory();
+        if (isDefaultChannel)
+        {
+            SelectChannelNotice.Visibility = Visibility.Collapsed;
+            DefaultChannelNotice.Visibility = Visibility.Visible;
+            ChannelPricingTabs.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            SelectChannelNotice.Visibility = Visibility.Collapsed;
+            DefaultChannelNotice.Visibility = Visibility.Collapsed;
+            ChannelPricingTabs.Visibility = Visibility.Visible;
+        }
     }
 
-    private void NewItem_Click(object sender, RoutedEventArgs e)
+    private async void AddCategoryButton_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.SelectedItem = null;
-        ItemNameBox.Clear();
-        ItemCategoryBox.SelectedItem = _viewModel.Categories.FirstOrDefault(category => category.CategoryId > 0 && category.IsActive);
-        ItemPriceBox.Text = "0";
-        ItemStockBox.Clear();
-        ItemImageBox.Clear();
-        ItemDescriptionBox.Clear();
-        ItemAvailableBox.IsChecked = true;
+        CategoryEditorWindow dialog = new(_viewModel.EditableCategories)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            if (dialog.DeleteRequested) return; // Cannot delete a new category anyway
+            await _viewModel.SaveCategoryAsync(dialog.Request);
+        }
     }
 
-    private async void SaveItem_Click(object sender, RoutedEventArgs e)
+    private async void EditCategoryRow_Click(object sender, RoutedEventArgs e)
     {
-        if (ItemCategoryBox.SelectedItem is not ManagedCategoryDto { CategoryId: > 0 } category)
+        if ((sender as FrameworkElement)?.Tag is not ManagedCategoryDto category) return;
+        CategoryEditorWindow dialog = new(_viewModel.EditableCategories, category)
         {
-            MessageBox.Show("Vui lòng chọn danh mục hợp lệ.", "Quản lý thực đơn");
-            return;
-        }
-        if (!TryParseDecimal(ItemPriceBox.Text, "Giá cơ bản", out decimal price)) return;
-        int? stock = null;
-        if (!string.IsNullOrWhiteSpace(ItemStockBox.Text))
-        {
-            if (!TryParseInt(ItemStockBox.Text, "Tồn kho", out int parsedStock)) return;
-            stock = parsedStock;
-        }
+            Owner = Window.GetWindow(this)
+        };
 
-        await _viewModel.SaveItemAsync(new SaveMenuItemRequest
+        if (dialog.ShowDialog() == true)
         {
-            MenuItemId = _viewModel.SelectedItem?.MenuItemId,
-            CategoryId = category.CategoryId,
-            Name = ItemNameBox.Text,
-            Description = ItemDescriptionBox.Text,
-            BasePrice = price,
-            ImageUrl = ItemImageBox.Text,
-            Stock = stock,
-            IsAvailable = ItemAvailableBox.IsChecked == true
-        });
+            if (dialog.DeleteRequested)
+            {
+                await _viewModel.DeleteCategoryAsync(category);
+                return;
+            }
+
+            await _viewModel.SaveCategoryAsync(dialog.Request);
+
+            if (dialog.ToggleActiveRequested && string.IsNullOrEmpty(_viewModel.ErrorMessage))
+            {
+                await _viewModel.ToggleCategoryAsync(category);
+            }
+        }
     }
 
-    private async void ToggleItem_Click(object sender, RoutedEventArgs e)
+    private async void AddMenuItemButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedItem is not { } item)
+        MenuItemEditorWindow dialog = new(_viewModel.Categories, _viewModel.ChoiceGroups)
         {
-            MessageBox.Show("Vui lòng chọn món.", "Quản lý thực đơn");
-            return;
+            Owner = Window.GetWindow(this)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            await SaveMenuItemWithAssignmentsAsync(dialog);
         }
-        await _viewModel.ToggleItemAsync(item);
     }
 
-    private async void AssignGroup_Click(object sender, RoutedEventArgs e)
+    private async void EditMenuItemRow_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedItem is not { } item)
+        if ((sender as FrameworkElement)?.Tag is not ManagedMenuItemDto item) return;
+        MenuItemEditorWindow dialog = new(_viewModel.Categories, _viewModel.ChoiceGroups, item)
         {
-            MessageBox.Show("Vui lòng chọn món cần gán nhóm phụ.", "Quản lý thực đơn");
-            return;
-        }
-        if (AssignGroupBox.SelectedItem is not ManagedChoiceGroupDto group)
-        {
-            MessageBox.Show("Vui lòng chọn nhóm phụ.", "Quản lý thực đơn");
-            return;
-        }
-        if (!TryParseInt(AssignOrderBox.Text, "Thứ tự nhóm phụ", out int order)) return;
-        int? maxSelect = null;
-        if (!string.IsNullOrWhiteSpace(AssignMaxBox.Text))
-        {
-            if (!TryParseInt(AssignMaxBox.Text, "MaxSelect riêng", out int parsedMax)) return;
-            maxSelect = parsedMax;
-        }
+            Owner = Window.GetWindow(this)
+        };
 
-        await _viewModel.AssignChoiceGroupAsync(new AssignChoiceGroupRequest
+        if (dialog.ShowDialog() == true)
         {
-            MenuItemId = item.MenuItemId,
-            ChoiceGroupId = group.ChoiceGroupId,
-            DisplayOrder = order,
-            MaxSelect = maxSelect
-        });
+            if (dialog.DeleteRequested)
+            {
+                await _viewModel.DeleteItemAsync(item);
+                return;
+            }
+
+            await SaveMenuItemWithAssignmentsAsync(dialog);
+        }
     }
 
-    private async void RemoveAssignedGroup_Click(object sender, RoutedEventArgs e)
+    private async Task SaveMenuItemWithAssignmentsAsync(MenuItemEditorWindow dialog)
     {
-        if (_viewModel.SelectedItem is not { } item ||
-            _viewModel.SelectedAssignedChoiceGroup is not { } group)
+        await _viewModel.SaveItemAsync(dialog.Request);
+        if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+
+        ManagedMenuItemDto? savedItem = dialog.Request.MenuItemId is { } itemId
+            ? _viewModel.Items.FirstOrDefault(item => item.MenuItemId == itemId)
+            : _viewModel.Items.FirstOrDefault(item =>
+                item.Name.Equals(dialog.Request.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (savedItem is null)
         {
-            MessageBox.Show("Vui lòng chọn món và nhóm phụ đã gán.", "Quản lý thực đơn");
+            MessageBox.Show("Đã lưu món nhưng không tìm thấy món để gán nhóm phụ.", "Quản lý thực đơn");
             return;
         }
-        await _viewModel.RemoveChoiceGroupAssignmentAsync(item, group);
+
+        // Save any newly created choice groups (created inline from the item editor dialog)
+        Dictionary<string, int> newGroupNameToId = [];
+        foreach ((SaveChoiceGroupRequest groupRequest, List<SaveChoiceItemRequest> choiceRequests) in dialog.PendingNewGroups)
+        {
+            await _viewModel.SaveChoiceGroupAsync(groupRequest);
+            if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+
+            // Find the newly saved group by name to get its real ID
+            ManagedChoiceGroupDto? savedGroup = _viewModel.ChoiceGroups.FirstOrDefault(g =>
+                g.GroupName.Equals(groupRequest.GroupName.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (savedGroup is null) continue;
+
+            newGroupNameToId[groupRequest.GroupName.Trim()] = savedGroup.ChoiceGroupId;
+
+            foreach (SaveChoiceItemRequest choiceRequest in choiceRequests)
+            {
+                choiceRequest.ChoiceGroupId = savedGroup.ChoiceGroupId;
+                await _viewModel.SaveChoiceItemAsync(choiceRequest);
+                if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+            }
+        }
+
+        foreach (int removedChoiceGroupId in dialog.RemovedChoiceGroupIds)
+        {
+            // Only remove if it's a real (positive) ID — negative IDs are pending groups never saved
+            if (removedChoiceGroupId <= 0) continue;
+            ManagedMenuItemChoiceGroupDto? assigned = savedItem.ChoiceGroups.FirstOrDefault(group => group.ChoiceGroupId == removedChoiceGroupId);
+            if (assigned is not null)
+            {
+                await _viewModel.RemoveChoiceGroupAssignmentAsync(savedItem, assigned);
+                if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+            }
+        }
+
+        foreach (AssignChoiceGroupRequest assignment in dialog.AssignmentRequests)
+        {
+            assignment.MenuItemId = savedItem.MenuItemId;
+
+            // If this assignment references a pending (negative) group ID, resolve to real ID by name
+            if (assignment.ChoiceGroupId < 0)
+            {
+                ManagedChoiceGroupDto? tempGroup = dialog.PendingNewGroups
+                    .Select(p => new ManagedChoiceGroupDto { GroupName = p.Group.GroupName })
+                    .FirstOrDefault();
+
+                // Look up by matching order in pendingNewGroups list (negative ID encoding: -(100 + index))
+                int pendingIndex = -(assignment.ChoiceGroupId + 100) - 1;
+                if (pendingIndex >= 0 && pendingIndex < dialog.PendingNewGroups.Count)
+                {
+                    string pendingName = dialog.PendingNewGroups[pendingIndex].Group.GroupName.Trim();
+                    if (newGroupNameToId.TryGetValue(pendingName, out int realId))
+                    {
+                        assignment.ChoiceGroupId = realId;
+                    }
+                    else
+                    {
+                        continue; // Skip if we couldn't resolve — group save may have failed
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            await _viewModel.AssignChoiceGroupAsync(assignment);
+            if (!string.IsNullOrEmpty(_viewModel.ErrorMessage)) return;
+        }
     }
 
     private async void AddChoiceGroupButton_Click(object sender, RoutedEventArgs e)
@@ -353,66 +312,108 @@ public partial class MenuManagementView : UserControl
         await _viewModel.ToggleChoiceItemAsync(item);
     }
 
-    private void NewChannel_Click(object sender, RoutedEventArgs e)
+    private async void AddChannelButton_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.SelectedSalesChannel = null;
-        ChannelCodeBox.Clear();
-        ChannelNameBox.Clear();
-    }
-
-    private async void SaveChannel_Click(object sender, RoutedEventArgs e)
-    {
-        await _viewModel.SaveSalesChannelAsync(new SaveSalesChannelRequest
+        SalesChannelEditorWindow dialog = new(_viewModel.SalesChannels)
         {
-            SalesChannelId = _viewModel.SelectedSalesChannel?.SalesChannelId,
-            ChannelCode = ChannelCodeBox.Text,
-            ChannelName = ChannelNameBox.Text
-        });
-    }
+            Owner = Window.GetWindow(this)
+        };
 
-    private async void ToggleChannel_Click(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.SelectedSalesChannel is not { } channel)
+        if (dialog.ShowDialog() == true)
         {
-            MessageBox.Show("Vui lòng chọn kênh bán.", "Quản lý kênh bán");
-            return;
+            await _viewModel.SaveSalesChannelAsync(dialog.Request);
         }
-        await _viewModel.ToggleSalesChannelAsync(channel);
     }
 
-    private async void SaveMenuChannelPrice_Click(object sender, RoutedEventArgs e)
+    private void SalesChannelRow_Click(object sender, MouseButtonEventArgs e)
     {
-        if (_viewModel.SelectedItem is not { } item ||
+        if ((sender as FrameworkElement)?.DataContext is ManagedSalesChannelDto channel)
+            _viewModel.SelectedSalesChannel = channel;
+    }
+
+    private async void EditChannelRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ManagedSalesChannelDto channel) return;
+
+        SalesChannelEditorWindow dialog = new(_viewModel.SalesChannels, channel)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            if (dialog.DeleteRequested)
+            {
+                var confirm = MessageBox.Show(
+                    $"Bạn có chắc chắn muốn xóa kênh bán hàng '{channel.ChannelName}' không?\nHành động này không thể hoàn tác.",
+                    "Xác nhận xóa kênh",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (confirm == MessageBoxResult.Yes)
+                {
+                    await _viewModel.DeleteSalesChannelAsync(channel);
+                }
+            }
+            else if (dialog.ToggleActiveRequested)
+            {
+                await _viewModel.ToggleSalesChannelAsync(channel);
+            }
+            else
+            {
+                await _viewModel.SaveSalesChannelAsync(dialog.Request);
+            }
+        }
+    }
+
+    private async void EditMenuItemChannelPrice_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ManagedMenuItemDto item ||
             _viewModel.SelectedSalesChannel is not { } channel)
         {
-            MessageBox.Show("Vui lòng chọn món và kênh bán.", "Giá theo kênh");
             return;
         }
-        if (!TryParseDecimal(MenuChannelPriceBox.Text, "Giá món theo kênh", out decimal extra)) return;
-        await _viewModel.SaveMenuItemChannelPriceAsync(new SaveChannelPriceRequest
+
+        decimal currentExtra = _viewModel.GetMenuItemChannelExtraPrice(item, channel);
+
+        MenuItemChannelPriceEditorWindow dialog = new(
+            item.Name,
+            item.BasePrice,
+            currentExtra,
+            channel.ChannelName)
         {
-            MenuItemId = item.MenuItemId,
-            SalesChannelId = channel.SalesChannelId,
-            ChannelExtraPrice = extra
-        });
+            Owner = Window.GetWindow(this)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            await _viewModel.SaveMenuItemChannelPriceAsync(new SaveChannelPriceRequest
+            {
+                MenuItemId = item.MenuItemId,
+                SalesChannelId = channel.SalesChannelId,
+                ChannelExtraPrice = dialog.ResultPrice
+            });
+
+            if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
+            {
+                MessageBox.Show(_viewModel.ErrorMessage, "Lỗi lưu giá");
+            }
+        }
     }
 
-    private async void SaveChoiceChannelPrice_Click(object sender, RoutedEventArgs e)
+    private void EditChoiceGroupChannelPrices_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.SelectedChoiceItem is not { } item ||
+        if ((sender as FrameworkElement)?.Tag is not ManagedChoiceGroupDto choiceGroup ||
             _viewModel.SelectedSalesChannel is not { } channel)
         {
-            MessageBox.Show("Vui lòng chọn lựa chọn phụ và kênh bán.", "Giá theo kênh");
             return;
         }
-        if (!TryParseDecimal(ChoiceChannelPriceBox.Text, "Giá lựa chọn theo kênh", out decimal extra)) return;
-        await _viewModel.SaveChoiceItemChannelPriceAsync(new SaveChannelPriceRequest
+
+        ChoiceGroupChannelPricesWindow dialog = new(choiceGroup, channel, _viewModel)
         {
-            MenuItemId = 0,
-            ChoiceItemId = item.ChoiceItemId,
-            SalesChannelId = channel.SalesChannelId,
-            ChannelExtraPrice = extra
-        });
+            Owner = Window.GetWindow(this)
+        };
+
+        dialog.ShowDialog();
     }
 
     private static bool TryParseInt(string value, string fieldName, out int result)
@@ -427,5 +428,57 @@ public partial class MenuManagementView : UserControl
         if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out result)) return true;
         MessageBox.Show($"{fieldName} không hợp lệ.", "DineFlow");
         return false;
+    }
+
+    private void CategoryTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        CategoryPanel.Visibility = Visibility.Visible;
+        MenuItemPanel.Visibility = Visibility.Collapsed;
+        ChoiceGroupPanel.Visibility = Visibility.Collapsed;
+        SalesChannelPanel.Visibility = Visibility.Collapsed;
+
+        CategoryTabButton.Tag = "Active";
+        MenuItemTabButton.Tag = null;
+        ChoiceGroupTabButton.Tag = null;
+        SalesChannelTabButton.Tag = null;
+    }
+
+    private void MenuItemTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        CategoryPanel.Visibility = Visibility.Collapsed;
+        MenuItemPanel.Visibility = Visibility.Visible;
+        ChoiceGroupPanel.Visibility = Visibility.Collapsed;
+        SalesChannelPanel.Visibility = Visibility.Collapsed;
+
+        CategoryTabButton.Tag = null;
+        MenuItemTabButton.Tag = "Active";
+        ChoiceGroupTabButton.Tag = null;
+        SalesChannelTabButton.Tag = null;
+    }
+
+    private void ChoiceGroupTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        CategoryPanel.Visibility = Visibility.Collapsed;
+        MenuItemPanel.Visibility = Visibility.Collapsed;
+        ChoiceGroupPanel.Visibility = Visibility.Visible;
+        SalesChannelPanel.Visibility = Visibility.Collapsed;
+
+        CategoryTabButton.Tag = null;
+        MenuItemTabButton.Tag = null;
+        ChoiceGroupTabButton.Tag = "Active";
+        SalesChannelTabButton.Tag = null;
+    }
+
+    private void SalesChannelTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        CategoryPanel.Visibility = Visibility.Collapsed;
+        MenuItemPanel.Visibility = Visibility.Collapsed;
+        ChoiceGroupPanel.Visibility = Visibility.Collapsed;
+        SalesChannelPanel.Visibility = Visibility.Visible;
+
+        CategoryTabButton.Tag = null;
+        MenuItemTabButton.Tag = null;
+        ChoiceGroupTabButton.Tag = null;
+        SalesChannelTabButton.Tag = "Active";
     }
 }

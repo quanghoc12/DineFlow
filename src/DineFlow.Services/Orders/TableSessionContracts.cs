@@ -18,7 +18,10 @@ public class DiningTableDto
 {
     public int TableId { get; set; }
     public string TableName { get; set; } = string.Empty;
+    public int? AreaId { get; set; }
     public string Area { get; set; } = string.Empty;
+    public int AreaDisplayOrder { get; set; }
+    public int TableDisplayOrder { get; set; }
     public string Status { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public int? CurrentTableSessionId { get; set; }

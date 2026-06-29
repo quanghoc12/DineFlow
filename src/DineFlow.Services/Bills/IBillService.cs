@@ -11,4 +11,5 @@ public interface IBillService
     Task<BillDto> RenameBillAsync(int billId, string billName, CancellationToken cancellationToken = default);
     Task<BillDto> RecalculateBillTotalAsync(int billId, CancellationToken cancellationToken = default);
     Task CancelUnpaidBillAsync(int billId, string reason, int currentUserId, CancellationToken cancellationToken = default);
+    Task<BillDto> ApplySalesChannelPricingAsync(int billId, int salesChannelId, CancellationToken cancellationToken = default);
 }

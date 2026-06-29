@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
@@ -18,6 +19,11 @@ public partial class OrderManagementView
     private static BillPreview MapBill(BillDto bill)
     {
         BillPreview preview = new(bill.BillId, bill.BillNo, bill.BillName, bill.IsDefault);
+        preview.SelectedChannelId = bill.SalesChannelId;
+        preview.SelectedChannelCode = bill.SalesChannelCode;
+        preview.SelectedChannelName = string.IsNullOrWhiteSpace(bill.SalesChannelName)
+            ? "Bảng giá chung"
+            : bill.SalesChannelName;
         foreach (BillDetailDto detail in bill.Details)
         {
             preview.Lines.Add(new BillLinePreview(
@@ -98,8 +104,7 @@ public partial class OrderManagementView
                 return;
             }
 
-            BillPreview bill = table.CreateNextBill();
-            SelectTable(table, bill);
+            throw new InvalidOperationException("Không thể tạo bill bằng dữ liệu tạm. Vui lòng kết nối database.");
         }
         catch (Exception ex)
         {
@@ -649,6 +654,7 @@ public partial class OrderManagementView
         }
 
         _selectedBill = bill;
+        _ = ReloadMenuCatalogForSelectedBillAsync();
     }
 
     private int? GetSelectedBillIdForCurrentTable()
@@ -676,7 +682,7 @@ public partial class OrderManagementView
 
         BillPreview bill = table.Bills.FirstOrDefault(x => x.IsDefault)
             ?? table.Bills.FirstOrDefault()
-            ?? table.CreateNextBill(isDefault: true);
+            ?? throw new InvalidOperationException("Bàn chưa có bill trong database. Vui lòng tạo bill trước.");
 
         SelectTable(table, bill);
         return bill;
@@ -692,6 +698,11 @@ public partial class OrderManagementView
             {
                 CurrentBillLines.Add(line);
             }
+            CommonPriceListButtonText.Text = _selectedBill.SelectedChannelName;
+        }
+        else
+        {
+            CommonPriceListButtonText.Text = "Bảng giá chung";
         }
 
         BillLinesList.ItemsSource = CurrentBillLines;
@@ -826,4 +837,78 @@ public partial class OrderManagementView
         return string.Format(CultureInfo.GetCultureInfo("vi-VN"), "{0:N0}", value);
     }
 
+    private async void CommonPriceListButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBill is null)
+        {
+            ShowCustomMessageBox("Vui lòng chọn hóa đơn trước khi áp dụng bảng giá kênh bán.", "Áp dụng bảng giá", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (sender is not Button button) return;
+
+        try
+        {
+            IReadOnlyList<ManagedSalesChannelDto> channels = await _menuManagementService.GetSalesChannelsAsync();
+            var activeChannels = channels.Where(c => c.IsActive).ToList();
+
+            if (activeChannels.Count == 0)
+            {
+                ShowCustomMessageBox("Không có kênh bán nào đang hoạt động.", "Áp dụng bảng giá", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            ContextMenu contextMenu = new()
+            {
+                Style = FindResource("ModernContextMenuStyle") as Style
+            };
+
+            foreach (var channel in activeChannels)
+            {
+                System.Windows.Controls.MenuItem menuItem = new()
+                {
+                    Header = channel.ChannelName,
+                    Tag = channel,
+                    Style = FindResource("ModernMenuItemStyle") as Style
+                };
+                menuItem.Click += async (s, args) =>
+                {
+                    try
+                    {
+                        var selectedChannel = (ManagedSalesChannelDto)((System.Windows.Controls.MenuItem)s).Tag;
+
+                        var result = ShowCustomMessageBox(
+                            $"Bạn có chắc chắn muốn áp dụng bảng giá của kênh '{selectedChannel.ChannelName}' cho hóa đơn này không?\nCác món ăn sẽ được cập nhật lại đơn giá.",
+                            "Xác nhận áp dụng bảng giá",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            BillDto updatedBill = await _billService.ApplySalesChannelPricingAsync(
+                                _selectedBill.BillId, selectedChannel.SalesChannelId);
+
+                            _selectedBill.CopyFrom(MapBill(updatedBill));
+                            RefreshBill();
+
+                            ShowCustomMessageBox($"Đã áp dụng bảng giá kênh '{selectedChannel.ChannelName}' thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowCustomMessageBox(GetFriendlyError(ex), "Lỗi áp dụng bảng giá", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                };
+                contextMenu.Items.Add(menuItem);
+            }
+
+            contextMenu.PlacementTarget = button;
+            contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            contextMenu.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            ShowCustomMessageBox(GetFriendlyError(ex), "Lỗi tải kênh bán", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 }

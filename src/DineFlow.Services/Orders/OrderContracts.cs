@@ -85,6 +85,7 @@ public class OrderSummaryDto
     public string? PrintStatus { get; set; }
     public DateTime CreatedAt { get; set; }
     public int ItemCount { get; set; }
+    public string? TableName { get; set; }
 }
 
 public class OrderDetailDto : OrderSummaryDto

@@ -1,0 +1,190 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="TablePrimaryBrush" Color="#2F80ED"/>
+    <SolidColorBrush x:Key="TableDarkBrush" Color="#102A43"/>
+    <SolidColorBrush x:Key="TableMutedBrush" Color="#627D98"/>
+    <SolidColorBrush x:Key="TableBorderBrush" Color="#DDE5EE"/>
+
+    <Style x:Key="TablePrimaryButtonStyle" TargetType="Button">
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Padding" Value="20,0"/>
+        <Setter Property="Background" Value="#2F80ED"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="21">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#1671DB"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value=".45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TableSecondaryButtonStyle" TargetType="Button"
+           BasedOn="{StaticResource TablePrimaryButtonStyle}">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="Foreground" Value="#526174"/>
+        <Setter Property="BorderBrush" Value="#DDE5EE"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="21">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#F1F7FF"/>
+                            <Setter TargetName="Root" Property="BorderBrush" Value="#91C3FF"/>
+                            <Setter Property="Foreground" Value="#1671DB"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TableDangerButtonStyle" TargetType="Button"
+           BasedOn="{StaticResource TablePrimaryButtonStyle}">
+        <Setter Property="Background" Value="#EF4444"/>
+    </Style>
+
+    <Style x:Key="TableFieldStyle" TargetType="TextBox">
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#DDE5EE"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <Style x:Key="TableComboStyle" TargetType="ComboBox">
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#DDE5EE"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <Style x:Key="TableDialogLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#334E68"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,18,0,7"/>
+    </Style>
+
+    <Style x:Key="TableTabItemStyle" TargetType="TabItem">
+        <Setter Property="Foreground" Value="#526174"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="24,11"/>
+        <Setter Property="Margin" Value="0,0,10,10"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Root" Background="White" BorderBrush="#DDE5EE"
+                            BorderThickness="1" CornerRadius="22" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#2F80ED"/>
+                            <Setter TargetName="Root" Property="BorderBrush" Value="#2F80ED"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="BorderBrush" Value="#91C3FF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ManagementTabButtonStyle" TargetType="Button"
+           BasedOn="{StaticResource TableSecondaryButtonStyle}">
+        <Setter Property="MinWidth" Value="120"/>
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="Margin" Value="0,0,10,12"/>
+        <Style.Triggers>
+            <Trigger Property="Tag" Value="Active">
+                <Setter Property="Background" Value="#2F80ED"/>
+                <Setter Property="BorderBrush" Value="#2F80ED"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ManagementListRowStyle" TargetType="Border">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#EDF2F7"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="MinHeight" Value="58"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#F7FAFE"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TableTabControlStyle" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TabPanel Grid.Row="0"
+                                  IsItemsHost="True"
+                                  Background="Transparent"
+                                  KeyboardNavigation.TabIndex="1"
+                                  Panel.ZIndex="1"/>
+                        <ContentPresenter Grid.Row="1"
+                                          Content="{TemplateBinding SelectedContent}"
+                                          ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectedContentStringFormat}"
+                                          ContentSource="SelectedContent"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="#F4F7FA"/>
+        <Setter Property="Foreground" Value="#334E68"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="12,11"/>
+        <Setter Property="BorderBrush" Value="#E7EDF3"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style TargetType="DataGridCell">
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="#EDF2F7"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+</ResourceDictionary>

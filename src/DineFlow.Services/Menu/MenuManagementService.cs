@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Menu;
+using DineFlow.BusinessObjects.Auth;
 using DineFlow.Repositories.Menu;
 using DineFlow.Services.Auth;
 
@@ -41,7 +42,9 @@ public sealed class MenuManagementService : IMenuManagementService
             BasePrice = item.BasePrice,
             ImageUrl = item.ImageUrl,
             IsAvailable = item.IsAvailable,
+            IsDeleted = item.IsDeleted,
             Stock = item.Stock,
+            IsOutOfStockStored = item.IsOutOfStock,
             ChoiceGroups = item.MenuItemChoiceGroups
                 .OrderBy(assignment => assignment.DisplayOrder)
                 .Select(assignment => new ManagedMenuItemChoiceGroupDto
@@ -113,6 +116,37 @@ public sealed class MenuManagementService : IMenuManagementService
         await _repository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        Category category = await _repository.GetCategoryAsync(categoryId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy danh mục.");
+
+        // Check if there are active (non-deleted) food items belonging to this category
+        var items = await _repository.GetItemsAsync(cancellationToken);
+        bool hasActiveFoods = items.Any(item => item.CategoryId == categoryId && !item.IsDeleted);
+        if (hasActiveFoods)
+        {
+            throw new InvalidOperationException("Không thể xóa danh mục này vì vẫn còn món ăn đang hoạt động bên trong.");
+        }
+
+        _repository.RemoveCategory(category);
+
+        // Re-adjust display orders of remaining categories to keep them contiguous (0, 1, 2...)
+        List<Category> categories = await _repository.GetCategoriesAsync(cancellationToken);
+        categories.Remove(category);
+
+        int index = 0;
+        DateTime now = DateTime.UtcNow;
+        foreach (Category cat in categories.OrderBy(c => c.DisplayOrder))
+        {
+            cat.DisplayOrder = index++;
+            cat.UpdatedAt = now;
+        }
+
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default)
     {
         EnsureAdmin();
@@ -143,7 +177,9 @@ public sealed class MenuManagementService : IMenuManagementService
                 BasePrice = request.BasePrice,
                 ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim(),
                 Stock = request.Stock,
-                IsAvailable = request.IsAvailable && (request.Stock is null || request.Stock > 0),
+                IsOutOfStock = request.IsOutOfStock,
+                IsAvailable = request.IsAvailable,
+                IsDeleted = false,
                 CreatedAt = now,
                 UpdatedAt = now
             }, cancellationToken);
@@ -158,7 +194,8 @@ public sealed class MenuManagementService : IMenuManagementService
             item.BasePrice = request.BasePrice;
             item.ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim();
             item.Stock = request.Stock;
-            item.IsAvailable = request.IsAvailable && (request.Stock is null || request.Stock > 0);
+            item.IsOutOfStock = request.IsOutOfStock;
+            item.IsAvailable = request.IsAvailable;
             item.UpdatedAt = now;
         }
         await _repository.SaveChangesAsync(cancellationToken);
@@ -169,9 +206,21 @@ public sealed class MenuManagementService : IMenuManagementService
         EnsureAdmin();
         MenuItem item = await _repository.GetItemAsync(itemId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy món.");
-        if (available && item.Stock == 0)
-            throw new InvalidOperationException("Không thể mở bán món đã hết tồn kho.");
         item.IsAvailable = available;
+        item.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SetItemDeletedAsync(int itemId, bool deleted, CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        MenuItem item = await _repository.GetItemAsync(itemId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy món.");
+        item.IsDeleted = deleted;
+        if (deleted)
+        {
+            item.IsAvailable = false;
+        }
         item.UpdatedAt = DateTime.UtcNow;
         await _repository.SaveChangesAsync(cancellationToken);
     }
@@ -411,6 +460,25 @@ public sealed class MenuManagementService : IMenuManagementService
         await _repository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteSalesChannelAsync(
+        int salesChannelId,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAdmin();
+        SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
+
+        if (channel.ChannelCode == "TAI_QUAN" || channel.ChannelName.ToLower().Contains("tại quán"))
+        {
+            throw new InvalidOperationException("Không thể xóa kênh bán mặc định tại quán.");
+        }
+
+        channel.IsDeleted = true;
+        channel.IsActive = false;
+        channel.UpdatedAt = DateTime.UtcNow;
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SaveMenuItemChannelPriceAsync(
         SaveChannelPriceRequest request,
         CancellationToken cancellationToken = default)
@@ -504,8 +572,8 @@ public sealed class MenuManagementService : IMenuManagementService
     private void EnsureAdmin()
     {
         if (!_currentUser.IsAuthenticated ||
-            !_currentUser.User!.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-            throw new UnauthorizedAccessException("Chỉ Admin được quản lý thực đơn.");
+            !AuthRoles.CanManage(_currentUser.User!.Role))
+            throw new UnauthorizedAccessException("Chỉ Admin hoặc Chủ nhà hàng được quản lý thực đơn.");
     }
 
     private static void RebuildCategoryOrders(

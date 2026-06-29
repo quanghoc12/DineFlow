@@ -27,6 +27,7 @@ public sealed class MenuManagementRepository : IMenuManagementRepository
     public Task<MenuItemChoiceGroup?> GetAssignmentAsync(int menuItemId, int choiceGroupId, CancellationToken cancellationToken = default) => _dao.GetAssignmentAsync(menuItemId, choiceGroupId, cancellationToken);
     public Task AddAssignmentAsync(MenuItemChoiceGroup assignment, CancellationToken cancellationToken = default) => _dao.AddAssignmentAsync(assignment, cancellationToken);
     public void RemoveAssignment(MenuItemChoiceGroup assignment) => _dao.RemoveAssignment(assignment);
+    public void RemoveCategory(Category category) => _dao.RemoveCategory(category);
     public Task<List<SalesChannel>> GetSalesChannelsAsync(CancellationToken cancellationToken = default) => _dao.GetSalesChannelsAsync(cancellationToken);
     public Task<MenuItemChannelPrice?> GetMenuItemChannelPriceAsync(int menuItemId, int salesChannelId, CancellationToken cancellationToken = default) => _dao.GetMenuItemChannelPriceAsync(menuItemId, salesChannelId, cancellationToken);
     public Task AddMenuItemChannelPriceAsync(MenuItemChannelPrice price, CancellationToken cancellationToken = default) => _dao.AddMenuItemChannelPriceAsync(price, cancellationToken);

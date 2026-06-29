@@ -11,6 +11,7 @@ public class DiningTable
     public string QrToken { get; set; } = string.Empty;
     public string Status { get; set; } = "Available";
     public bool IsActive { get; set; } = true;
+    public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

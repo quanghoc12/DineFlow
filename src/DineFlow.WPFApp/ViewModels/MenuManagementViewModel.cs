@@ -134,7 +134,13 @@ public sealed class MenuManagementViewModel : BaseViewModel
         foreach (ManagedChoiceGroupDto group in groups) ChoiceGroups.Add(group);
 
         SalesChannels.Clear();
-        foreach (ManagedSalesChannelDto channel in channels) SalesChannels.Add(channel);
+        foreach (ManagedSalesChannelDto channel in channels)
+        {
+            if (channel.ChannelCode != "DINE_IN")
+            {
+                SalesChannels.Add(channel);
+            }
+        }
 
         SelectedCategory = Categories.FirstOrDefault(category => category.CategoryId == selectedCategoryId);
         CategoryFilter = Categories.FirstOrDefault(category => category.CategoryId == selectedFilterId) ?? Categories[0];
@@ -149,8 +155,10 @@ public sealed class MenuManagementViewModel : BaseViewModel
 
     public Task SaveCategoryAsync(SaveCategoryRequest request) => ExecuteAndReloadAsync(() => _service.SaveCategoryAsync(request));
     public Task ToggleCategoryAsync(ManagedCategoryDto category) => ExecuteAndReloadAsync(() => _service.SetCategoryActiveAsync(category.CategoryId, !category.IsActive));
+    public Task DeleteCategoryAsync(ManagedCategoryDto category) => ExecuteAndReloadAsync(() => _service.DeleteCategoryAsync(category.CategoryId));
     public Task SaveItemAsync(SaveMenuItemRequest request) => ExecuteAndReloadAsync(() => _service.SaveItemAsync(request));
     public Task ToggleItemAsync(ManagedMenuItemDto item) => ExecuteAndReloadAsync(() => _service.SetItemAvailabilityAsync(item.MenuItemId, !item.IsAvailable));
+    public Task DeleteItemAsync(ManagedMenuItemDto item) => ExecuteAndReloadAsync(() => _service.SetItemDeletedAsync(item.MenuItemId, true));
     public Task SaveChoiceGroupAsync(SaveChoiceGroupRequest request) => ExecuteAndReloadAsync(() => _service.SaveChoiceGroupAsync(request));
     public Task ToggleChoiceGroupAsync(ManagedChoiceGroupDto group) => ExecuteAndReloadAsync(() => _service.SetChoiceGroupAvailabilityAsync(group.ChoiceGroupId, !group.IsAvailable));
     public Task SaveChoiceItemAsync(SaveChoiceItemRequest request) => ExecuteAndReloadAsync(() => _service.SaveChoiceItemAsync(request));
@@ -160,6 +168,7 @@ public sealed class MenuManagementViewModel : BaseViewModel
         ExecuteAndReloadAsync(() => _service.RemoveChoiceGroupAssignmentAsync(item.MenuItemId, group.ChoiceGroupId));
     public Task SaveSalesChannelAsync(SaveSalesChannelRequest request) => ExecuteAndReloadAsync(() => _service.SaveSalesChannelAsync(request));
     public Task ToggleSalesChannelAsync(ManagedSalesChannelDto channel) => ExecuteAndReloadAsync(() => _service.SetSalesChannelActiveAsync(channel.SalesChannelId, !channel.IsActive));
+    public Task DeleteSalesChannelAsync(ManagedSalesChannelDto channel) => ExecuteAndReloadAsync(() => _service.DeleteSalesChannelAsync(channel.SalesChannelId));
     public Task SaveMenuItemChannelPriceAsync(SaveChannelPriceRequest request) => ExecuteAndReloadAsync(() => _service.SaveMenuItemChannelPriceAsync(request));
     public Task SaveChoiceItemChannelPriceAsync(SaveChannelPriceRequest request) => ExecuteAndReloadAsync(() => _service.SaveChoiceItemChannelPriceAsync(request));
 

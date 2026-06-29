@@ -44,7 +44,10 @@ public class TableSessionService : ITableSessionService
             {
                 TableId = table.TableId,
                 TableName = table.TableName,
-                Area = table.Area,
+                AreaId = table.AreaId,
+                Area = table.AreaEntity?.AreaName ?? table.Area,
+                AreaDisplayOrder = table.AreaEntity?.DisplayOrder ?? int.MaxValue,
+                TableDisplayOrder = table.DisplayOrder,
                 Status = table.Status,
                 IsActive = table.IsActive,
                 CurrentTableSessionId = table.TableSessions

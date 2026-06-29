@@ -464,6 +464,11 @@ public class OrderService : IOrderService
             return Rejected(request.MenuItemId, "MENU_ITEM_UNAVAILABLE", "Menu item does not exist or is unavailable.");
         }
 
+        if (menuItem.IsOutOfStock || menuItem.Stock == 0)
+        {
+            return Rejected(request.MenuItemId, "MENU_ITEM_OUT_OF_STOCK", "Menu item is out of stock.");
+        }
+
         decimal menuItemChannelExtraPrice = await _menuReadRepository.GetMenuItemChannelExtraPriceAsync(
             menuItem.MenuItemId,
             salesChannelId,
@@ -602,7 +607,7 @@ public class OrderService : IOrderService
             if (item.MenuItem.Stock <= 0)
             {
                 item.MenuItem.Stock = 0;
-                item.MenuItem.IsAvailable = false;
+                item.MenuItem.IsOutOfStock = true;
             }
 
             item.MenuItem.UpdatedAt = DateTime.UtcNow;
@@ -619,7 +624,6 @@ public class OrderService : IOrderService
         }
 
         menuItem.Stock += quantity;
-        menuItem.IsAvailable = true;
         menuItem.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -637,7 +641,8 @@ public class OrderService : IOrderService
             Status = order.Status,
             PrintStatus = order.PrintStatus,
             CreatedAt = order.CreatedAt,
-            ItemCount = order.OrderItems.Sum(x => x.Quantity)
+            ItemCount = order.OrderItems.Sum(x => x.Quantity),
+            TableName = order.TableSession?.Table?.TableName
         };
     }
 

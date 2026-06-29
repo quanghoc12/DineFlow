@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using DineFlow.Services.Bills;
@@ -39,7 +39,10 @@ public partial class OrderManagementView
                 }
 
                 DiningTableDto? table = tables.FirstOrDefault(x => x.CurrentTableSessionId == detail.TableSessionId);
-                _allPendingOrders.Add(new PendingOrderCard(detail, table?.TableName ?? $"Session {detail.TableSessionId}"));
+                string tableName = detail.TableName
+                    ?? table?.TableName
+                    ?? $"Bàn #{detail.TableSessionId}";
+                _allPendingOrders.Add(new PendingOrderCard(detail, tableName));
             }
 
             ApplyPendingOrderFilter();

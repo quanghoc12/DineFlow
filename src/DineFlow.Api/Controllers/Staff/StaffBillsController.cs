@@ -1,4 +1,6 @@
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.Services.Bills;
+using DineFlow.Services.Menu;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DineFlow.Api.Controllers.Staff;
@@ -30,6 +32,15 @@ public class StaffBillsController : StaffControllerBase
     {
         BillDto? response = await _billService.GetBillByIdAsync(billId, cancellationToken);
         return response is null ? NotFound() : Ok(response);
+    }
+
+    [HttpGet("channels")]
+    public async Task<ActionResult<IReadOnlyList<ManagedSalesChannelDto>>> GetSalesChannels(
+        [FromServices] IMenuManagementService menuManagementService,
+        CancellationToken cancellationToken)
+    {
+        var channels = await menuManagementService.GetSalesChannelsAsync(cancellationToken);
+        return Ok(channels);
     }
 
     [HttpPost("session/{tableSessionId:int}/default")]
@@ -115,6 +126,7 @@ public class StaffBillsController : StaffControllerBase
             tableSessionId,
             request.BillName,
             CurrentUserId,
+            request.SalesChannelId,
             cancellationToken);
 
         return Ok(response);
@@ -129,11 +141,22 @@ public class StaffBillsController : StaffControllerBase
         await _billService.CancelUnpaidBillAsync(billId, request.Reason, CurrentUserId, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{billId:int}/apply-pricing/{salesChannelId:int}")]
+    public async Task<ActionResult<BillDto>> ApplySalesChannelPricing(
+        int billId,
+        int salesChannelId,
+        CancellationToken cancellationToken)
+    {
+        BillDto response = await _billService.ApplySalesChannelPricingAsync(billId, salesChannelId, cancellationToken);
+        return Ok(response);
+    }
 }
 
 public class CreateEmptyBillRequest
 {
     public string BillName { get; set; } = string.Empty;
+    public int? SalesChannelId { get; set; }
 }
 
 public class CancelBillRequest

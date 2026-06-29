@@ -19,11 +19,26 @@ public sealed class TableManagementDao : ITableManagementDao
             .Include(table => table.AreaEntity)
             .OrderBy(table => table.AreaEntity != null ? table.AreaEntity.DisplayOrder : int.MaxValue)
             .ThenBy(table => table.Area)
+            .ThenBy(table => table.DisplayOrder)
+            .ThenBy(table => table.TableName)
+            .ToListAsync(cancellationToken);
+
+    public Task<List<DiningTable>> GetAllForUpdateAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.DiningTables
+            .OrderBy(table => table.DisplayOrder)
             .ThenBy(table => table.TableName)
             .ToListAsync(cancellationToken);
 
     public Task<List<Area>> GetAreasAsync(CancellationToken cancellationToken = default) =>
-        _dbContext.Areas.AsNoTracking()
+        _dbContext.Areas
+            .AsNoTracking()
+            .Include(area => area.DiningTables)
+            .OrderBy(area => area.DisplayOrder)
+            .ThenBy(area => area.AreaName)
+            .ToListAsync(cancellationToken);
+
+    public Task<List<Area>> GetAreasForUpdateAsync(CancellationToken cancellationToken = default) =>
+        _dbContext.Areas
             .OrderBy(area => area.DisplayOrder)
             .ThenBy(area => area.AreaName)
             .ToListAsync(cancellationToken);

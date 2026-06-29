@@ -1,5 +1,6 @@
 using DineFlow.BusinessObjects.Auth;
 using DineFlow.WPFApp.ViewModels;
+using DineFlow.Services.Auth;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,11 +9,13 @@ namespace DineFlow.WPFApp.Views;
 public partial class UserManagementView : UserControl
 {
     private readonly UserManagementViewModel _viewModel;
+    private readonly ICurrentUserService _currentUser;
 
-    public UserManagementView(UserManagementViewModel viewModel)
+    public UserManagementView(UserManagementViewModel viewModel, ICurrentUserService currentUser)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _currentUser = currentUser;
         DataContext = viewModel;
     }
 
@@ -20,56 +23,40 @@ public partial class UserManagementView : UserControl
 
     private async void CreateButton_Click(object sender, RoutedEventArgs e)
     {
-        UserEditorWindow dialog = new();
+        UserEditorWindow dialog = new(null, _currentUser.User?.Role ?? AuthRoles.Staff)
+            { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() == true)
         {
             await _viewModel.CreateAsync(dialog.CreateRequest);
         }
     }
 
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
+    private async void EditUserRow_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelection(out UserSummary user))
-        {
-            return;
-        }
+        if ((sender as FrameworkElement)?.Tag is not UserSummary user) return;
 
-        UserEditorWindow dialog = new(user);
+        UserEditorWindow dialog = new(user, _currentUser.User?.Role ?? AuthRoles.Staff)
+            { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() == true)
         {
             await _viewModel.UpdateAsync(dialog.UpdateRequest);
+            if (string.IsNullOrEmpty(_viewModel.ErrorMessage) &&
+                dialog.DesiredIsActive != user.IsActive)
+                await _viewModel.SetActiveAsync(user, dialog.DesiredIsActive);
+            CloseManagementWindowWhenPermissionEnds();
         }
     }
 
-    private async void ToggleActiveButton_Click(object sender, RoutedEventArgs e)
+    private async void ResetPasswordRow_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelection(out UserSummary user))
-        {
-            return;
-        }
+        if ((sender as FrameworkElement)?.Tag is not UserSummary user) return;
 
-        string action = user.IsActive ? "khóa" : "mở khóa";
-        if (MessageBox.Show(
-                $"Bạn có chắc muốn {action} tài khoản {user.Username}?",
-                "Xác nhận",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question) == MessageBoxResult.Yes)
-        {
-            await _viewModel.SetActiveAsync(user, !user.IsActive);
-        }
-    }
-
-    private async void ResetPasswordButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryGetSelection(out UserSummary user))
-        {
-            return;
-        }
-
-        ResetPasswordWindow dialog = new(user.Username);
+        bool requireCurrentPassword = !AuthRoles.IsOwner(_currentUser.User!.Role);
+        ResetPasswordWindow dialog = new(user.Username, requireCurrentPassword)
+            { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() == true)
         {
-            await _viewModel.ResetPasswordAsync(user, dialog.NewPassword);
+            await _viewModel.ResetPasswordAsync(user, dialog.CurrentPassword, dialog.NewPassword);
             if (string.IsNullOrEmpty(_viewModel.ErrorMessage))
             {
                 MessageBox.Show("Đã đặt lại mật khẩu.", "Thành công");
@@ -77,17 +64,9 @@ public partial class UserManagementView : UserControl
         }
     }
 
-    private bool TryGetSelection(out UserSummary user)
+    private void CloseManagementWindowWhenPermissionEnds()
     {
-        UserSummary? selectedUser = _viewModel.SelectedUser;
-        if (selectedUser is not null)
-        {
-            user = selectedUser;
-            return true;
-        }
-
-        user = null!;
-        MessageBox.Show("Vui lòng chọn một người dùng.", "Quản lý tài khoản");
-        return false;
+        if (_currentUser.IsAuthenticated && AuthRoles.CanManage(_currentUser.User?.Role)) return;
+        Window.GetWindow(this)?.Close();
     }
 }

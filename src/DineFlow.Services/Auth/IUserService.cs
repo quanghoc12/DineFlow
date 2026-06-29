@@ -8,5 +8,5 @@ public interface IUserService
     Task CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
     Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken = default);
     Task SetActiveAsync(int userId, bool isActive, CancellationToken cancellationToken = default);
-    Task ResetPasswordAsync(int userId, string newPassword, CancellationToken cancellationToken = default);
+    Task ResetPasswordAsync(int userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
 }

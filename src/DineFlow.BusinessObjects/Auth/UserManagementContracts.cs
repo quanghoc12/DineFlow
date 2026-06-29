@@ -8,6 +8,8 @@ public sealed class UserSummary
     public string Role { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string ActiveStatusLabel => IsActive ? "Hoạt động" : "Đã khóa";
+    public string RoleLabel => AuthRoles.GetLabel(Role);
 }
 
 public sealed class CreateUserRequest

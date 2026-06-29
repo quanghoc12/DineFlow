@@ -12,6 +12,9 @@ public class MenuItem
     public decimal BasePrice { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; } = true;
+    public bool IsDeleted { get; set; }
+    // True when admin explicitly marks item as sold out (independent of Stock tracking)
+    public bool IsOutOfStock { get; set; }
     public int? Stock { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

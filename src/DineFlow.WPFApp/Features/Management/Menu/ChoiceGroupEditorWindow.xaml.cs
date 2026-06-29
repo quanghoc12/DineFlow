@@ -191,6 +191,11 @@ public partial class ChoiceGroupEditorWindow : Window
         ChoiceNameTextBox.Clear();
         ExtraPriceTextBox.Text = "0";
     }
+
+    private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        DragMove();
+    }
 }
 
 public sealed class EditableChoiceItem

@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Json;
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
@@ -29,10 +30,16 @@ public sealed class StaffOrderApiClient : IDisposable
             cancellationToken) ?? [];
     }
 
-    public async Task<MenuCatalogDto> GetMenuCatalogAsync(CancellationToken cancellationToken = default)
+    public async Task<MenuCatalogDto> GetMenuCatalogAsync(
+        string salesChannelCode = "DINE_IN",
+        CancellationToken cancellationToken = default)
     {
+        string channelCode = string.IsNullOrWhiteSpace(salesChannelCode)
+            ? "DINE_IN"
+            : Uri.EscapeDataString(salesChannelCode.Trim());
+
         return await _httpClient.GetFromJsonAsync<MenuCatalogDto>(
-            "api/staff/menu?salesChannelCode=DINE_IN&availableOnly=true",
+            $"api/staff/menu?salesChannelCode={channelCode}&availableOnly=true",
             cancellationToken) ?? new MenuCatalogDto();
     }
 
@@ -77,11 +84,12 @@ public sealed class StaffOrderApiClient : IDisposable
     public async Task<BillDto> CreateEmptyBillAsync(
         int tableSessionId,
         string billName,
+        int? salesChannelId = null,
         CancellationToken cancellationToken = default)
     {
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             $"api/staff/bills/session/{tableSessionId}/empty",
-            new CreateEmptyBillApiRequest { BillName = billName },
+            new CreateEmptyBillApiRequest { BillName = billName, SalesChannelId = salesChannelId },
             cancellationToken);
 
         return await ReadSuccessAsync<BillDto>(response, cancellationToken);
@@ -302,6 +310,26 @@ public sealed class StaffOrderApiClient : IDisposable
         return await ReadSuccessAsync<ServiceRequestDto>(response, cancellationToken);
     }
 
+    public async Task<BillDto> ApplySalesChannelPricingAsync(
+        int billId,
+        int salesChannelId,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.PostAsync(
+            $"api/staff/bills/{billId}/apply-pricing/{salesChannelId}",
+            content: null,
+            cancellationToken);
+
+        return await ReadSuccessAsync<BillDto>(response, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ManagedSalesChannelDto>> GetSalesChannelsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<IReadOnlyList<ManagedSalesChannelDto>>(
+            "api/staff/bills/channels",
+            cancellationToken) ?? [];
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();
@@ -326,6 +354,7 @@ public sealed class StaffOrderApiClient : IDisposable
     private sealed class CreateEmptyBillApiRequest
     {
         public string BillName { get; set; } = string.Empty;
+        public int? SalesChannelId { get; set; }
     }
 
     private sealed class CancelBillApiRequest

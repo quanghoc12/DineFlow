@@ -9,7 +9,6 @@ public sealed class UserManagementViewModel : BaseViewModel
 {
     private readonly IUserService _userService;
     private List<UserSummary> _allUsers = [];
-    private UserSummary? _selectedUser;
     private string _searchText = string.Empty;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
@@ -20,12 +19,6 @@ public sealed class UserManagementViewModel : BaseViewModel
     }
 
     public ObservableCollection<UserSummary> Users { get; } = [];
-
-    public UserSummary? SelectedUser
-    {
-        get => _selectedUser;
-        set => SetProperty(ref _selectedUser, value);
-    }
 
     public string SearchText
     {
@@ -66,8 +59,8 @@ public sealed class UserManagementViewModel : BaseViewModel
     public Task SetActiveAsync(UserSummary user, bool active) =>
         ExecuteAndReloadAsync(() => _userService.SetActiveAsync(user.UserId, active));
 
-    public Task ResetPasswordAsync(UserSummary user, string password) =>
-        ExecuteAsync(() => _userService.ResetPasswordAsync(user.UserId, password));
+    public Task ResetPasswordAsync(UserSummary user, string currentPassword, string newPassword) =>
+        ExecuteAsync(() => _userService.ResetPasswordAsync(user.UserId, currentPassword, newPassword));
 
     private async Task ExecuteAndReloadAsync(Func<Task> action)
     {

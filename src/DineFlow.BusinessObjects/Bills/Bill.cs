@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Orders;
+using DineFlow.BusinessObjects.Menu;
 
 namespace DineFlow.BusinessObjects.Bills;
 
@@ -7,6 +8,9 @@ public class Bill
     public int BillId { get; set; }
     public string BillCode { get; set; } = string.Empty;
     public int TableSessionId { get; set; }
+    public int SalesChannelId { get; set; }
+    public string SalesChannelCodeSnapshot { get; set; } = string.Empty;
+    public string SalesChannelNameSnapshot { get; set; } = string.Empty;
     public int BillNo { get; set; }
     public string BillName { get; set; } = string.Empty;
     public bool IsDefault { get; set; }
@@ -22,6 +26,7 @@ public class Bill
     public string? CancelReason { get; set; }
 
     public TableSession? TableSession { get; set; }
+    public SalesChannel? SalesChannel { get; set; }
     public ICollection<BillDetail> BillDetails { get; set; } = new List<BillDetail>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

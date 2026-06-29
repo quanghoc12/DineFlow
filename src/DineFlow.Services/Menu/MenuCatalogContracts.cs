@@ -25,6 +25,8 @@ public class MenuCatalogItemDto
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; }
     public int? Stock { get; set; }
+    // True if item is marked out-of-stock (either explicitly by admin, or stock==0)
+    public bool IsOutOfStock { get; set; }
     public IReadOnlyList<MenuItemChoiceGroupDto> ChoiceGroups { get; set; } = [];
 }
 

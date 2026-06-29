@@ -13,7 +13,11 @@ public sealed class TableManagementRepository : ITableManagementRepository
     }
 
     public Task<List<DiningTable>> GetAllAsync(CancellationToken cancellationToken = default) => _dao.GetAllAsync(cancellationToken);
+    public Task<List<DiningTable>> GetAllForUpdateAsync(CancellationToken cancellationToken = default) =>
+        _dao.GetAllForUpdateAsync(cancellationToken);
     public Task<List<Area>> GetAreasAsync(CancellationToken cancellationToken = default) => _dao.GetAreasAsync(cancellationToken);
+    public Task<List<Area>> GetAreasForUpdateAsync(CancellationToken cancellationToken = default) =>
+        _dao.GetAreasForUpdateAsync(cancellationToken);
     public Task<Area?> GetAreaAsync(int areaId, CancellationToken cancellationToken = default) => _dao.GetAreaAsync(areaId, cancellationToken);
     public Task<Area?> GetAreaByNameAsync(string name, CancellationToken cancellationToken = default) => _dao.GetAreaByNameAsync(name, cancellationToken);
     public Task<bool> AreaNameExistsAsync(string name, int? excludedAreaId = null, CancellationToken cancellationToken = default) =>

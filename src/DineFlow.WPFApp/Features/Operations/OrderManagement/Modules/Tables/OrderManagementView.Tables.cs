@@ -19,7 +19,7 @@ public partial class OrderManagementView
     {
         if (sender is Button button)
         {
-            ToggleArea(button.CommandParameter?.ToString() ?? "All", button);
+            ToggleArea(button.CommandParameter?.ToString() ?? "All");
             ApplyTableFilters();
         }
     }
@@ -51,7 +51,9 @@ public partial class OrderManagementView
 
         List<TableCard> emptyTables = _tables
             .Where(x => x != _selectedTable && !x.HasSession)
-            .OrderBy(x => x.Area)
+            .OrderBy(x => x.AreaDisplayOrder)
+            .ThenBy(x => x.Area)
+            .ThenBy(x => x.TableDisplayOrder)
             .ThenBy(x => x.TableName)
             .ToList();
 
@@ -82,9 +84,19 @@ public partial class OrderManagementView
 
     private TableCard EnsureSelectedTable()
     {
+        if (!_usesApiData)
+        {
+            throw new InvalidOperationException("Chưa kết nối được dữ liệu database. Vui lòng chạy API và tải lại màn Order.");
+        }
+
         if (_selectedTable is not null)
         {
             return _selectedTable;
+        }
+
+        if (_tables.Count == 0)
+        {
+            throw new InvalidOperationException("Chưa có bàn nào trong database. Vui lòng thêm bàn trong Quản lý bàn trước.");
         }
 
         TableCard table = _tables.FirstOrDefault(x => x.HasSession) ?? _tables.First();
@@ -132,15 +144,16 @@ public partial class OrderManagementView
         }
     }
 
-    private void ToggleArea(string area, Button button)
+    private void ToggleArea(string area)
     {
         if (area == "All")
         {
             _selectedAreas.Clear();
             AllAreaButton.Tag = "Active";
-            FloorOneButton.Tag = null;
-            FloorTwoButton.Tag = null;
-            VipAreaButton.Tag = null;
+            foreach (FilterOption option in AreaFilterOptions)
+            {
+                option.IsActive = false;
+            }
             return;
         }
 
@@ -151,7 +164,10 @@ public partial class OrderManagementView
             _selectedAreas.Remove(area);
         }
 
-        button.Tag = _selectedAreas.Contains(area) ? "Active" : null;
+        foreach (FilterOption option in AreaFilterOptions)
+        {
+            option.IsActive = _selectedAreas.Contains(option.Value);
+        }
 
         if (_selectedAreas.Count == 0)
         {
@@ -195,39 +211,6 @@ public partial class OrderManagementView
         return panel.Children.OfType<Button>().Where(x => x != button);
     }
 
-    private static List<TableCard> CreateMockTables()
-    {
-        TableCard tableOne = new("Bàn 01", "Tang 1", "Available");
-        TableCard tableTwo = new("Bàn 02", "Tang 1", "Occupied");
-        BillPreview tableTwoDefault = tableTwo.CreateNextBill(isDefault: true);
-        tableTwoDefault.Lines.Add(new BillLinePreview(1, "APEROL SPRITZ", "Không có ghi chú/Món thêm", 1, 30000m));
-        tableTwoDefault.Lines.Add(new BillLinePreview(2, "GIN FIZZ", "Không có ghi chú/Món thêm", 1, 30000m));
-
-        BillPreview tableTwoSecond = tableTwo.CreateNextBill();
-        tableTwoSecond.Lines.Add(new BillLinePreview(13, "Khoai tây chiên", "Không có ghi chú/Món thêm", 1, 35000m));
-
-        TableCard tableThree = new("Bàn 03", "Tang 1", "WaitingPayment");
-        BillPreview tableThreeDefault = tableThree.CreateNextBill(isDefault: true);
-        tableThreeDefault.Lines.Add(new BillLinePreview(3, "Cơm gà xối mỡ", "Không có ghi chú/Món thêm", 2, 55000m));
-
-        TableCard tableFour = new("Bàn 04", "Tang 2", "Available");
-        TableCard tableFive = new("Bàn 05", "Tang 2", "Occupied");
-        BillPreview tableFiveDefault = tableFive.CreateNextBill(isDefault: true);
-        tableFiveDefault.Lines.Add(new BillLinePreview(4, "Bún thịt nướng", "Không có ghi chú/Món thêm", 1, 50000m));
-        tableFiveDefault.Lines.Add(new BillLinePreview(5, "Nước suối", "Không có ghi chú/Món thêm", 2, 10000m));
-
-        TableCard vip = new("VIP 01", "VIP", "Available");
-        return [tableOne, tableTwo, tableThree, tableFour, tableFive, vip];
-    }
-
-    private static string DisplayArea(string area)
-    {
-        return area switch
-        {
-            "Tang 1" => "Tầng 1",
-            "Tang 2" => "Tầng 2",
-            _ => area
-        };
-    }
+    private static string DisplayArea(string area) => area;
 
 }

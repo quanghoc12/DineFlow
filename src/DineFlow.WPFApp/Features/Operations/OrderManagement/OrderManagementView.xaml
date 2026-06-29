@@ -190,21 +190,22 @@
                                     Tag="Active"
                                     Style="{StaticResource RoomAreaFilterButtonStyle}"
                                     Click="AreaButton_Click" />
-                            <Button x:Name="FloorOneButton"
-                                    Content="Tầng 1"
-                                    CommandParameter="Tang 1"
-                                    Style="{StaticResource RoomAreaFilterButtonStyle}"
-                                    Click="AreaButton_Click" />
-                            <Button x:Name="FloorTwoButton"
-                                    Content="Tầng 2"
-                                    CommandParameter="Tang 2"
-                                    Style="{StaticResource RoomAreaFilterButtonStyle}"
-                                    Click="AreaButton_Click" />
-                            <Button x:Name="VipAreaButton"
-                                    Content="VIP"
-                                    CommandParameter="VIP"
-                                    Style="{StaticResource RoomAreaFilterButtonStyle}"
-                                    Click="AreaButton_Click" />
+                            <ItemsControl ItemsSource="{Binding AreaFilterOptions}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Label}"
+                                                CommandParameter="{Binding Value}"
+                                                Tag="{Binding ActiveTag}"
+                                                Style="{StaticResource RoomAreaFilterButtonStyle}"
+                                                Click="AreaButton_Click" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </WrapPanel>
 
                         <WrapPanel Grid.Row="1" Margin="0,2,0,8">
@@ -282,18 +283,22 @@
                                             Tag="Active"
                                             Style="{StaticResource FilterButtonStyle}"
                                             Click="CategoryButton_Click" />
-                                    <Button Content="Món chính"
-                                            CommandParameter="Mon chinh"
-                                            Style="{StaticResource FilterButtonStyle}"
-                                            Click="CategoryButton_Click" />
-                                    <Button Content="Đồ uống"
-                                            CommandParameter="Do uong"
-                                            Style="{StaticResource FilterButtonStyle}"
-                                            Click="CategoryButton_Click" />
-                                    <Button Content="Món thêm"
-                                            CommandParameter="Mon them"
-                                            Style="{StaticResource FilterButtonStyle}"
-                                            Click="CategoryButton_Click" />
+                                    <ItemsControl ItemsSource="{Binding CategoryFilterOptions}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Label}"
+                                                        CommandParameter="{Binding Value}"
+                                                        Tag="{Binding ActiveTag}"
+                                                        Style="{StaticResource FilterButtonStyle}"
+                                                        Click="CategoryButton_Click" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </ScrollViewer>
 
@@ -308,6 +313,7 @@
                                         <DataTemplate>
                                             <Button Style="{StaticResource MenuTileStyle}"
                                                     Tag="{Binding}"
+                                                    IsEnabled="{Binding IsOrderable}"
                                                     Click="MenuTile_Click">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -316,12 +322,48 @@
                                                     </Grid.RowDefinitions>
                                                     <Border Background="{Binding Color}"
                                                             CornerRadius="8,8,0,0">
-                                                        <TextBlock Text="{Binding Initials}"
-                                                                   Foreground="White"
-                                                                   FontSize="26"
-                                                                   FontWeight="Bold"
-                                                                   HorizontalAlignment="Center"
-                                                                   VerticalAlignment="Center" />
+                                                        <Grid>
+                                                            <Image Source="{Binding ImageUrl}"
+                                                                   Stretch="UniformToFill">
+                                                                <Image.Style>
+                                                                    <Style TargetType="Image">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding HasImage}" Value="False">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Image.Style>
+                                                            </Image>
+                                                            <TextBlock Text="{Binding Initials}"
+                                                                       Foreground="White"
+                                                                       FontSize="26"
+                                                                       FontWeight="Bold"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding HasImage}" Value="False">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <Border Background="#CC111827"
+                                                                    CornerRadius="8,8,0,0"
+                                                                    Visibility="{Binding IsOutOfStock, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                <TextBlock Text="Hết món"
+                                                                           Foreground="White"
+                                                                           FontWeight="Bold"
+                                                                           FontSize="14"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center" />
+                                                            </Border>
+                                                        </Grid>
                                                     </Border>
                                                     <StackPanel Grid.Row="1" Margin="8,6">
                                                         <TextBlock Text="{Binding PriceText}"
@@ -897,14 +939,15 @@
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal">
                                 <Button MinWidth="142"
-                                        Style="{StaticResource BillToolbarButtonStyle}">
+                                        Style="{StaticResource BillToolbarButtonStyle}"
+                                        Click="CommonPriceListButton_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE8EC;"
                                                    FontFamily="Segoe MDL2 Assets"
                                                    FontSize="17"
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center" />
-                                        <TextBlock Text="Bảng giá chung" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="CommonPriceListButtonText" Text="Bảng giá chung" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

@@ -8,6 +8,7 @@ public class SalesChannel
     public string ChannelCode { get; set; } = string.Empty;
     public string ChannelName { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

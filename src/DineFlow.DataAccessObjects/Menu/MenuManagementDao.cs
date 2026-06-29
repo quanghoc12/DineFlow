@@ -36,6 +36,7 @@ public sealed class MenuManagementDao : IMenuManagementDao
 
     public Task<List<MenuItem>> GetItemsAsync(CancellationToken cancellationToken = default) =>
         _dbContext.MenuItems.AsNoTracking()
+            .Where(item => !item.IsDeleted)
             .Include(item => item.Category)
             .Include(item => item.MenuItemChoiceGroups)
                 .ThenInclude(assignment => assignment.ChoiceGroup)
@@ -53,6 +54,7 @@ public sealed class MenuManagementDao : IMenuManagementDao
         string normalized = name.Trim().ToLower();
         return _dbContext.MenuItems.AnyAsync(
             item => item.Name.ToLower() == normalized &&
+                    !item.IsDeleted &&
                     (!excludedId.HasValue || item.MenuItemId != excludedId.Value),
             cancellationToken);
     }
@@ -111,8 +113,10 @@ public sealed class MenuManagementDao : IMenuManagementDao
 
     public void RemoveAssignment(MenuItemChoiceGroup assignment) => _dbContext.MenuItemChoiceGroups.Remove(assignment);
 
+    public void RemoveCategory(Category category) => _dbContext.Categories.Remove(category);
+
     public Task<List<SalesChannel>> GetSalesChannelsAsync(CancellationToken cancellationToken = default) =>
-        _dbContext.SalesChannels.AsNoTracking().OrderBy(channel => channel.ChannelName).ToListAsync(cancellationToken);
+        _dbContext.SalesChannels.AsNoTracking().Where(channel => !channel.IsDeleted).OrderBy(channel => channel.ChannelName).ToListAsync(cancellationToken);
 
     public Task<MenuItemChannelPrice?> GetMenuItemChannelPriceAsync(
         int menuItemId, int salesChannelId, CancellationToken cancellationToken = default) =>
@@ -130,7 +134,7 @@ public sealed class MenuManagementDao : IMenuManagementDao
     {
         string normalized = code.Trim().ToUpper();
         return _dbContext.SalesChannels.AnyAsync(
-            channel => channel.ChannelCode.ToUpper() == normalized &&
+            channel => !channel.IsDeleted && channel.ChannelCode.ToUpper() == normalized &&
                        (!excludedId.HasValue || channel.SalesChannelId != excludedId.Value),
             cancellationToken);
     }

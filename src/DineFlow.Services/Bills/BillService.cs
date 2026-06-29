@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using DineFlow.BusinessObjects.Bills;
+using DineFlow.BusinessObjects.Menu;
 using DineFlow.BusinessObjects.Orders;
 using DineFlow.Repositories.Bills;
 using DineFlow.Repositories.Common;
@@ -13,9 +14,11 @@ namespace DineFlow.Services.Bills;
 
 public class BillService : IBillService
 {
+    private const string DefaultSalesChannelCode = "DINE_IN";
     private static readonly ConcurrentDictionary<int, SemaphoreSlim> DefaultBillLocks = new();
     private readonly IBillRepository _billRepository;
     private readonly IMenuReadRepository _menuReadRepository;
+    private readonly IMenuManagementRepository _menuManagementRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly IRealtimeNotificationService _realtimeNotificationService;
     private readonly ITableSessionRepository _tableSessionRepository;
@@ -24,6 +27,7 @@ public class BillService : IBillService
     public BillService(
         IBillRepository billRepository,
         IMenuReadRepository menuReadRepository,
+        IMenuManagementRepository menuManagementRepository,
         IOrderRepository orderRepository,
         IRealtimeNotificationService realtimeNotificationService,
         ITableSessionRepository tableSessionRepository,
@@ -31,6 +35,7 @@ public class BillService : IBillService
     {
         _billRepository = billRepository;
         _menuReadRepository = menuReadRepository;
+        _menuManagementRepository = menuManagementRepository;
         _orderRepository = orderRepository;
         _realtimeNotificationService = realtimeNotificationService;
         _tableSessionRepository = tableSessionRepository;
@@ -55,7 +60,8 @@ public class BillService : IBillService
 
             BillDto dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
             {
-                Bill bill = await CreateDefaultBillAsync(tableSessionId, createdBy, ct);
+                SalesChannel salesChannel = await ResolveSalesChannelByCodeAsync(DefaultSalesChannelCode, ct);
+                Bill bill = await CreateDefaultBillAsync(tableSessionId, createdBy, salesChannel, ct);
                 await _billRepository.AddBillAsync(bill, ct);
                 await _unitOfWork.SaveChangesAsync(ct);
                 return MapBill(bill);
@@ -185,7 +191,11 @@ public class BillService : IBillService
             else
             {
                 bill = await _billRepository.GetDefaultUnpaidBillBySessionAsync(request.TableSessionId, ct)
-                    ?? await CreateDefaultBillAsync(request.TableSessionId, request.CreatedBy, ct);
+                    ?? await CreateDefaultBillAsync(
+                        request.TableSessionId,
+                        request.CreatedBy,
+                        order.SalesChannel ?? await ResolveSalesChannelByIdAsync(order.SalesChannelId, ct),
+                        ct);
             }
 
             if (bill.BillId == 0)
@@ -195,10 +205,11 @@ public class BillService : IBillService
             }
 
             Bill trackedBill = await _billRepository.GetBillByIdAsync(bill.BillId, ct) ?? bill;
+            EnsureBillChannelMatchesOrder(trackedBill, order);
 
             foreach (OrderItem orderItem in order.OrderItems)
             {
-                BillDetail line = CreateBillDetailFromOrderItem(trackedBill.BillId, orderItem);
+                BillDetail line = CreateBillDetailFromOrderItem(trackedBill.BillId, order, orderItem);
                 BillDetail? mergeTarget = FindMergeTarget(trackedBill.BillDetails, line);
 
                 if (mergeTarget is null)
@@ -415,6 +426,7 @@ public class BillService : IBillService
     private async Task<Bill> CreateDefaultBillAsync(
         int tableSessionId,
         int? createdBy,
+        SalesChannel salesChannel,
         CancellationToken cancellationToken)
     {
         await _billRepository.ClearDefaultBillFlagsAsync(tableSessionId, cancellationToken);
@@ -423,6 +435,9 @@ public class BillService : IBillService
         return new Bill
         {
             TableSessionId = tableSessionId,
+            SalesChannelId = salesChannel.SalesChannelId,
+            SalesChannelCodeSnapshot = salesChannel.ChannelCode,
+            SalesChannelNameSnapshot = salesChannel.ChannelName,
             BillCode = $"B{DateTime.UtcNow:yyyyMMddHHmmssfff}",
             BillNo = nextBillNo,
             BillName = $"Bill {nextBillNo}",
@@ -433,7 +448,7 @@ public class BillService : IBillService
         };
     }
 
-    private static BillDetail CreateBillDetailFromOrderItem(int billId, OrderItem orderItem)
+    private static BillDetail CreateBillDetailFromOrderItem(int billId, Order order, OrderItem orderItem)
     {
         decimal selectedChoiceExtraTotal = orderItem.SelectedChoices.Sum(x => x.FinalExtraPriceSnapshot);
         decimal unitPrice = orderItem.FinalUnitPriceSnapshot + selectedChoiceExtraTotal;
@@ -442,11 +457,15 @@ public class BillService : IBillService
         {
             BillId = billId,
             MenuItemId = orderItem.MenuItemId,
+            SalesChannelId = order.SalesChannelId,
             ItemName = orderItem.MenuItemNameSnapshot,
             ChoiceSummary = BuildChoiceSummary(orderItem.SelectedChoices),
             Note = Normalize(orderItem.Note),
             Quantity = orderItem.Quantity,
             NotifiedQuantity = 0,
+            BasePriceSnapshot = orderItem.BasePriceSnapshot,
+            MenuItemChannelExtraPriceSnapshot = orderItem.ChannelExtraPriceSnapshot,
+            ChoiceExtraPriceSnapshot = selectedChoiceExtraTotal,
             UnitPrice = unitPrice,
             TotalPrice = unitPrice * orderItem.Quantity,
             CreatedAt = DateTime.UtcNow
@@ -469,6 +488,7 @@ public class BillService : IBillService
     {
         return details.FirstOrDefault(x =>
             x.MenuItemId == incoming.MenuItemId &&
+            x.SalesChannelId == incoming.SalesChannelId &&
             Normalize(x.ChoiceSummary) == Normalize(incoming.ChoiceSummary) &&
             x.UnitPrice == incoming.UnitPrice &&
             Normalize(x.Note) == Normalize(incoming.Note));
@@ -518,6 +538,9 @@ public class BillService : IBillService
             BillId = bill.BillId,
             BillCode = bill.BillCode,
             TableSessionId = bill.TableSessionId,
+            SalesChannelId = bill.SalesChannelId,
+            SalesChannelCode = bill.SalesChannelCodeSnapshot,
+            SalesChannelName = bill.SalesChannelNameSnapshot,
             BillNo = bill.BillNo,
             BillName = bill.BillName,
             IsDefault = bill.IsDefault,
@@ -546,6 +569,9 @@ public class BillService : IBillService
             BillId = bill.BillId,
             BillCode = bill.BillCode,
             TableSessionId = bill.TableSessionId,
+            SalesChannelId = bill.SalesChannelId,
+            SalesChannelCode = bill.SalesChannelCodeSnapshot,
+            SalesChannelName = bill.SalesChannelNameSnapshot,
             BillNo = bill.BillNo,
             BillName = bill.BillName,
             IsDefault = bill.IsDefault,
@@ -564,11 +590,15 @@ public class BillService : IBillService
             BillDetailId = detail.BillDetailId,
             BillId = detail.BillId,
             MenuItemId = detail.MenuItemId,
+            SalesChannelId = detail.SalesChannelId,
             ItemName = detail.ItemName,
             ChoiceSummary = detail.ChoiceSummary,
             Note = detail.Note,
             Quantity = detail.Quantity,
             NotifiedQuantity = detail.NotifiedQuantity,
+            BasePriceSnapshot = detail.BasePriceSnapshot,
+            MenuItemChannelExtraPriceSnapshot = detail.MenuItemChannelExtraPriceSnapshot,
+            ChoiceExtraPriceSnapshot = detail.ChoiceExtraPriceSnapshot,
             UnitPrice = detail.UnitPrice,
             TotalPrice = detail.TotalPrice
         };
@@ -594,6 +624,45 @@ public class BillService : IBillService
     {
         string? normalized = value?.Trim();
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+    }
+
+    private async Task<SalesChannel> ResolveSalesChannelByCodeAsync(
+        string salesChannelCode,
+        CancellationToken cancellationToken)
+    {
+        SalesChannel? salesChannel = await _menuReadRepository.GetSalesChannelByCodeAsync(salesChannelCode, cancellationToken);
+        return salesChannel ?? throw new BusinessException("CHANNEL_NOT_FOUND", "Sales channel does not exist.");
+    }
+
+    private async Task<SalesChannel> ResolveSalesChannelByIdAsync(
+        int salesChannelId,
+        CancellationToken cancellationToken)
+    {
+        SalesChannel? salesChannel = await _menuManagementRepository.GetSalesChannelAsync(salesChannelId, cancellationToken);
+        return salesChannel is not null && salesChannel.IsActive && !salesChannel.IsDeleted
+            ? salesChannel
+            : throw new BusinessException("CHANNEL_NOT_FOUND", "Sales channel does not exist.");
+    }
+
+    private static void EnsureBillChannelMatchesOrder(Bill bill, Order order)
+    {
+        if (bill.SalesChannelId == order.SalesChannelId)
+        {
+            return;
+        }
+
+        bool emptyBill = bill.BillDetails.Count == 0;
+        if (emptyBill && order.SalesChannel is not null)
+        {
+            bill.SalesChannelId = order.SalesChannelId;
+            bill.SalesChannelCodeSnapshot = order.SalesChannel.ChannelCode;
+            bill.SalesChannelNameSnapshot = order.SalesChannel.ChannelName;
+            return;
+        }
+
+        throw new BusinessException(
+            "BILL_CHANNEL_MISMATCH",
+            "Bill sales channel is different from order sales channel. Create or select another bill for this channel.");
     }
 
     private async Task NotifyBillChangedAsync(
@@ -638,5 +707,90 @@ public class BillService : IBillService
             RealtimeEvents.TableSessionChanged,
             payload,
             cancellationToken);
+    }
+
+    public async Task<BillDto> ApplySalesChannelPricingAsync(int billId, int salesChannelId, CancellationToken cancellationToken = default)
+    {
+        BillDto dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            Bill bill = await _billRepository.GetBillByIdAsync(billId, ct)
+                ?? throw new BusinessException("BILL_NOT_FOUND", "Bill does not exist.");
+
+            if (bill.Status != "Unpaid")
+            {
+                throw new BusinessException("BILL_NOT_UNPAID", "Only unpaid bills can have their pricing updated.");
+            }
+
+            SalesChannel salesChannel = await ResolveSalesChannelByIdAsync(salesChannelId, ct);
+
+            bill.SalesChannelId = salesChannel.SalesChannelId;
+            bill.SalesChannelCodeSnapshot = salesChannel.ChannelCode;
+            bill.SalesChannelNameSnapshot = salesChannel.ChannelName;
+
+            foreach (BillDetail detail in bill.BillDetails)
+            {
+                var menuItem = await _menuReadRepository.GetCatalogItemByIdAsync(detail.MenuItemId, ct);
+                if (menuItem is null) continue;
+
+                decimal menuItemExtraPrice = menuItem.ChannelPrices
+                    .FirstOrDefault(x => x.SalesChannelId == salesChannelId)?
+                    .ChannelExtraPrice ?? 0m;
+
+                decimal choiceExtraPriceSum = 0m;
+
+                if (!string.IsNullOrWhiteSpace(detail.ChoiceSummary))
+                {
+                    var selectedChoiceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var parts = detail.ChoiceSummary.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var part in parts)
+                    {
+                        int colonIdx = part.IndexOf(':');
+                        if (colonIdx >= 0)
+                        {
+                            var choicesPart = part.Substring(colonIdx + 1);
+                            var names = choicesPart.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var name in names)
+                            {
+                                selectedChoiceNames.Add(name.Trim());
+                            }
+                        }
+                    }
+
+                    foreach (var assignment in menuItem.MenuItemChoiceGroups)
+                    {
+                        var choiceGroup = assignment.ChoiceGroup;
+                        if (choiceGroup is null) continue;
+
+                        foreach (var choiceItem in choiceGroup.ChoiceItems)
+                        {
+                            if (selectedChoiceNames.Contains(choiceItem.ChoiceName))
+                            {
+                                decimal choiceExtra = choiceItem.ExtraPrice;
+                                decimal channelChoiceExtra = choiceItem.ChannelPrices
+                                    .FirstOrDefault(x => x.SalesChannelId == salesChannelId)?
+                                    .ChannelExtraPrice ?? 0m;
+
+                                choiceExtraPriceSum += (choiceExtra + channelChoiceExtra);
+                            }
+                        }
+                    }
+                }
+
+                decimal newUnitPrice = menuItem.BasePrice + menuItemExtraPrice + choiceExtraPriceSum;
+                detail.SalesChannelId = salesChannel.SalesChannelId;
+                detail.BasePriceSnapshot = menuItem.BasePrice;
+                detail.MenuItemChannelExtraPriceSnapshot = menuItemExtraPrice;
+                detail.ChoiceExtraPriceSnapshot = choiceExtraPriceSum;
+                detail.UnitPrice = newUnitPrice;
+                detail.TotalPrice = newUnitPrice * detail.Quantity;
+            }
+
+            Recalculate(bill);
+            await _unitOfWork.SaveChangesAsync(ct);
+            return MapBill(bill);
+        }, cancellationToken);
+
+        await NotifyBillChangedAsync(dto.TableSessionId, dto.BillId, cancellationToken);
+        return dto;
     }
 }

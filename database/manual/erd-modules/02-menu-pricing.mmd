@@ -1,0 +1,89 @@
+erDiagram
+    CATEGORIES {
+        int CategoryId PK
+        string CategoryName
+        string Description
+        int DisplayOrder
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEMS {
+        int MenuItemId PK
+        int CategoryId FK
+        string Name
+        string Description
+        decimal BasePrice
+        string ImageUrl
+        bool IsAvailable
+        bool IsDeleted
+        bool IsOutOfStock
+        int Stock "nullable; null means no stock tracking"
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_GROUPS {
+        int ChoiceGroupId PK
+        string GroupName
+        bool IsAvailable
+        bool IsRequired
+        int MaxSelectDefault
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_ITEMS {
+        int ChoiceItemId PK
+        int ChoiceGroupId FK
+        string ChoiceName
+        decimal ExtraPrice
+        bool IsAvailable
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEM_CHOICE_GROUPS {
+        int MenuItemId PK, FK
+        int ChoiceGroupId PK, FK
+        int DisplayOrder
+        int MaxSelect "nullable override"
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    SALES_CHANNELS {
+        int SalesChannelId PK
+        string ChannelCode UK "unique when IsDeleted=false"
+        string ChannelName
+        bool IsActive
+        bool IsDeleted
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    MENU_ITEM_CHANNEL_PRICES {
+        int MenuItemId PK, FK
+        int SalesChannelId PK, FK
+        decimal ChannelExtraPrice
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CHOICE_ITEM_CHANNEL_PRICES {
+        int ChoiceItemId PK, FK
+        int SalesChannelId PK, FK
+        decimal ChannelExtraPrice
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    CATEGORIES ||--o{ MENU_ITEMS : contains
+    MENU_ITEMS ||--o{ MENU_ITEM_CHOICE_GROUPS : has
+    CHOICE_GROUPS ||--o{ MENU_ITEM_CHOICE_GROUPS : assigned_to
+    CHOICE_GROUPS ||--o{ CHOICE_ITEMS : contains
+    MENU_ITEMS ||--o{ MENU_ITEM_CHANNEL_PRICES : has
+    SALES_CHANNELS ||--o{ MENU_ITEM_CHANNEL_PRICES : prices
+    CHOICE_ITEMS ||--o{ CHOICE_ITEM_CHANNEL_PRICES : has
+    SALES_CHANNELS ||--o{ CHOICE_ITEM_CHANNEL_PRICES : prices

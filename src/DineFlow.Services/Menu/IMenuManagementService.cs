@@ -8,8 +8,10 @@ public interface IMenuManagementService
     Task<IReadOnlyList<ManagedMenuItemDto>> GetItemsAsync(CancellationToken cancellationToken = default);
     Task SaveCategoryAsync(SaveCategoryRequest request, CancellationToken cancellationToken = default);
     Task SetCategoryActiveAsync(int categoryId, bool active, CancellationToken cancellationToken = default);
+    Task DeleteCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
     Task SaveItemAsync(SaveMenuItemRequest request, CancellationToken cancellationToken = default);
     Task SetItemAvailabilityAsync(int itemId, bool available, CancellationToken cancellationToken = default);
+    Task SetItemDeletedAsync(int itemId, bool deleted, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ManagedChoiceGroupDto>> GetChoiceGroupsAsync(CancellationToken cancellationToken = default);
     Task SaveChoiceGroupAsync(SaveChoiceGroupRequest request, CancellationToken cancellationToken = default);
     Task SaveChoiceItemAsync(SaveChoiceItemRequest request, CancellationToken cancellationToken = default);
@@ -20,6 +22,7 @@ public interface IMenuManagementService
     Task<IReadOnlyList<ManagedSalesChannelDto>> GetSalesChannelsAsync(CancellationToken cancellationToken = default);
     Task SaveSalesChannelAsync(SaveSalesChannelRequest request, CancellationToken cancellationToken = default);
     Task SetSalesChannelActiveAsync(int salesChannelId, bool active, CancellationToken cancellationToken = default);
+    Task DeleteSalesChannelAsync(int salesChannelId, CancellationToken cancellationToken = default);
     Task SaveMenuItemChannelPriceAsync(SaveChannelPriceRequest request, CancellationToken cancellationToken = default);
     Task SaveChoiceItemChannelPriceAsync(SaveChannelPriceRequest request, CancellationToken cancellationToken = default);
 }

@@ -23,6 +23,8 @@ public class OrderDao : IOrderDao
     {
         IQueryable<Order> query = _dbContext.Orders
             .Include(x => x.SalesChannel)
+            .Include(x => x.TableSession)
+                .ThenInclude(x => x!.Table)
             .Include(x => x.OrderItems);
 
         if (tableSessionId.HasValue)
@@ -82,6 +84,8 @@ public class OrderDao : IOrderDao
     {
         return _dbContext.Orders
             .Include(x => x.SalesChannel)
+            .Include(x => x.TableSession)
+                .ThenInclude(x => x!.Table)
             .Include(x => x.OrderItems)
             .ThenInclude(x => x.SelectedChoices)
             .FirstOrDefaultAsync(x => x.OrderId == orderId, cancellationToken);
