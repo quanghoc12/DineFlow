@@ -13,8 +13,8 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
     private DateTime _fromDate;
     private DateTime _toDate;
     private string _selectedPaymentMethod = "All";
-    private string _tableName = string.Empty;
-    private string _area = string.Empty;
+    private string _selectedTableName = "All";
+    private string _selectedArea = "All";
     private string _keyword = string.Empty;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
@@ -31,6 +31,9 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
         PaymentMethods.Add(DineFlow.BusinessObjects.Bills.PaymentMethods.Cash);
         PaymentMethods.Add(DineFlow.BusinessObjects.Bills.PaymentMethods.BankTransfer);
         PaymentMethods.Add(DineFlow.BusinessObjects.Bills.PaymentMethods.Card);
+
+        TableNames.Add("All");
+        Areas.Add("All");
     }
 
     public DateTime FromDate
@@ -51,16 +54,16 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
         set => SetProperty(ref _selectedPaymentMethod, value);
     }
 
-    public string TableName
+    public string SelectedTableName
     {
-        get => _tableName;
-        set => SetProperty(ref _tableName, value);
+        get => _selectedTableName;
+        set => SetProperty(ref _selectedTableName, value);
     }
 
-    public string Area
+    public string SelectedArea
     {
-        get => _area;
-        set => SetProperty(ref _area, value);
+        get => _selectedArea;
+        set => SetProperty(ref _selectedArea, value);
     }
 
     public string Keyword
@@ -97,6 +100,8 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
         string.Format(CultureInfo.GetCultureInfo("vi-VN"), "{0:N0} đ", TotalPaymentAmount);
 
     public ObservableCollection<string> PaymentMethods { get; } = [];
+    public ObservableCollection<string> TableNames { get; } = [];
+    public ObservableCollection<string> Areas { get; } = [];
     public ObservableCollection<PaidBillHistoryRowViewModel> Items { get; } = [];
 
     public int PaymentCount => Items.Count;
@@ -105,18 +110,11 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
     {
         ErrorMessage = string.Empty;
 
-        if (!TryValidateKeyword())
-        {
-            Items.Clear();
-            TotalPaymentAmount = 0m;
-            OnPropertyChanged(nameof(PaymentCount));
-            return;
-        }
-
         IsBusy = true;
 
         try
         {
+            await LoadFilterOptionsAsync();
             IReadOnlyList<PaidBillHistoryItemDto> items = await _apiClient.GetPaidBillHistoryAsync(BuildFilter());
 
             Items.Clear();
@@ -141,25 +139,9 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
         }
     }
 
-    public Task<byte[]> ExportCsvAsync()
-    {
-        if (!TryValidateKeyword())
-        {
-            throw new InvalidOperationException(ErrorMessage);
-        }
+    public Task<byte[]> ExportCsvAsync() => _apiClient.ExportPaidBillHistoryCsvAsync(BuildFilter());
 
-        return _apiClient.ExportPaidBillHistoryCsvAsync(BuildFilter());
-    }
-
-    public Task<byte[]> ExportExcelAsync()
-    {
-        if (!TryValidateKeyword())
-        {
-            throw new InvalidOperationException(ErrorMessage);
-        }
-
-        return _apiClient.ExportPaidBillHistoryExcelAsync(BuildFilter());
-    }
+    public Task<byte[]> ExportExcelAsync() => _apiClient.ExportPaidBillHistoryExcelAsync(BuildFilter());
 
     private PaidBillHistoryFilterDto BuildFilter() =>
         new()
@@ -167,26 +149,42 @@ public sealed class PaidBillHistoryViewModel : BaseViewModel
             FromDate = FromDate,
             ToDate = ToDate,
             PaymentMethod = SelectedPaymentMethod,
-            TableName = TableName,
-            Area = Area,
+            TableName = string.Equals(SelectedTableName, "All", StringComparison.OrdinalIgnoreCase) ? null : SelectedTableName,
+            Area = string.Equals(SelectedArea, "All", StringComparison.OrdinalIgnoreCase) ? null : SelectedArea,
             Keyword = Keyword
         };
 
-    private bool TryValidateKeyword()
+    private async Task LoadFilterOptionsAsync()
     {
-        string keyword = Keyword.Trim();
-        if (string.IsNullOrEmpty(keyword))
+        IReadOnlyList<DineFlow.Services.Orders.DiningTableDto> tables = await _apiClient.GetTablesAsync();
+
+        string selectedTable = SelectedTableName;
+        string selectedArea = SelectedArea;
+
+        TableNames.Clear();
+        TableNames.Add("All");
+        foreach (string tableName in tables
+                     .Select(x => x.TableName)
+                     .Where(x => !string.IsNullOrWhiteSpace(x))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .Order(StringComparer.OrdinalIgnoreCase))
         {
-            return true;
+            TableNames.Add(tableName);
         }
 
-        if (int.TryParse(keyword, out _))
+        Areas.Clear();
+        Areas.Add("All");
+        foreach (string area in tables
+                     .Select(x => x.Area)
+                     .Where(x => !string.IsNullOrWhiteSpace(x))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .Order(StringComparer.OrdinalIgnoreCase))
         {
-            return true;
+            Areas.Add(area);
         }
 
-        ErrorMessage = "Keyword phải là BillId dạng số hoặc để trống.";
-        return false;
+        SelectedTableName = TableNames.Contains(selectedTable) ? selectedTable : "All";
+        SelectedArea = Areas.Contains(selectedArea) ? selectedArea : "All";
     }
 
     public sealed class PaidBillHistoryRowViewModel

@@ -36,6 +36,6 @@ public interface IReportRepository
         string? paymentMethod,
         string? tableName,
         string? area,
-        int? billIdKeyword,
+        string? keyword,
         CancellationToken cancellationToken = default);
 }

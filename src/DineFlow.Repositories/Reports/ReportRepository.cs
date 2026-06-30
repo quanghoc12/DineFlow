@@ -61,7 +61,7 @@ public sealed class ReportRepository : IReportRepository
         string? paymentMethod,
         string? tableName,
         string? area,
-        int? billIdKeyword,
+        string? keyword,
         CancellationToken cancellationToken = default) =>
         _reportDao.GetPaidBillHistoryByLocalDateRangeAsync(
             fromLocalDate,
@@ -70,6 +70,6 @@ public sealed class ReportRepository : IReportRepository
             paymentMethod,
             tableName,
             area,
-            billIdKeyword,
+            keyword,
             cancellationToken);
 }

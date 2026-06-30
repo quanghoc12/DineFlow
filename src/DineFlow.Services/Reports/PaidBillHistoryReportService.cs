@@ -40,17 +40,7 @@ public sealed class PaidBillHistoryReportService : IPaidBillHistoryReportService
             }
         }
 
-        int? billIdKeyword = null;
         string? keyword = Normalize(filter.Keyword);
-        if (!string.IsNullOrEmpty(keyword))
-        {
-            if (!int.TryParse(keyword, out int parsedBillId))
-            {
-                throw new BusinessException("PAID_BILL_HISTORY_KEYWORD_INVALID", "Keyword phải là BillId dạng số hoặc để trống.");
-            }
-
-            billIdKeyword = parsedBillId;
-        }
 
         return _reportRepository.GetPaidBillHistoryByLocalDateRangeAsync(
             fromDate,
@@ -59,7 +49,7 @@ public sealed class PaidBillHistoryReportService : IPaidBillHistoryReportService
             string.Equals(paymentMethod, "All", StringComparison.OrdinalIgnoreCase) ? null : paymentMethod,
             Normalize(filter.TableName),
             Normalize(filter.Area),
-            billIdKeyword,
+            keyword,
             cancellationToken);
     }
 

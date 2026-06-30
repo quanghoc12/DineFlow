@@ -45,22 +45,22 @@
 
                             <StackPanel Width="220" Margin="0,0,16,12">
                                 <TextBlock Text="Tên bàn" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
-                                <TextBox Text="{Binding TableName}"
-                                         Margin="0,8,0,0"
-                                         VerticalContentAlignment="Center"
-                                         Style="{StaticResource ReportWorkspaceTextBoxStyle}" />
+                                <ComboBox ItemsSource="{Binding TableNames}"
+                                          SelectedItem="{Binding SelectedTableName}"
+                                          Margin="0,8,0,0"
+                                          Style="{StaticResource ReportWorkspaceComboBoxStyle}" />
                             </StackPanel>
 
                             <StackPanel Width="220" Margin="0,0,16,12">
                                 <TextBlock Text="Khu vực" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
-                                <TextBox Text="{Binding Area}"
-                                         Margin="0,8,0,0"
-                                         VerticalContentAlignment="Center"
-                                         Style="{StaticResource ReportWorkspaceTextBoxStyle}" />
+                                <ComboBox ItemsSource="{Binding Areas}"
+                                          SelectedItem="{Binding SelectedArea}"
+                                          Margin="0,8,0,0"
+                                          Style="{StaticResource ReportWorkspaceComboBoxStyle}" />
                             </StackPanel>
 
                             <StackPanel Width="260" Margin="0,0,16,12">
-                                <TextBlock Text="Keyword BillId" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                                <TextBlock Text="Keyword (BillId, BillCode, BillName)" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
                                 <TextBox Text="{Binding Keyword}"
                                          Margin="0,8,0,0"
                                          VerticalContentAlignment="Center"

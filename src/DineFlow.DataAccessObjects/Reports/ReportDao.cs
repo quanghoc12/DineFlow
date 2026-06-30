@@ -216,7 +216,7 @@ public sealed class ReportDao : IReportDao
         string? paymentMethod,
         string? tableName,
         string? area,
-        int? billIdKeyword,
+        string? keyword,
         CancellationToken cancellationToken = default)
     {
         (DateTime startUtc, DateTime endUtcExclusive) = BuildUtcRange(fromLocalDate, toLocalDate, localOffset);
@@ -231,6 +231,7 @@ public sealed class ReportDao : IReportDao
             {
                 PaymentId = payment.PaymentId,
                 BillId = payment.BillId,
+                BillIdText = payment.BillId.ToString(),
                 BillCode = payment.Bill != null ? payment.Bill.BillCode : string.Empty,
                 BillName = payment.Bill != null ? payment.Bill.BillName : string.Empty,
                 TableName = payment.Bill != null &&
@@ -271,9 +272,13 @@ public sealed class ReportDao : IReportDao
             query = query.Where(x => x.Area.ToLower().Contains(normalizedArea));
         }
 
-        if (billIdKeyword.HasValue)
+        if (!string.IsNullOrWhiteSpace(keyword))
         {
-            query = query.Where(x => x.BillId == billIdKeyword.Value);
+            string normalizedKeyword = keyword.Trim().ToLower();
+            query = query.Where(x =>
+                x.BillIdText.Contains(normalizedKeyword) ||
+                x.BillCode.ToLower().Contains(normalizedKeyword) ||
+                x.BillName.ToLower().Contains(normalizedKeyword));
         }
 
         List<PaidBillHistoryProjection> items = await query
@@ -343,6 +348,7 @@ public sealed class ReportDao : IReportDao
     {
         public int PaymentId { get; set; }
         public int BillId { get; set; }
+        public string BillIdText { get; set; } = string.Empty;
         public string BillCode { get; set; } = string.Empty;
         public string BillName { get; set; } = string.Empty;
         public string TableName { get; set; } = string.Empty;
