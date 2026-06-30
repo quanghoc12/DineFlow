@@ -9,6 +9,7 @@ using DineFlow.WPFApp.Views;
 using DineFlow.WPFApp.Features.Management.Tables;
 using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.BusinessObjects.Auth;
+using DineFlow.WPFApp.Features.Reports.Dashboard;
 
 namespace DineFlow.WPFApp;
 
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
     private readonly UserManagementView _userManagementView;
     private readonly TableManagementView _tableManagementView;
     private readonly MenuManagementView _menuManagementView;
+    private readonly DashboardView _dashboardView;
 
     public MainWindow(
         ICurrentUserService currentUserService,
@@ -29,7 +31,8 @@ public partial class MainWindow : Window
         IBillService billService,
         UserManagementView userManagementView,
         TableManagementView tableManagementView,
-        MenuManagementView menuManagementView)
+        MenuManagementView menuManagementView,
+        DashboardView dashboardView)
     {
         _currentUserService = currentUserService;
         _authService = authService;
@@ -38,6 +41,7 @@ public partial class MainWindow : Window
         _userManagementView = userManagementView;
         _tableManagementView = tableManagementView;
         _menuManagementView = menuManagementView;
+        _dashboardView = dashboardView;
         InitializeComponent();
         CurrentUserText.Text = string.IsNullOrWhiteSpace(_currentUserService.User?.FullName)
             ? _currentUserService.User?.Username ?? string.Empty
@@ -73,6 +77,7 @@ public partial class MainWindow : Window
         }
 
         _authService.Logout();
+        ApiClientSession.Clear();
         Close();
     }
 
@@ -86,10 +91,11 @@ public partial class MainWindow : Window
         Height = workArea.Height;
     }
 
-    private void DashboardButton_Click(object sender, RoutedEventArgs e)
+    private async void DashboardButton_Click(object sender, RoutedEventArgs e)
     {
-        SetPlaceholderScreen("Dashboard", "Tổng quan doanh thu, bàn đang phục vụ và đơn đang chờ.");
+        ScreenHost.Content = _dashboardView;
         SetActiveButton(DashboardButton);
+        await _dashboardView.LoadAsync();
     }
 
     private void OrderButton_Click(object sender, RoutedEventArgs e)
@@ -147,36 +153,6 @@ public partial class MainWindow : Window
             _menuManagementService,
             _billService);
         SetActiveButton(OrderButton);
-    }
-
-    private void SetPlaceholderScreen(string title, string subtitle)
-    {
-        ScreenHost.Content = new Border
-        {
-            Background = System.Windows.Media.Brushes.White,
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(28),
-            Child = new StackPanel
-            {
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = title,
-                        FontSize = 28,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = System.Windows.Media.Brushes.Black
-                    },
-                    new TextBlock
-                    {
-                        Text = subtitle,
-                        FontSize = 15,
-                        Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(82, 99, 118)),
-                        Margin = new Thickness(0, 8, 0, 0)
-                    }
-                }
-            }
-        };
     }
 
     private void SetActiveButton(Button activeButton)

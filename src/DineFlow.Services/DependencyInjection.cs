@@ -7,6 +7,7 @@ using DineFlow.Services.Realtime;
 using DineFlow.Services.Requests;
 using DineFlow.Services.Auth;
 using DineFlow.Services.Tables;
+using DineFlow.Services.Reports;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DineFlow.Services;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IMenuCatalogService, MenuCatalogService>();
         services.AddScoped<ISplitBillService, SplitBillService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IPaymentCorrectionService, PaymentCorrectionService>();
         services.AddScoped<ITableSessionService, TableSessionService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderPrintService, OrderPrintService>();
@@ -32,6 +34,11 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ITableManagementService, TableManagementService>();
         services.AddScoped<IMenuManagementService, MenuManagementService>();
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IRevenueReportService, RevenueReportService>();
+        services.AddScoped<ITopSellingItemReportService, TopSellingItemReportService>();
+        services.AddScoped<IPaidBillHistoryReportService, PaidBillHistoryReportService>();
+        services.AddScoped<IReportExportService, ReportExportService>();
 
         return services;
     }

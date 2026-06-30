@@ -1,0 +1,122 @@
+<UserControl x:Class="DineFlow.WPFApp.Features.Reports.Payments.RevenueByPaymentMethodView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DineFlow.WPFApp;component/Features/Reports/ReportWorkspaceStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Style="{StaticResource ReportWorkspaceRootStyle}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource ReportWorkspaceHeaderBorderStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Doanh thu theo phương thức" FontSize="27" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="Theo dõi tỉ trọng thanh toán Cash, BankTransfer và Card trong cùng một bố cục chuẩn."
+                                   Margin="0,5,0,0"
+                                   Foreground="{StaticResource ReportWorkspaceHeaderTextBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ReportWorkspacePanelStyle}" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Từ ngày" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                        <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Style="{StaticResource ReportWorkspaceDatePickerStyle}" />
+                        <TextBlock Grid.Column="2" Text="Đến ngày" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                        <DatePicker Grid.Column="3" SelectedDate="{Binding ToDate}" Style="{StaticResource ReportWorkspaceDatePickerStyle}" />
+
+                        <Button Grid.Column="5"
+                                Content="Xem báo cáo"
+                                Margin="0,0,8,0"
+                                Click="LoadButton_Click"
+                                Width="120"
+                                Style="{StaticResource ReportWorkspacePrimaryButtonStyle}" />
+                        <Button Grid.Column="6"
+                                Content="CSV"
+                                Margin="0,0,8,0"
+                                Click="ExportCsvButton_Click"
+                                Width="90"
+                                Style="{StaticResource ReportWorkspaceSecondaryButtonStyle}" />
+                        <Button Grid.Column="7"
+                                Content="Excel"
+                                Click="ExportExcelButton_Click"
+                                Width="90"
+                                Style="{StaticResource ReportWorkspaceSecondaryButtonStyle}" />
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#C53030"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,12" />
+
+                <Border Style="{StaticResource ReportWorkspacePanelStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Doanh thu theo phương thức thanh toán" Style="{StaticResource ReportWorkspaceSectionTitleStyle}" />
+                        <Grid Margin="0,14,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="46" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Background="#F4F7FA">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="180" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Phương thức" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Text="Số lượt" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="2" Text="Tổng doanh thu" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MinHeight="320">
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource ManagementListRowStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="120" />
+                                                        <ColumnDefinition Width="180" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding PaymentMethod}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding PaymentCount}" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding TotalAmountText}" VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Background="#99FFFFFF"
+                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}">
+            <TextBlock Text="Đang tải báo cáo theo phương thức..."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#102A43" />
+        </Border>
+    </Grid>
+</UserControl>

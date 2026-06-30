@@ -1,0 +1,134 @@
+<UserControl x:Class="DineFlow.WPFApp.Features.Reports.TopSelling.TopSellingItemsReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DineFlow.WPFApp;component/Features/Reports/ReportWorkspaceStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Style="{StaticResource ReportWorkspaceRootStyle}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource ReportWorkspaceHeaderBorderStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Top món bán chạy" FontSize="27" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="So sánh món bán chạy theo khoảng ngày và top do người dùng nhập."
+                                   Margin="0,5,0,0"
+                                   Foreground="{StaticResource ReportWorkspaceHeaderTextBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource ReportWorkspacePanelStyle}" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Từ ngày" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                        <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Style="{StaticResource ReportWorkspaceDatePickerStyle}" />
+                        <TextBlock Grid.Column="2" Text="Đến ngày" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                        <DatePicker Grid.Column="3" SelectedDate="{Binding ToDate}" Style="{StaticResource ReportWorkspaceDatePickerStyle}" />
+                        <TextBlock Grid.Column="4" Text="Top" Style="{StaticResource ReportWorkspaceFilterLabelStyle}" />
+                        <TextBox Grid.Column="5" Text="{Binding TopCount}" Style="{StaticResource ReportWorkspaceTextBoxStyle}" VerticalContentAlignment="Center" />
+
+                        <Button Grid.Column="7"
+                                Content="Xem báo cáo"
+                                Margin="0,0,8,0"
+                                Click="LoadButton_Click"
+                                Width="120"
+                                Style="{StaticResource ReportWorkspacePrimaryButtonStyle}" />
+                        <Button Grid.Column="8"
+                                Content="CSV"
+                                Margin="0,0,8,0"
+                                Click="ExportCsvButton_Click"
+                                Width="90"
+                                Style="{StaticResource ReportWorkspaceSecondaryButtonStyle}" />
+                        <Button Grid.Column="9"
+                                Content="Excel"
+                                Click="ExportExcelButton_Click"
+                                Width="90"
+                                Style="{StaticResource ReportWorkspaceSecondaryButtonStyle}" />
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#C53030"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,12" />
+
+                <Border Style="{StaticResource ReportWorkspacePanelStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Top món bán chạy" Style="{StaticResource ReportWorkspaceSectionTitleStyle}" />
+                        <Grid Margin="0,14,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="46" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Background="#F4F7FA">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="160" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="#" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Text="MenuItemId" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="2" Text="Tên món" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="3" Text="Tổng SL" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="4" Text="Tổng doanh thu" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MinHeight="320">
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource ManagementListRowStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="60" />
+                                                        <ColumnDefinition Width="100" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="100" />
+                                                        <ColumnDefinition Width="160" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Rank}" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding MenuItemId}" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding ItemName}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                    <TextBlock Grid.Column="3" Text="{Binding TotalQuantity}" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="4" Text="{Binding TotalRevenueText}" VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Background="#99FFFFFF"
+                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}">
+            <TextBlock Text="Đang tải top selling items..."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#102A43" />
+        </Border>
+    </Grid>
+</UserControl>

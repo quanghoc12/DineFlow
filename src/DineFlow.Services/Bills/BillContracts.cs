@@ -148,3 +148,10 @@ public class PaymentDto
     public int? UpdatedBy { get; set; }
     public string? ChangeReason { get; set; }
 }
+
+public class UpdatePaidPaymentMethodRequest
+{
+    public int PaymentId { get; set; }
+    public string NewPaymentMethod { get; set; } = string.Empty;
+    public string ChangeReason { get; set; } = string.Empty;
+}
