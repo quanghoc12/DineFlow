@@ -17,4 +17,21 @@ public abstract class StaffControllerBase : ControllerBase
             return 1;
         }
     }
+
+    protected string CurrentUserRole
+    {
+        get
+        {
+            if (Request.Headers.TryGetValue("X-User-Role", out var values))
+            {
+                string? role = values.FirstOrDefault()?.Trim();
+                if (!string.IsNullOrWhiteSpace(role))
+                {
+                    return role;
+                }
+            }
+
+            return "Staff";
+        }
+    }
 }

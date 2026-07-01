@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Requests;
+using DineFlow.BusinessObjects.Bills;
 using DineFlow.Repositories.Common;
 using DineFlow.Repositories.Orders;
 using DineFlow.Repositories.Requests;
@@ -11,8 +12,6 @@ namespace DineFlow.Services.Requests;
 
 public class ServiceRequestService : IServiceRequestService
 {
-    private static readonly string[] ValidPaymentMethods = ["Cash", "BankTransfer", "Card", "Combined"];
-
     private readonly IServiceRequestRepository _serviceRequestRepository;
     private readonly IRealtimeNotificationService _realtimeNotificationService;
     private readonly ITableSessionRepository _tableSessionRepository;
@@ -128,7 +127,7 @@ public class ServiceRequestService : IServiceRequestService
             throw new BusinessException("PAYMENT_METHOD_NOT_ALLOWED", "Call staff request must not include payment method.");
         }
 
-        if (request.RequestType == "PaymentRequest" && !ValidPaymentMethods.Contains(request.PaymentMethod))
+        if (request.RequestType == "PaymentRequest" && !PaymentMethods.IsRequestValue(request.PaymentMethod))
         {
             throw new BusinessException("PAYMENT_METHOD_INVALID", "Payment request must include a valid payment method.");
         }

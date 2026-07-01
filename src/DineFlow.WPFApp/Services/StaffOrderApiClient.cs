@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using DineFlow.BusinessObjects.Menu;
+using DineFlow.BusinessObjects.Reports;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
@@ -20,7 +22,8 @@ public sealed class StaffOrderApiClient : IDisposable
             Timeout = TimeSpan.FromSeconds(10)
         };
 
-        _httpClient.DefaultRequestHeaders.Add("X-User-Id", "1");
+        _httpClient.DefaultRequestHeaders.Add("X-User-Id", ApiClientSession.CurrentUserId.ToString());
+        _httpClient.DefaultRequestHeaders.Add("X-User-Role", ApiClientSession.CurrentUserRole);
     }
 
     public async Task<IReadOnlyList<DiningTableDto>> GetTablesAsync(CancellationToken cancellationToken = default)
@@ -28,6 +31,139 @@ public sealed class StaffOrderApiClient : IDisposable
         return await _httpClient.GetFromJsonAsync<IReadOnlyList<DiningTableDto>>(
             "api/staff/tables?activeOnly=true",
             cancellationToken) ?? [];
+    }
+
+    public async Task<DashboardDto> GetTodayDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<DashboardDto>(
+            "api/reports/dashboard/today",
+            cancellationToken) ?? new DashboardDto();
+    }
+
+    public async Task<DashboardDto> GetDashboardByDateAsync(
+        DateTime date,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<DashboardDto>(
+            $"api/reports/dashboard?date={date:yyyy-MM-dd}",
+            cancellationToken) ?? new DashboardDto();
+    }
+
+    public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<RevenueSummaryDto>(
+            $"api/reports/revenue?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken) ?? new RevenueSummaryDto();
+    }
+
+    public async Task<byte[]> ExportRevenueSummaryCsvAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/revenue/export/csv?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken);
+    }
+
+    public async Task<byte[]> ExportRevenueSummaryExcelAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/revenue/export/excel?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TopSellingItemDto>> GetTopSellingItemsAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        int topCount,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<IReadOnlyList<TopSellingItemDto>>(
+            $"api/reports/top-selling-items?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}&top={topCount}",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<byte[]> ExportTopSellingItemsCsvAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        int topCount,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/top-selling-items/export/csv?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}&top={topCount}",
+            cancellationToken);
+    }
+
+    public async Task<byte[]> ExportTopSellingItemsExcelAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        int topCount,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/top-selling-items/export/excel?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}&top={topCount}",
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PaymentMethodRevenueDto>> GetRevenueByPaymentMethodAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<IReadOnlyList<PaymentMethodRevenueDto>>(
+            $"api/reports/revenue/by-payment-method?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<byte[]> ExportRevenueByPaymentMethodCsvAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/revenue/by-payment-method/export/csv?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken);
+    }
+
+    public async Task<byte[]> ExportRevenueByPaymentMethodExcelAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetBytesAsync(
+            $"api/reports/revenue/by-payment-method/export/excel?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PaidBillHistoryItemDto>> GetPaidBillHistoryAsync(
+        PaidBillHistoryFilterDto filter,
+        CancellationToken cancellationToken = default)
+    {
+        string url = BuildPaidBillHistoryUrl("api/reports/paid-bill-history", filter);
+        return await GetJsonAsync<IReadOnlyList<PaidBillHistoryItemDto>>(url, cancellationToken) ?? [];
+    }
+
+    public async Task<byte[]> ExportPaidBillHistoryCsvAsync(
+        PaidBillHistoryFilterDto filter,
+        CancellationToken cancellationToken = default)
+    {
+        string url = BuildPaidBillHistoryUrl("api/reports/paid-bill-history/export/csv", filter);
+        return await GetBytesAsync(url, cancellationToken);
+    }
+
+    public async Task<byte[]> ExportPaidBillHistoryExcelAsync(
+        PaidBillHistoryFilterDto filter,
+        CancellationToken cancellationToken = default)
+    {
+        string url = BuildPaidBillHistoryUrl("api/reports/paid-bill-history/export/excel", filter);
+        return await GetBytesAsync(url, cancellationToken);
     }
 
     public async Task<MenuCatalogDto> GetMenuCatalogAsync(
@@ -171,6 +307,19 @@ public sealed class StaffOrderApiClient : IDisposable
             cancellationToken);
 
         return await ReadSuccessAsync<PaymentResultDto>(response, cancellationToken);
+    }
+
+    public async Task<PaymentDto> UpdatePaidPaymentMethodAsync(
+        int billId,
+        UpdatePaidPaymentMethodRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.PutAsJsonAsync(
+            $"api/admin/payments/{billId}/method",
+            request,
+            cancellationToken);
+
+        return await ReadSuccessAsync<PaymentDto>(response, cancellationToken);
     }
 
     public async Task<BillDto> SplitBillBatchAsync(
@@ -346,9 +495,77 @@ public sealed class StaffOrderApiClient : IDisposable
         }
 
         string body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new InvalidOperationException(string.IsNullOrWhiteSpace(body)
-            ? $"API request failed with HTTP {(int)response.StatusCode}."
-            : body);
+        throw new InvalidOperationException(ParseApiErrorMessage(body, response.StatusCode));
+    }
+
+    private async Task<T?> GetJsonAsync<T>(string url, CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
+        return await ReadSuccessAsync<T>(response, cancellationToken);
+    }
+
+    private async Task<byte[]> GetBytesAsync(string url, CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        }
+
+        string body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new InvalidOperationException(ParseApiErrorMessage(body, response.StatusCode));
+    }
+
+    private static string BuildPaidBillHistoryUrl(string basePath, PaidBillHistoryFilterDto filter)
+    {
+        List<string> query = [
+            $"fromDate={filter.FromDate:yyyy-MM-dd}",
+            $"toDate={filter.ToDate:yyyy-MM-dd}"
+        ];
+
+        if (!string.IsNullOrWhiteSpace(filter.PaymentMethod))
+        {
+            query.Add($"paymentMethod={Uri.EscapeDataString(filter.PaymentMethod.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.TableName))
+        {
+            query.Add($"tableName={Uri.EscapeDataString(filter.TableName.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Area))
+        {
+            query.Add($"area={Uri.EscapeDataString(filter.Area.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Keyword))
+        {
+            query.Add($"keyword={Uri.EscapeDataString(filter.Keyword.Trim())}");
+        }
+
+        return $"{basePath}?{string.Join("&", query)}";
+    }
+
+    private static string ParseApiErrorMessage(string? body, System.Net.HttpStatusCode statusCode)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return $"API request failed with HTTP {(int)statusCode}.";
+        }
+
+        try
+        {
+            ApiErrorResponse? error = JsonSerializer.Deserialize<ApiErrorResponse>(body);
+            if (!string.IsNullOrWhiteSpace(error?.Message))
+            {
+                return error.Message;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return body;
     }
 
     private sealed class CreateEmptyBillApiRequest
@@ -360,5 +577,11 @@ public sealed class StaffOrderApiClient : IDisposable
     private sealed class CancelBillApiRequest
     {
         public string Reason { get; set; } = string.Empty;
+    }
+
+    private sealed class ApiErrorResponse
+    {
+        public string? Code { get; set; }
+        public string? Message { get; set; }
     }
 }

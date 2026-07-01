@@ -11,7 +11,9 @@ using DineFlow.Repositories.Requests;
 using DineFlow.DataAccessObjects.Auth;
 using DineFlow.Repositories.Auth;
 using DineFlow.DataAccessObjects.Tables;
+using DineFlow.DataAccessObjects.Reports;
 using DineFlow.Repositories.Tables;
+using DineFlow.Repositories.Reports;
 
 namespace DineFlow.Repositories;
 
@@ -28,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderDao, OrderDao>();
         services.AddScoped<ITableSessionDao, TableSessionDao>();
         services.AddScoped<IServiceRequestDao, ServiceRequestDao>();
+        services.AddScoped<IReportDao, ReportDao>();
 
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<IOrderRepository, OrderRepository>();
@@ -39,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ITableManagementRepository, TableManagementRepository>();
         services.AddScoped<IMenuManagementRepository, MenuManagementRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
 
         return services;
     }

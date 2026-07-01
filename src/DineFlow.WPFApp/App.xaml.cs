@@ -6,6 +6,13 @@ using DineFlow.WPFApp.ViewModels;
 using DineFlow.WPFApp.Views;
 using DineFlow.WPFApp.Features.Management.Tables;
 using DineFlow.WPFApp.Features.Management.Menu;
+using DineFlow.WPFApp.Features.Reports.Dashboard;
+using DineFlow.WPFApp.Features.Reports.ViewModels;
+using DineFlow.WPFApp.Features.Reports.Revenue;
+using DineFlow.WPFApp.Features.Reports.TopSelling;
+using DineFlow.WPFApp.Features.Reports.Payments;
+using DineFlow.WPFApp.Features.Reports.BillHistory;
+using DineFlow.WPFApp.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,10 +44,22 @@ public partial class App : Application
         services.AddTransient<UserManagementViewModel>();
         services.AddTransient<TableManagementViewModel>();
         services.AddTransient<MenuManagementViewModel>();
+        services.AddTransient<DashboardViewModel>();
+        services.AddTransient<RevenueReportViewModel>();
+        services.AddTransient<TopSellingItemsReportViewModel>();
+        services.AddTransient<RevenueByPaymentMethodViewModel>();
+        services.AddTransient<PaidBillHistoryViewModel>();
+        services.AddTransient<PaymentCorrectionViewModel>();
         services.AddTransient<LoginWindow>();
         services.AddTransient<UserManagementView>();
         services.AddTransient<TableManagementView>();
         services.AddTransient<MenuManagementView>();
+        services.AddTransient<DashboardView>();
+        services.AddTransient<RevenueReportView>();
+        services.AddTransient<TopSellingItemsReportView>();
+        services.AddTransient<RevenueByPaymentMethodView>();
+        services.AddTransient<PaidBillHistoryView>();
+        services.AddTransient<PaymentCorrectionView>();
         services.AddTransient<MainWindow>();
         _serviceProvider = services.BuildServiceProvider();
 
@@ -73,8 +92,11 @@ public partial class App : Application
 
             if (!authenticated || !currentUser.IsAuthenticated)
             {
+                ApiClientSession.Clear();
                 break;
             }
+
+            ApiClientSession.Configure(currentUser.User);
 
             using IServiceScope mainScope = _serviceProvider.CreateScope();
             mainScope.ServiceProvider.GetRequiredService<MainWindow>().ShowDialog();
@@ -83,6 +105,8 @@ public partial class App : Application
             {
                 break;
             }
+
+            ApiClientSession.Clear();
         }
 
         Shutdown();

@@ -9,8 +9,6 @@ namespace DineFlow.Services.Bills;
 
 public class PaymentService : IPaymentService
 {
-    private static readonly string[] ValidPaymentMethods = ["Cash", "BankTransfer", "Card"];
-
     private readonly IBillRepository _billRepository;
     private readonly IPaymentRepository _paymentRepository;
     private readonly IRealtimeNotificationService _realtimeNotificationService;
@@ -56,7 +54,7 @@ public class PaymentService : IPaymentService
                 .ToList();
 
             if (parts.Count == 0 ||
-                parts.Any(x => !ValidPaymentMethods.Contains(x.PaymentMethod)))
+                parts.Any(x => !PaymentMethods.IsStoredValue(x.PaymentMethod)))
             {
                 throw new BusinessException("PAYMENT_INVALID", "Payment methods and amounts are invalid.");
             }
@@ -150,7 +148,7 @@ public class PaymentService : IPaymentService
                 throw new BusinessException("BILL_EMPTY", "Bill must have at least one detail before payment.");
             }
 
-            if (!ValidPaymentMethods.Contains(request.PaymentMethod))
+            if (!PaymentMethods.IsStoredValue(request.PaymentMethod))
             {
                 throw new BusinessException("PAYMENT_METHOD_INVALID", "Payment method is invalid.");
             }
