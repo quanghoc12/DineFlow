@@ -20,5 +20,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Migrations\seed_data.sql" />
+    <EmbeddedResource Include="Migrations\SeedKoreanMenuExpanded.sql" />
   </ItemGroup>
 </Project>
