@@ -17,8 +17,8 @@ public partial class OrderManagementView
 {
     private void PrintKitchenBillCancelPdf(BillPreview bill, string reason)
     {
-        string path = _pdfPrintService.PrintKitchenBillCancel(_selectedTable, bill, reason);
-        ShowCustomMessageBox($"Đã tạo PDF hủy bill cho bếp:\n{path}", "Hủy bill", MessageBoxButton.OK, MessageBoxImage.Information);
+        _pdfPrintService.PrintKitchenBillCancel(_selectedTable, bill, reason);
+        ShowCustomMessageBox("Bếp đã nhận thông báo hủy bill.", "Hủy bill", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void PrintTemporaryBillButton_Click(object sender, RoutedEventArgs e)
@@ -29,8 +29,8 @@ public partial class OrderManagementView
             return;
         }
 
-        string path = _pdfPrintService.PrintTemporaryBill(_selectedTable, _selectedBill);
-        ShowCustomMessageBox($"Đã tạo PDF tạm tính:\n{path}", "In tạm tính", MessageBoxButton.OK, MessageBoxImage.Information);
+        _pdfPrintService.PrintTemporaryBill(_selectedTable, _selectedBill);
+        ShowCustomMessageBox("Đã chuẩn bị bill tạm tính.", "In tạm tính", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void PrintKitchenOrderPdfIfNeeded(IReadOnlyList<(BillLinePreview Line, int Quantity)> kitchenLines)
@@ -40,19 +40,19 @@ public partial class OrderManagementView
             return;
         }
 
-        string path = _pdfPrintService.PrintKitchenOrder(_selectedTable, _selectedBill, kitchenLines);
-        ShowCustomMessageBox($"Đã tạo PDF phiếu bếp:\n{path}", "Thông báo bếp", MessageBoxButton.OK, MessageBoxImage.Information);
+        _pdfPrintService.PrintKitchenOrder(_selectedTable, _selectedBill, kitchenLines);
+        ShowCustomMessageBox("Bếp đã nhận bill.", "Thông báo bếp", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void PrintPaymentReceiptPdf(BillPreview bill, PaymentDialogResult payment, string paymentMethods)
     {
-        string path = _pdfPrintService.PrintPaymentReceipt(
+        _pdfPrintService.PrintPaymentReceipt(
             _selectedTable,
             bill,
             payment.Parts.Sum(x => x.Amount),
             paymentMethods);
 
-        ShowCustomMessageBox($"Đã tạo PDF thanh toán:\n{path}", "Thanh toán", MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowCustomMessageBox("Đã xác nhận thanh toán.", "Thanh toán", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void PrintKitchenCancelPdf(BillLinePreview line, int cancelQuantity, string reason)
@@ -62,8 +62,8 @@ public partial class OrderManagementView
             return;
         }
 
-        string path = _pdfPrintService.PrintKitchenCancel(_selectedTable, _selectedBill, line, cancelQuantity, reason);
-        ShowCustomMessageBox($"Đã tạo PDF hủy bếp:\n{path}", "Hủy món", MessageBoxButton.OK, MessageBoxImage.Information);
+        _pdfPrintService.PrintKitchenCancel(_selectedTable, _selectedBill, line, cancelQuantity, reason);
+        ShowCustomMessageBox("Bếp đã nhận thông báo hủy món.", "Hủy món", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
 }

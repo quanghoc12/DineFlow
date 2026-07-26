@@ -119,10 +119,33 @@
                     <Button x:Name="OrderButton"
                             Style="{StaticResource NavButtonStyle}"
                             Click="OrderButton_Click">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE9C0;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
                             <TextBlock Text="Quản lý order" VerticalAlignment="Center"/>
-                        </StackPanel>
+                            </StackPanel>
+                            <Border x:Name="OrderSidebarBadge"
+                                    Grid.Column="1"
+                                    MinWidth="20"
+                                    Height="20"
+                                    Margin="10,0,0,0"
+                                    Padding="5,0"
+                                    Background="#EF4444"
+                                    CornerRadius="10"
+                                    Visibility="Collapsed"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="OrderSidebarBadgeText"
+                                           Foreground="White"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
                     </Button>
                     <Button x:Name="MenuButton"
                             Style="{StaticResource NavButtonStyle}"

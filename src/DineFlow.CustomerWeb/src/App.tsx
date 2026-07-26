@@ -56,6 +56,15 @@ function App() {
   const viewRef = useRef<View>(view);
 
   useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
     viewRef.current = view;
     if (view === "messages") {
       setUnreadMessageCount(0);
@@ -180,6 +189,7 @@ function App() {
           previous?.status !== message.status
         ) {
           setUnreadMessageCount((count) => count + 1);
+          showSuccess(getRealtimeReplyToast(message));
         }
 
         return upsertCustomerMessage(current, message);
@@ -493,6 +503,20 @@ function isRestaurantResponse(message: CustomerMessage) {
     message.messageType === "ServiceRequest" &&
     message.status === "Confirmed"
   );
+}
+
+function getRealtimeReplyToast(message: CustomerMessage) {
+  if (message.messageType === "Order") {
+    return message.status === "Cancelled"
+      ? "Nhà hàng đã phản hồi đơn gọi món."
+      : "Nhà hàng đã xác nhận đơn gọi món.";
+  }
+
+  if (message.messageType === "ServiceRequest") {
+    return "Nhà hàng đã phản hồi yêu cầu của bạn.";
+  }
+
+  return "Bạn có phản hồi mới từ nhà hàng.";
 }
 
 export default App;

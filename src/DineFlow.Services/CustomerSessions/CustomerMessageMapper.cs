@@ -11,7 +11,7 @@ public static class CustomerMessageMapper
         {
             MessageType = "Order",
             SourceId = order.OrderId,
-            Title = $"Gọi món {order.CreatedAt:HH:mm}",
+            Title = $"Gọi món {FormatVietnamTime(order.CreatedAt)}",
             Status = order.Status,
             Message = order.Status == "Cancelled"
                 ? order.CancelReason ?? order.SystemNote ?? order.CustomerNote
@@ -41,10 +41,35 @@ public static class CustomerMessageMapper
         {
             MessageType = "ServiceRequest",
             SourceId = request.RequestId,
-            Title = $"{title} {request.CreatedAt:HH:mm}",
+            Title = $"{title} {FormatVietnamTime(request.CreatedAt)}",
             Status = request.Status,
             Message = request.Message ?? request.Reason ?? request.PaymentMethod,
             CreatedAt = request.CreatedAt
         };
+    }
+
+    private static string FormatVietnamTime(DateTime value)
+    {
+        DateTime utc = value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        TimeZoneInfo zone = FindVietnamTimeZone();
+        return TimeZoneInfo.ConvertTimeFromUtc(utc, zone).ToString("HH:mm");
+    }
+
+    private static TimeZoneInfo FindVietnamTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
     }
 }

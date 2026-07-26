@@ -103,6 +103,7 @@ public partial class OrderManagementView
     {
         UpdateBadge(PendingOrdersBadge, PendingOrdersBadgeText, _allPendingOrders.Count);
         UpdateBadge(ServiceRequestsBadge, ServiceRequestsBadgeText, _allServiceRequests.Count);
+        SidebarNotificationCountChanged?.Invoke(_allPendingOrders.Count + _allServiceRequests.Count);
     }
 
     private static void UpdateBadge(Border badge, TextBlock text, int count)
@@ -663,6 +664,7 @@ public partial class OrderManagementView
             BillDto bill = await _apiClient.ConfirmOrderAsync(order.OrderId, targetBillId);
             await LoadPendingOrdersAsync();
             await LoadFromApiAsync();
+            ShowCustomMessageBox("Đã xác nhận order và gửi phản hồi cho khách.", "Xác nhận order", MessageBoxButton.OK, MessageBoxImage.Information);
             TableCard? table = _tables.FirstOrDefault(x => x.TableSessionId == bill.TableSessionId);
             if (table is not null)
             {

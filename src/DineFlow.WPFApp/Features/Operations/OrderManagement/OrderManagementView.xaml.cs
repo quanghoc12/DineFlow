@@ -56,6 +56,7 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged, 
     public string MenuPageText => $"1/{Math.Max(1, (int)Math.Ceiling(FilteredMenuItems.Count / 12d))}";
 
     public event PropertyChangedEventHandler? PropertyChanged;
+    public event Action<int>? SidebarNotificationCountChanged;
 
     internal OrderManagementView(
         StaffOrderApiClient apiClient,

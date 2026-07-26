@@ -82,7 +82,7 @@ public sealed class PendingOrderCard
             TableName = tableName;
             TableSessionId = order.TableSessionId;
             HeaderText = $"{tableName} - {order.OrderCode}";
-            DetailText = $"{order.SalesChannelName} | {order.CreatedAt:HH:mm dd/MM} | {order.ItemCount} món";
+            DetailText = $"{order.SalesChannelName} | {order.CreatedAt.ToLocalTime():HH:mm dd/MM} | {order.ItemCount} món";
             ItemSummary = string.Join(", ", order.Items.Select(x => $"{x.MenuItemNameSnapshot} x{x.Quantity}"));
             DetailMessage = string.Join(Environment.NewLine + Environment.NewLine, order.Items.Select(BuildLineDetail));
         }

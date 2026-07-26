@@ -49,6 +49,7 @@ public partial class MainWindow : Window
             new PdfDemoPrintService(),
             _menuManagementService,
             _billService);
+        _orderManagementView.SidebarNotificationCountChanged += UpdateOrderSidebarBadge;
         InitializeComponent();
         CurrentUserText.Text = string.IsNullOrWhiteSpace(_currentUserService.User?.FullName)
             ? _currentUserService.User?.Username ?? string.Empty
@@ -160,7 +161,17 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Closed(object? sender, EventArgs e)
     {
+        _orderManagementView.SidebarNotificationCountChanged -= UpdateOrderSidebarBadge;
         await _orderManagementView.DisposeAsync();
+    }
+
+    private void UpdateOrderSidebarBadge(int count)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            OrderSidebarBadge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            OrderSidebarBadgeText.Text = count > 99 ? "99+" : count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        });
     }
 
     private void SetActiveButton(Button activeButton)
