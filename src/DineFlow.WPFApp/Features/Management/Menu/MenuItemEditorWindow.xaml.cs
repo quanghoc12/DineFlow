@@ -136,7 +136,7 @@ public partial class MenuItemEditorWindow : Window
         OpenFileDialog dialog = new()
         {
             Title = "Chọn ảnh món",
-            Filter = "Image files|*.png;*.jpg;*.jpeg;*.webp|All files|*.*"
+            Filter = "Image files (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*"
         };
         if (dialog.ShowDialog(this) != true)
         {

@@ -9,6 +9,13 @@ from datetime import datetime
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://qcnchscanwgqeyyzipgu.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "menu-images")
+IMAGE_DIR = os.environ.get("MENU_IMAGE_DIR", "jpgs")
+CONTENT_TYPES = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
 
 def upload_image(file_path):
     filename = os.path.basename(file_path)
@@ -27,7 +34,7 @@ def upload_image(file_path):
     req = urllib.request.Request(upload_url, data=data, method="POST")
     req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
     req.add_header("apikey", SUPABASE_KEY)
-    req.add_header("Content-Type", "image/webp")
+    req.add_header("Content-Type", CONTENT_TYPES.get(os.path.splitext(filename)[1].lower(), "application/octet-stream"))
     req.add_header("x-upsert", "true")
 
     try:
@@ -43,13 +50,17 @@ def upload_image(file_path):
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    webps_dir = os.path.join(script_dir, "webps")
-    files = sorted(glob.glob(os.path.join(webps_dir, "*.webp")))
+    image_dir = os.path.join(script_dir, IMAGE_DIR)
+    files = sorted(
+        file_path
+        for pattern in ("*.jpg", "*.jpeg", "*.png", "*.webp")
+        for file_path in glob.glob(os.path.join(image_dir, pattern))
+    )
     if not files:
-        print("No webp files found in", webps_dir)
+        print("No image files found in", image_dir)
         sys.exit(1)
 
-    print(f"Processing {len(files)} webp images...")
+    print(f"Processing {len(files)} images from {image_dir}...")
     results = {}
     for f in files:
         name = os.path.splitext(os.path.basename(f))[0]

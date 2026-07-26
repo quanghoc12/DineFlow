@@ -220,10 +220,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Bò ba chỉ Mỹ nướng';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_bbq, 'Bò ba chỉ Mỹ nướng', 'Thịt ba chỉ bò Mỹ tươi ngon thái lát mỏng, nướng giòn thơm ngậy ăn kèm sốt nướng đặc trưng.', 199000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bo-ba-chi-my-nuong.webp', true, false, false, 40, v_now, v_now)
+        VALUES (v_cat_bbq, 'Bò ba chỉ Mỹ nướng', 'Thịt ba chỉ bò Mỹ tươi ngon thái lát mỏng, nướng giòn thơm ngậy ăn kèm sốt nướng đặc trưng.', 199000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bo-ba-chi-my-nuong.jpg', true, false, false, 40, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 199000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bo-ba-chi-my-nuong.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 199000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bo-ba-chi-my-nuong.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_bbq_sauce) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_bbq_sauce, 2, 1, v_now, v_now);
@@ -248,10 +248,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Thăn bò sốt Bulgogi';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_bbq, 'Thăn bò sốt Bulgogi', 'Thăn bò tươi ướp sốt Bulgogi hoa quả truyền thống thơm ngọt đậm đà.', 249000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/than-bo-sot-bulgogi.webp', true, false, false, 30, v_now, v_now)
+        VALUES (v_cat_bbq, 'Thăn bò sốt Bulgogi', 'Thăn bò tươi ướp sốt Bulgogi hoa quả truyền thống thơm ngọt đậm đà.', 249000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/than-bo-sot-bulgogi.jpg', true, false, false, 30, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 249000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/than-bo-sot-bulgogi.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 249000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/than-bo-sot-bulgogi.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_bbq_sauce) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_bbq_sauce, 2, 1, v_now, v_now);
@@ -276,10 +276,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Gà nướng sốt mật ong';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_bbq, 'Gà nướng sốt mật ong', 'Đùi gà rút xương ướp sốt mật ong mù tạt nướng xém cạnh da giòn rụm.', 169000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-nuong-sot-mat-ong.webp', true, false, false, 35, v_now, v_now)
+        VALUES (v_cat_bbq, 'Gà nướng sốt mật ong', 'Đùi gà rút xương ướp sốt mật ong mù tạt nướng xém cạnh da giòn rụm.', 169000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-nuong-sot-mat-ong.jpg', true, false, false, 35, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 169000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-nuong-sot-mat-ong.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 169000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-nuong-sot-mat-ong.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_bbq_sauce) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_bbq_sauce, 2, 1, v_now, v_now);
@@ -304,10 +304,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Bạch tuộc nướng cay';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_bbq, 'Bạch tuộc nướng cay', 'Bạch tuộc tươi giòn sần sật ướp sốt Gochujang siêu cay nướng than hồng.', 219000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bach-tuoc-nuong-cay.webp', true, false, false, 25, v_now, v_now)
+        VALUES (v_cat_bbq, 'Bạch tuộc nướng cay', 'Bạch tuộc tươi giòn sần sật ướp sốt Gochujang siêu cay nướng than hồng.', 219000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bach-tuoc-nuong-cay.jpg', true, false, false, 25, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 219000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bach-tuoc-nuong-cay.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 219000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/bach-tuoc-nuong-cay.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_spicy) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_spicy, 1, 1, v_now, v_now);
@@ -335,10 +335,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Lẩu kimchi hải sản';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_lau, 'Lẩu kimchi hải sản', 'Lẩu kimchi đậm vị chua cay kèm tôm, mực, ngao, đậu hũ non và rau nấm tươi.', 329000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-kimchi-hai-san.webp', true, false, false, 20, v_now, v_now)
+        VALUES (v_cat_lau, 'Lẩu kimchi hải sản', 'Lẩu kimchi đậm vị chua cay kèm tôm, mực, ngao, đậu hũ non và rau nấm tươi.', 329000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-kimchi-hai-san.jpg', true, false, false, 20, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 329000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-kimchi-hai-san.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 329000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-kimchi-hai-san.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_portion_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_portion_size, 1, 1, v_now, v_now);
@@ -366,10 +366,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Canh rong biển bò';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_lau, 'Canh rong biển bò', 'Canh rong biển Miyeok-guk nấu cùng thịt bò tươi mang lại vị ngọt thanh bổ dưỡng.', 119000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-rong-bien-bo.webp', true, false, false, 40, v_now, v_now)
+        VALUES (v_cat_lau, 'Canh rong biển bò', 'Canh rong biển Miyeok-guk nấu cùng thịt bò tươi mang lại vị ngọt thanh bổ dưỡng.', 119000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-rong-bien-bo.jpg', true, false, false, 40, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 119000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-rong-bien-bo.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 119000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-rong-bien-bo.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_portion_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_portion_size, 1, 1, v_now, v_now);
@@ -391,10 +391,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Canh tương đậu Doenjang';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_lau, 'Canh tương đậu Doenjang', 'Canh tương đậu đậu hũ truyền thống chuẩn vị nhà làm thanh mát thơm bùi.', 129000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-tuong-dau-doenjang.webp', true, false, false, 35, v_now, v_now)
+        VALUES (v_cat_lau, 'Canh tương đậu Doenjang', 'Canh tương đậu đậu hũ truyền thống chuẩn vị nhà làm thanh mát thơm bùi.', 129000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-tuong-dau-doenjang.jpg', true, false, false, 35, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 129000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-tuong-dau-doenjang.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 129000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/canh-tuong-dau-doenjang.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_portion_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_portion_size, 1, 1, v_now, v_now);
@@ -419,10 +419,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Lẩu nấm bò Bulgogi';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_lau, 'Lẩu nấm bò Bulgogi', 'Lẩu nấm tổng hợp thượng hạng kết hợp thịt bò Bulgogi xào sốt ngọt thơm thanh.', 349000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-nam-bo-bulgogi.webp', true, false, false, 20, v_now, v_now)
+        VALUES (v_cat_lau, 'Lẩu nấm bò Bulgogi', 'Lẩu nấm tổng hợp thượng hạng kết hợp thịt bò Bulgogi xào sốt ngọt thơm thanh.', 349000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-nam-bo-bulgogi.jpg', true, false, false, 20, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 349000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-nam-bo-bulgogi.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 349000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/lau-nam-bo-bulgogi.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_portion_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_portion_size, 1, 1, v_now, v_now);
@@ -447,10 +447,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Cơm chiên kimchi';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_com, 'Cơm chiên kimchi', 'Cơm chiên kimchi chua cay thơm lừng phủ trứng chiên lòng đào và rong biển vụn.', 89000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-chien-kimchi.webp', true, false, false, 50, v_now, v_now)
+        VALUES (v_cat_com, 'Cơm chiên kimchi', 'Cơm chiên kimchi chua cay thơm lừng phủ trứng chiên lòng đào và rong biển vụn.', 89000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-chien-kimchi.jpg', true, false, false, 50, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 89000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-chien-kimchi.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 89000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-chien-kimchi.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_spicy) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_spicy, 1, 1, v_now, v_now);
@@ -475,10 +475,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Mì lạnh Naengmyeon';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_com, 'Mì lạnh Naengmyeon', 'Mì lạnh sợi dai giòn tan trong nước dùng đá bào chua ngọt mát lạnh giải nhiệt.', 109000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mi-lanh-naengmyeon.webp', true, false, false, 30, v_now, v_now)
+        VALUES (v_cat_com, 'Mì lạnh Naengmyeon', 'Mì lạnh sợi dai giòn tan trong nước dùng đá bào chua ngọt mát lạnh giải nhiệt.', 109000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mi-lanh-naengmyeon.jpg', true, false, false, 30, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 109000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mi-lanh-naengmyeon.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 109000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mi-lanh-naengmyeon.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_rice_top) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_rice_top, 3, 1, v_now, v_now);
@@ -500,10 +500,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Kimbap bò Bulgogi';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_com, 'Kimbap bò Bulgogi', 'Cơm cuộn lá bàng nhân thịt bò Bulgogi đậm đà, trứng chiên và củ cải muối.', 79000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/kimbap-bo-bulgogi.webp', true, false, false, 45, v_now, v_now)
+        VALUES (v_cat_com, 'Kimbap bò Bulgogi', 'Cơm cuộn lá bàng nhân thịt bò Bulgogi đậm đà, trứng chiên và củ cải muối.', 79000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/kimbap-bo-bulgogi.jpg', true, false, false, 45, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 79000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/kimbap-bo-bulgogi.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 79000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/kimbap-bo-bulgogi.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_panchan) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_panchan, 4, 1, v_now, v_now);
@@ -525,10 +525,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Cơm gà sốt Gochujang';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_com, 'Cơm gà sốt Gochujang', 'Cơm trắng nóng hổi ăn kèm gà sốt Gochujang cay ngọt đậm đà hấp dẫn.', 99000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-ga-sot-gochujang.webp', true, false, false, 40, v_now, v_now)
+        VALUES (v_cat_com, 'Cơm gà sốt Gochujang', 'Cơm trắng nóng hổi ăn kèm gà sốt Gochujang cay ngọt đậm đà hấp dẫn.', 99000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-ga-sot-gochujang.jpg', true, false, false, 40, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 99000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-ga-sot-gochujang.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 99000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/com-ga-sot-gochujang.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_spicy) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_spicy, 1, 1, v_now, v_now);
@@ -553,10 +553,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Gà chiên sốt cay ngọt';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_side, 'Gà chiên sốt cay ngọt', 'Gà chiên giòn tan rưới sốt Yangnyeom cay ngọt mặn bùng nổ vị giác.', 149000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-chien-sot-cay-ngot.webp', true, false, false, 35, v_now, v_now)
+        VALUES (v_cat_side, 'Gà chiên sốt cay ngọt', 'Gà chiên giòn tan rưới sốt Yangnyeom cay ngọt mặn bùng nổ vị giác.', 149000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-chien-sot-cay-ngot.jpg', true, false, false, 35, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 149000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-chien-sot-cay-ngot.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 149000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/ga-chien-sot-cay-ngot.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_spicy) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_spicy, 1, 1, v_now, v_now);
@@ -581,10 +581,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Khoai tây chiên rong biển';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_side, 'Khoai tây chiên rong biển', 'Khoai tây chiên vàng giòn lắc bột rong biển thơm nức ngậy bùi.', 59000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/khoai-tay-chien-rong-bien.webp', true, false, false, 50, v_now, v_now)
+        VALUES (v_cat_side, 'Khoai tây chiên rong biển', 'Khoai tây chiên vàng giòn lắc bột rong biển thơm nức ngậy bùi.', 59000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/khoai-tay-chien-rong-bien.jpg', true, false, false, 50, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 59000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/khoai-tay-chien-rong-bien.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 59000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/khoai-tay-chien-rong-bien.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_panchan) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_panchan, 4, 1, v_now, v_now);
@@ -606,10 +606,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Salad rong biển mè';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_side, 'Salad rong biển mè', 'Salad rong biển tươi mát trộn sốt mè rang béo ngậy chua ngọt thanh vị.', 69000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/salad-rong-bien-me.webp', true, false, false, 45, v_now, v_now)
+        VALUES (v_cat_side, 'Salad rong biển mè', 'Salad rong biển tươi mát trộn sốt mè rang béo ngậy chua ngọt thanh vị.', 69000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/salad-rong-bien-me.jpg', true, false, false, 45, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 69000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/salad-rong-bien-me.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 69000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/salad-rong-bien-me.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_panchan) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_panchan, 4, 1, v_now, v_now);
@@ -631,10 +631,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Mandu chiên';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_side, 'Mandu chiên', 'Bánh xếp Hàn Quốc nhân thịt và hẹ chiên giòn rụm chấm sốt xì dầu ớt.', 79000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mandu-chien.webp', true, false, false, 40, v_now, v_now)
+        VALUES (v_cat_side, 'Mandu chiên', 'Bánh xếp Hàn Quốc nhân thịt và hẹ chiên giòn rụm chấm sốt xì dầu ớt.', 79000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mandu-chien.jpg', true, false, false, 40, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 79000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mandu-chien.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 79000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/mandu-chien.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_spicy) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_spicy, 1, 1, v_now, v_now);
@@ -659,10 +659,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Soju đào';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_drink, 'Soju đào', 'Rượu Soju hương đào trái cây ngọt thơm, nồng độ nhẹ thanh mát dễ uống.', 120000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-dao.webp', true, false, false, 80, v_now, v_now)
+        VALUES (v_cat_drink, 'Soju đào', 'Rượu Soju hương đào trái cây ngọt thơm, nồng độ nhẹ thanh mát dễ uống.', 120000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-dao.jpg', true, false, false, 80, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 120000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-dao.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 120000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-dao.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_soju_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_soju_size, 1, 1, v_now, v_now);
@@ -684,10 +684,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Soju nho xanh';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_drink, 'Soju nho xanh', 'Rượu Soju hương nho xanh tươi mát cực sảng khoái.', 120000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-nho-xanh.webp', true, false, false, 80, v_now, v_now)
+        VALUES (v_cat_drink, 'Soju nho xanh', 'Rượu Soju hương nho xanh tươi mát cực sảng khoái.', 120000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-nho-xanh.jpg', true, false, false, 80, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 120000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-nho-xanh.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 120000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/soju-nho-xanh.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_soju_size) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_soju_size, 1, 1, v_now, v_now);
@@ -709,10 +709,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Trà đào cam sả';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_drink, 'Trà đào cam sả', 'Trà đào thơm ngát kết hợp vị chua ngọt của cam tươi và hương sả nồng nàn.', 45000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/tra-dao-cam-sa.webp', true, false, false, 100, v_now, v_now)
+        VALUES (v_cat_drink, 'Trà đào cam sả', 'Trà đào thơm ngát kết hợp vị chua ngọt của cam tươi và hương sả nồng nàn.', 45000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/tra-dao-cam-sa.jpg', true, false, false, 100, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 45000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/tra-dao-cam-sa.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 45000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/tra-dao-cam-sa.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_drink_ice) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_drink_ice, 1, 1, v_now, v_now);
@@ -734,10 +734,10 @@ BEGIN
     SELECT "MenuItemId" INTO v_item_id FROM "MenuItems" WHERE "Name" = 'Nước gạo Hàn Quốc';
     IF v_item_id IS NULL THEN
         INSERT INTO "MenuItems" ("CategoryId", "Name", "Description", "BasePrice", "ImageUrl", "IsAvailable", "IsDeleted", "IsOutOfStock", "Stock", "CreatedAt", "UpdatedAt")
-        VALUES (v_cat_drink, 'Nước gạo Hàn Quốc', 'Nước gạo rang Sikhye ngọt thanh mát lành bổ dưỡng đậm chất truyền thống.', 35000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/nuoc-gao-han-quoc.webp', true, false, false, 90, v_now, v_now)
+        VALUES (v_cat_drink, 'Nước gạo Hàn Quốc', 'Nước gạo rang Sikhye ngọt thanh mát lành bổ dưỡng đậm chất truyền thống.', 35000, 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/nuoc-gao-han-quoc.jpg', true, false, false, 90, v_now, v_now)
         RETURNING "MenuItemId" INTO v_item_id;
     ELSE
-        UPDATE "MenuItems" SET "BasePrice" = 35000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/nuoc-gao-han-quoc.webp', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
+        UPDATE "MenuItems" SET "BasePrice" = 35000, "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260726/nuoc-gao-han-quoc.jpg', "UpdatedAt" = v_now WHERE "MenuItemId" = v_item_id;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM "MenuItemChoiceGroups" WHERE "MenuItemId" = v_item_id AND "ChoiceGroupId" = v_group_drink_ice) THEN
         INSERT INTO "MenuItemChoiceGroups" ("MenuItemId", "ChoiceGroupId", "MaxSelect", "DisplayOrder", "CreatedAt", "UpdatedAt") VALUES (v_item_id, v_group_drink_ice, 1, 1, v_now, v_now);
