@@ -48,8 +48,7 @@ public partial class MenuManagementView : UserControl
             return;
         }
 
-        bool isDefaultChannel = channel.ChannelCode == "TAI_QUAN" ||
-                               channel.ChannelName.ToLower().Contains("tại quán");
+        bool isDefaultChannel = IsDefaultDineInChannel(channel);
 
         if (isDefaultChannel)
         {
@@ -64,6 +63,10 @@ public partial class MenuManagementView : UserControl
             ChannelPricingTabs.Visibility = Visibility.Visible;
         }
     }
+
+    private static bool IsDefaultDineInChannel(ManagedSalesChannelDto channel) =>
+        channel.ChannelCode.Equals("DINE_IN", StringComparison.OrdinalIgnoreCase) ||
+        channel.ChannelName.Contains("tại quán", StringComparison.OrdinalIgnoreCase);
 
     private async void AddCategoryButton_Click(object sender, RoutedEventArgs e)
     {

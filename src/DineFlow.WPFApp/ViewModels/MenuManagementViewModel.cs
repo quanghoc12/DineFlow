@@ -136,7 +136,7 @@ public sealed class MenuManagementViewModel : BaseViewModel
         SalesChannels.Clear();
         foreach (ManagedSalesChannelDto channel in channels)
         {
-            if (channel.ChannelCode != "DINE_IN")
+            if (!channel.ChannelCode.Equals("DINE_IN", StringComparison.OrdinalIgnoreCase))
             {
                 SalesChannels.Add(channel);
             }

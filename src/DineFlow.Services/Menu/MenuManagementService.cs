@@ -7,6 +7,8 @@ namespace DineFlow.Services.Menu;
 
 public sealed class MenuManagementService : IMenuManagementService
 {
+    private const string DefaultDineInChannelCode = "DINE_IN";
+
     private readonly IMenuManagementRepository _repository;
     private readonly ICurrentUserService _currentUser;
 
@@ -418,6 +420,8 @@ public sealed class MenuManagementService : IMenuManagementService
         EnsureAdmin();
         string code = NormalizeChannelCode(request.ChannelCode);
         string name = request.ChannelName.Trim();
+        if (code == DefaultDineInChannelCode)
+            throw new InvalidOperationException("Kênh bán tại quán là kênh mặc định, không thể chỉnh sửa.");
         if (name.Length is < 1 or > 120)
             throw new InvalidOperationException("Tên kênh bán phải từ 1 đến 120 ký tự.");
         if (await _repository.SalesChannelCodeExistsAsync(code, request.SalesChannelId, cancellationToken))
@@ -439,6 +443,8 @@ public sealed class MenuManagementService : IMenuManagementService
         {
             SalesChannel channel = await _repository.GetSalesChannelAsync(request.SalesChannelId.Value, cancellationToken)
                 ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
+            if (IsDefaultDineInChannel(channel))
+                throw new InvalidOperationException("Kênh bán tại quán là kênh mặc định, không thể chỉnh sửa.");
             channel.ChannelCode = code;
             channel.ChannelName = name;
             channel.UpdatedAt = now;
@@ -455,6 +461,8 @@ public sealed class MenuManagementService : IMenuManagementService
         EnsureAdmin();
         SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
+        if (IsDefaultDineInChannel(channel))
+            throw new InvalidOperationException("Kênh bán tại quán là kênh mặc định, không thể tạm ngưng.");
         channel.IsActive = active;
         channel.UpdatedAt = DateTime.UtcNow;
         await _repository.SaveChangesAsync(cancellationToken);
@@ -468,7 +476,7 @@ public sealed class MenuManagementService : IMenuManagementService
         SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
 
-        if (channel.ChannelCode == "TAI_QUAN" || channel.ChannelName.ToLower().Contains("tại quán"))
+        if (IsDefaultDineInChannel(channel))
         {
             throw new InvalidOperationException("Không thể xóa kênh bán mặc định tại quán.");
         }
@@ -568,6 +576,10 @@ public sealed class MenuManagementService : IMenuManagementService
             throw new InvalidOperationException("Mã kênh bán chỉ gồm chữ, số hoặc dấu gạch dưới.");
         return normalized;
     }
+
+    private static bool IsDefaultDineInChannel(SalesChannel channel) =>
+        channel.ChannelCode.Equals(DefaultDineInChannelCode, StringComparison.OrdinalIgnoreCase) ||
+        channel.ChannelName.Contains("tại quán", StringComparison.OrdinalIgnoreCase);
 
     private void EnsureAdmin()
     {

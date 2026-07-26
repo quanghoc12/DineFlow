@@ -22,7 +22,7 @@ public partial class SalesChannelEditorWindow : Window
         HeadingText.Text = "Chỉnh sửa kênh bán";
         ToggleButton.Visibility = Visibility.Visible;
 
-        bool isDefault = channel.ChannelCode == "TAI_QUAN" || channel.ChannelName.ToLower().Contains("tại quán");
+        bool isDefault = IsDefaultDineInChannel(channel);
         if (!isDefault)
         {
             DeleteButton.Visibility = Visibility.Visible;
@@ -91,6 +91,10 @@ public partial class SalesChannelEditorWindow : Window
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    private static bool IsDefaultDineInChannel(ManagedSalesChannelDto channel) =>
+        channel.ChannelCode.Equals("DINE_IN", StringComparison.OrdinalIgnoreCase) ||
+        channel.ChannelName.Contains("tại quán", StringComparison.OrdinalIgnoreCase);
 
     private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
