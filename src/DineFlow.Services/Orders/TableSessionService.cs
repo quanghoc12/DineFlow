@@ -5,6 +5,7 @@ using DineFlow.Repositories.Common;
 using DineFlow.Repositories.Orders;
 using DineFlow.Services.Common;
 using DineFlow.Services.Realtime;
+using Microsoft.EntityFrameworkCore;
 
 namespace DineFlow.Services.Orders;
 
@@ -103,19 +104,33 @@ public class TableSessionService : ITableSessionService
                 cancellationToken);
         }
 
-        TableSessionDto dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        TableSessionDto dto;
+        try
         {
-            DiningTable table = await _tableSessionRepository.GetActiveTableByIdAsync(tableId, ct)
-                ?? throw new BusinessException("TABLE_NOT_FOUND", "Dining table does not exist or is inactive.");
+            dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+            {
+                DiningTable table = await _tableSessionRepository.GetActiveTableByIdAsync(tableId, ct)
+                    ?? throw new BusinessException("TABLE_NOT_FOUND", "Dining table does not exist or is inactive.");
 
-            TableSession session = CreateSession(table.TableId, openedBy);
-            table.Status = "Occupied";
-            table.UpdatedAt = DateTime.UtcNow;
+                TableSession session = CreateSession(table.TableId, openedBy);
+                table.Status = "Occupied";
+                table.UpdatedAt = DateTime.UtcNow;
 
-            await _tableSessionRepository.AddTableSessionAsync(session, ct);
-            await _unitOfWork.SaveChangesAsync(ct);
-            return MapSession(session);
-        }, cancellationToken);
+                await _tableSessionRepository.AddTableSessionAsync(session, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
+                return MapSession(session);
+            }, cancellationToken);
+        }
+        catch (DbUpdateException) when (!cancellationToken.IsCancellationRequested)
+        {
+            TableSession? current = await _tableSessionRepository.GetCurrentCustomerSessionByTableIdAsync(tableId, cancellationToken);
+            if (current is null)
+            {
+                throw;
+            }
+
+            dto = MapSession(current);
+        }
 
         await NotifyTableSessionChangedAsync(dto.TableSessionId, dto.TableId, cancellationToken);
         return dto;
@@ -139,20 +154,33 @@ public class TableSessionService : ITableSessionService
             return MapSession(existing);
         }
 
-        return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        try
         {
-            TableSession session = new()
+            return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
             {
-                TableId = table.TableId,
-                StartedAt = DateTime.UtcNow,
-                Status = "Browsing",
-                OpenedBy = openedBy
-            };
+                TableSession session = new()
+                {
+                    TableId = table.TableId,
+                    StartedAt = DateTime.UtcNow,
+                    Status = "Browsing",
+                    OpenedBy = openedBy
+                };
 
-            await _tableSessionRepository.AddTableSessionAsync(session, ct);
-            await _unitOfWork.SaveChangesAsync(ct);
-            return MapSession(session);
-        }, cancellationToken);
+                await _tableSessionRepository.AddTableSessionAsync(session, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
+                return MapSession(session);
+            }, cancellationToken);
+        }
+        catch (DbUpdateException) when (!cancellationToken.IsCancellationRequested)
+        {
+            TableSession? current = await _tableSessionRepository.GetCurrentCustomerSessionByTableIdAsync(table.TableId, cancellationToken);
+            if (current is null)
+            {
+                throw;
+            }
+
+            return MapSession(current);
+        }
     }
 
     public async Task<TableSessionDto> ActivateBrowsingSessionAsync(
