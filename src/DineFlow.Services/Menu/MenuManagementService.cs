@@ -8,6 +8,7 @@ namespace DineFlow.Services.Menu;
 public sealed class MenuManagementService : IMenuManagementService
 {
     private const string DefaultDineInChannelCode = "DINE_IN";
+    private const string CustomerWebChannelCode = "CUSTOMER_WEB";
 
     private readonly IMenuManagementRepository _repository;
     private readonly ICurrentUserService _currentUser;
@@ -461,8 +462,8 @@ public sealed class MenuManagementService : IMenuManagementService
         EnsureAdmin();
         SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
-        if (IsDefaultDineInChannel(channel))
-            throw new InvalidOperationException("Kênh bán tại quán là kênh mặc định, không thể tạm ngưng.");
+        if (IsRequiredSystemChannel(channel))
+            throw new InvalidOperationException("Kênh bán hệ thống không thể tạm ngưng.");
         channel.IsActive = active;
         channel.UpdatedAt = DateTime.UtcNow;
         await _repository.SaveChangesAsync(cancellationToken);
@@ -476,9 +477,9 @@ public sealed class MenuManagementService : IMenuManagementService
         SalesChannel channel = await _repository.GetSalesChannelAsync(salesChannelId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy kênh bán.");
 
-        if (IsDefaultDineInChannel(channel))
+        if (IsRequiredSystemChannel(channel))
         {
-            throw new InvalidOperationException("Không thể xóa kênh bán mặc định tại quán.");
+            throw new InvalidOperationException("Không thể xóa kênh bán hệ thống.");
         }
 
         channel.IsDeleted = true;
@@ -580,6 +581,10 @@ public sealed class MenuManagementService : IMenuManagementService
     private static bool IsDefaultDineInChannel(SalesChannel channel) =>
         channel.ChannelCode.Equals(DefaultDineInChannelCode, StringComparison.OrdinalIgnoreCase) ||
         channel.ChannelName.Contains("tại quán", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsRequiredSystemChannel(SalesChannel channel) =>
+        IsDefaultDineInChannel(channel) ||
+        channel.ChannelCode.Equals(CustomerWebChannelCode, StringComparison.OrdinalIgnoreCase);
 
     private void EnsureAdmin()
     {
