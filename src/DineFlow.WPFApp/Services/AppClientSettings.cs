@@ -8,12 +8,21 @@ internal static class AppClientSettings
 
     public static IConfiguration LoadConfiguration()
     {
-        return new ConfigurationBuilder()
+        string environmentName = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
+        IConfigurationBuilder builder = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true)
-            .AddJsonFile("appsettings.Development.json", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
+            .AddJsonFile("appsettings.json", optional: true);
+
+        if (environmentName.Equals("Development", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.AddJsonFile("appsettings.Development.json", optional: true);
+        }
+
+        builder.AddEnvironmentVariables();
+        return builder.Build();
     }
 
     public static string ResolveApiBaseUrl()
