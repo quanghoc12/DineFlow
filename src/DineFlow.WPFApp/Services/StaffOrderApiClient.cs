@@ -1,5 +1,7 @@
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.IO;
 using System.Text.Json;
 using DineFlow.BusinessObjects.Menu;
 using DineFlow.BusinessObjects.Reports;
@@ -188,6 +190,30 @@ public sealed class StaffOrderApiClient : IDisposable
         return await _httpClient.GetFromJsonAsync<MenuCatalogDto>(
             $"api/staff/menu?salesChannelCode={channelCode}&availableOnly=true",
             cancellationToken) ?? new MenuCatalogDto();
+    }
+
+    public async Task<string> UploadMenuImageAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            throw new InvalidOperationException("Không tìm thấy file ảnh.");
+        }
+
+        using MultipartFormDataContent form = new();
+        await using FileStream fileStream = File.OpenRead(filePath);
+        using StreamContent fileContent = new(fileStream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(ResolveImageContentType(filePath));
+        form.Add(fileContent, "file", Path.GetFileName(filePath));
+
+        HttpResponseMessage response = await _httpClient.PostAsync(
+            "api/staff/menu/images",
+            form,
+            cancellationToken);
+
+        MenuImageUploadResponse result = await ReadSuccessAsync<MenuImageUploadResponse>(response, cancellationToken);
+        return string.IsNullOrWhiteSpace(result.ImageUrl)
+            ? throw new InvalidOperationException("API không trả về đường dẫn ảnh.")
+            : result.ImageUrl;
     }
 
     public async Task<IReadOnlyList<BillSummaryDto>> GetBillsBySessionAsync(
@@ -613,6 +639,17 @@ public sealed class StaffOrderApiClient : IDisposable
         return body;
     }
 
+    private static string ResolveImageContentType(string filePath)
+    {
+        return Path.GetExtension(filePath).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream"
+        };
+    }
+
     private sealed class CreateEmptyBillApiRequest
     {
         public string BillName { get; set; } = string.Empty;
@@ -628,5 +665,10 @@ public sealed class StaffOrderApiClient : IDisposable
     {
         public string? Code { get; set; }
         public string? Message { get; set; }
+    }
+
+    private sealed class MenuImageUploadResponse
+    {
+        public string? ImageUrl { get; set; }
     }
 }

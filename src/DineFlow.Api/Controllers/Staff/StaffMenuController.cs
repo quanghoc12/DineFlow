@@ -1,3 +1,4 @@
+using DineFlow.Api.Services;
 using DineFlow.Services.Menu;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,14 @@ namespace DineFlow.Api.Controllers.Staff;
 public class StaffMenuController : StaffControllerBase
 {
     private readonly IMenuCatalogService _menuCatalogService;
+    private readonly IMenuImageStorageService _menuImageStorageService;
 
-    public StaffMenuController(IMenuCatalogService menuCatalogService)
+    public StaffMenuController(
+        IMenuCatalogService menuCatalogService,
+        IMenuImageStorageService menuImageStorageService)
     {
         _menuCatalogService = menuCatalogService;
+        _menuImageStorageService = menuImageStorageService;
     }
 
     [HttpGet]
@@ -41,5 +46,27 @@ public class StaffMenuController : StaffControllerBase
     {
         MenuCatalogItemDto? response = await _menuCatalogService.GetMenuItemAsync(menuItemId, salesChannelCode, cancellationToken);
         return response is null ? NotFound() : Ok(response);
+    }
+
+    [HttpPost("images")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<ActionResult<MenuImageUploadResult>> UploadImage(
+        [FromForm] IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        if (file is null)
+        {
+            return BadRequest(new { code = "ImageRequired", message = "Vui lòng chọn ảnh món." });
+        }
+
+        try
+        {
+            MenuImageUploadResult result = await _menuImageStorageService.UploadMenuImageAsync(file, cancellationToken);
+            return Ok(result);
+        }
+        catch (MenuImageUploadException ex)
+        {
+            return BadRequest(new { code = "ImageUploadFailed", message = ex.Message });
+        }
     }
 }

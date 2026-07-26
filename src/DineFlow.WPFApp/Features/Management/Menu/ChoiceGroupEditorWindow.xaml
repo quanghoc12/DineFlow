@@ -73,7 +73,7 @@
                     <DataGridTemplateColumn Header="Thao tác" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Content="Sửa" Tag="{Binding}" Click="EditChoice_Click" Padding="10,4" />
+                                <Button Content="Sửa" Tag="{Binding}" Click="EditChoice_Click" Style="{StaticResource SecondaryButtonStyle}" MinHeight="30" Padding="12,2" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -89,7 +89,7 @@
                     <TextBox x:Name="ExtraPriceTextBox" Text="0" Padding="9,6" />
                     <WrapPanel Margin="0,14,0,0">
                         <Button x:Name="AddOrUpdateChoiceButton" Content="Thêm" Click="AddOrUpdateChoice_Click" Padding="13,7" Margin="0,0,8,0" />
-                        <Button Content="Làm mới" Click="ResetChoiceForm_Click" Padding="13,7" />
+                        <Button Content="Làm mới" Click="ResetChoiceForm_Click" Style="{StaticResource SecondaryButtonStyle}" Padding="13,7" />
                     </WrapPanel>
                 </StackPanel>
             </Border>
@@ -98,7 +98,7 @@
             <StackPanel Grid.Row="3" Margin="0,16,0,0">
                 <TextBlock x:Name="ErrorText" Foreground="#C53030" TextWrapping="Wrap" Margin="0,0,0,10" Height="Auto" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Hủy" Click="CancelButton_Click" Padding="15,7" Margin="0,0,8,0" />
+                    <Button Content="Hủy" Click="CancelButton_Click" Style="{StaticResource SecondaryButtonStyle}" Padding="15,7" Margin="0,0,8,0" />
                     <Button Content="Lưu nhóm" Click="SaveButton_Click" Padding="15,7" />
                 </StackPanel>
             </StackPanel>

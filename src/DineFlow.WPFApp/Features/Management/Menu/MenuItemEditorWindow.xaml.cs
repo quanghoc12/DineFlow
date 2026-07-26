@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Menu;
+using DineFlow.WPFApp.Services;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -130,16 +131,41 @@ public partial class MenuItemEditorWindow : Window
 
 
 
-    private void PickImageButton_Click(object sender, RoutedEventArgs e)
+    private async void PickImageButton_Click(object sender, RoutedEventArgs e)
     {
         OpenFileDialog dialog = new()
         {
             Title = "Chọn ảnh món",
-            Filter = "Image files|*.png;*.jpg;*.jpeg;*.webp;*.bmp|All files|*.*"
+            Filter = "Image files|*.png;*.jpg;*.jpeg;*.webp|All files|*.*"
         };
-        if (dialog.ShowDialog(this) == true)
+        if (dialog.ShowDialog(this) != true)
         {
-            ImageTextBox.Text = dialog.FileName;
+            return;
+        }
+
+        string previousImageUrl = ImageTextBox.Text;
+        PickImageButton.IsEnabled = false;
+        ImageUploadStatusText.Text = "Đang tải ảnh...";
+        ErrorText.Text = string.Empty;
+
+        try
+        {
+            using StaffOrderApiClient apiClient = new();
+            string imageUrl = await apiClient.UploadMenuImageAsync(dialog.FileName);
+            ImageTextBox.Text = imageUrl;
+            ImageUploadStatusText.Text = "Đã tải ảnh.";
+        }
+        catch (Exception ex)
+        {
+            ImageTextBox.Text = previousImageUrl;
+            ImageUploadStatusText.Text = string.Empty;
+            ErrorText.Text = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không thể tải ảnh lên. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            PickImageButton.IsEnabled = true;
         }
     }
 

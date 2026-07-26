@@ -4,6 +4,7 @@ using DineFlow.Api.Middleware;
 using DineFlow.Api.Hubs;
 using DineFlow.Api.Realtime;
 using DineFlow.Api.BackgroundServices;
+using DineFlow.Api.Services;
 using DineFlow.Services;
 using DineFlow.Services.Realtime;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddDineFlowServices();
+builder.Services.AddHttpClient<IMenuImageStorageService, MenuImageStorageService>();
 builder.Services.AddScoped<IRealtimeNotificationService, SignalRRealtimeNotificationService>();
 builder.Services.AddCors(options =>
 {
