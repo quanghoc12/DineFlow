@@ -14,7 +14,7 @@ using DineFlow.WPFApp.Services;
 
 namespace DineFlow.WPFApp.Features.Operations.OrderManagement;
 
-public partial class OrderManagementView : UserControl, INotifyPropertyChanged
+public partial class OrderManagementView : UserControl, INotifyPropertyChanged, IAsyncDisposable
 {
     private readonly StaffOrderApiClient _apiClient;
     private readonly StaffRealtimeClient _realtimeClient;
@@ -33,6 +33,8 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
     private readonly List<ServiceRequestCard> _allServiceRequests = [];
     private string? _selectedCategory;
     private bool _usesApiData;
+    private bool _isInitialized;
+    private bool _isDisposed;
     private bool _isAddingMenuItem;
     private string _loadedMenuSalesChannelCode = "DINE_IN";
     private TableCard? _selectedTable;
@@ -77,11 +79,16 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
         RefreshBill();
         RegisterRealtimeHandlers();
         Loaded += OrderManagementView_Loaded;
-        Unloaded += OrderManagementView_Unloaded;
     }
 
     private async void OrderManagementView_Loaded(object sender, RoutedEventArgs e)
     {
+        if (_isInitialized || _isDisposed)
+        {
+            return;
+        }
+
+        _isInitialized = true;
         try
         {
             await _realtimeClient.StartAsync();
@@ -94,9 +101,16 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged
         await LoadFromApiAsync();
     }
 
-    private async void OrderManagementView_Unloaded(object sender, RoutedEventArgs e)
+    public async ValueTask DisposeAsync()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
         await _realtimeClient.DisposeAsync();
+        _apiClient.Dispose();
     }
 
     private async Task LoadFromApiAsync()

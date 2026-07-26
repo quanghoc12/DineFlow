@@ -9,9 +9,7 @@ using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.WPFApp.Features.Reports.Dashboard;
 using DineFlow.WPFApp.Features.Reports.ViewModels;
 using DineFlow.WPFApp.Features.Reports.Revenue;
-using DineFlow.WPFApp.Features.Reports.TopSelling;
-using DineFlow.WPFApp.Features.Reports.Payments;
-using DineFlow.WPFApp.Features.Reports.BillHistory;
+using DineFlow.WPFApp.Features.Reports.Cancellation;
 using DineFlow.WPFApp.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,10 +26,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.Development.json", optional: false)
-            .Build();
+        IConfiguration configuration = AppClientSettings.LoadConfiguration();
 
         string connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Thiếu ConnectionStrings:DefaultConnection.");
@@ -45,21 +40,17 @@ public partial class App : Application
         services.AddTransient<TableManagementViewModel>();
         services.AddTransient<MenuManagementViewModel>();
         services.AddTransient<DashboardViewModel>();
+        services.AddScoped<DashboardChatSessionStore>();
+        services.AddScoped<DashboardAssistantViewModel>();
         services.AddTransient<RevenueReportViewModel>();
-        services.AddTransient<TopSellingItemsReportViewModel>();
-        services.AddTransient<RevenueByPaymentMethodViewModel>();
-        services.AddTransient<PaidBillHistoryViewModel>();
-        services.AddTransient<PaymentCorrectionViewModel>();
+        services.AddTransient<CancellationViewModel>();
         services.AddTransient<LoginWindow>();
         services.AddTransient<UserManagementView>();
         services.AddTransient<TableManagementView>();
         services.AddTransient<MenuManagementView>();
         services.AddTransient<DashboardView>();
         services.AddTransient<RevenueReportView>();
-        services.AddTransient<TopSellingItemsReportView>();
-        services.AddTransient<RevenueByPaymentMethodView>();
-        services.AddTransient<PaidBillHistoryView>();
-        services.AddTransient<PaymentCorrectionView>();
+        services.AddTransient<CancellationView>();
         services.AddTransient<MainWindow>();
         _serviceProvider = services.BuildServiceProvider();
 

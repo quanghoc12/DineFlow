@@ -1,6 +1,8 @@
 using DineFlow.BusinessObjects.Auth;
 using DineFlow.BusinessObjects.Menu;
 using DineFlow.BusinessObjects.Tables;
+using DineFlow.BusinessObjects.Orders;
+using DineFlow.BusinessObjects.Bills;
 using DineFlow.DataAccessObjects.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
@@ -11,17 +13,23 @@ public static class DevelopmentDataSeeder
 {
     public static async Task SeedDevelopmentDataAsync(AppDbContext dbContext, CancellationToken cancellationToken = default)
     {
-        if (!await HasCurrentSchemaAsync(dbContext, cancellationToken))
-        {
-            Console.WriteLine("Development seed skipped: database schema is not current. Recreate/update the database, then start the API again.");
-            return;
-        }
+        // Seeding is now handled via EF Core Migrations (SeedAllRestaurantDataAndHistory)
+        return;
 
         // Only run clean-slate seeding if the Korean menu is not yet present
         bool alreadySeeded = await dbContext.Categories.AnyAsync(x => x.CategoryName == "K-BBQ (Thịt nướng)", cancellationToken);
         if (alreadySeeded)
         {
-            Console.WriteLine("Korean restaurant data is already seeded. Skipping seeder.");
+            bool billsEmpty = !await dbContext.Bills.AnyAsync(cancellationToken);
+            if (billsEmpty)
+            {
+                Console.WriteLine("Korean restaurant data is seeded but Bills are empty. Seeding historical data...");
+                await SeedHistoricalDataAsync(dbContext, cancellationToken);
+            }
+            else
+            {
+                Console.WriteLine("Korean restaurant data and historical bills are already seeded. Skipping seeder for instant startup.");
+            }
             return;
         }
 
@@ -40,6 +48,9 @@ public static class DevelopmentDataSeeder
         await SeedMenuItemChoiceGroupsAsync(dbContext, menuItems, choiceGroups, now, cancellationToken);
         await SeedMenuItemChannelPricesAsync(dbContext, menuItems, salesChannels, now, cancellationToken);
         await SeedChoiceItemChannelPricesAsync(dbContext, choiceItems, salesChannels, now, cancellationToken);
+
+        Console.WriteLine("Seeding historical data...");
+        await SeedHistoricalDataAsync(dbContext, cancellationToken);
 
         _ = users;
         _ = tables;
@@ -77,6 +88,29 @@ public static class DevelopmentDataSeeder
 
         await dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
         Console.WriteLine("Cleanup completed successfully.");
+    }
+
+    private static async Task ClearTransactionDataOnlyAsync(AppDbContext dbContext, CancellationToken cancellationToken)
+    {
+        Console.WriteLine("Clearing database transaction tables only...");
+
+        string sql = """
+            TRUNCATE TABLE
+                "Payments",
+                "BillDetailAdjustments",
+                "BillDetails",
+                "Bills",
+                "ServiceRequests",
+                "OrderItemSelectedChoices",
+                "OrderItems",
+                "Orders",
+                "TableSessionCustomers",
+                "TableSessions"
+            RESTART IDENTITY CASCADE;
+            """;
+
+        await dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        Console.WriteLine("Transaction tables cleanup completed successfully.");
     }
 
     private static async Task<bool> HasCurrentSchemaAsync(AppDbContext dbContext, CancellationToken cancellationToken)
@@ -707,5 +741,258 @@ public static class DevelopmentDataSeeder
 
         channelPrice.ChannelExtraPrice = extraPrice;
         channelPrice.UpdatedAt = now;
+    }
+
+    private static async Task SeedHistoricalDataAsync(AppDbContext dbContext, CancellationToken cancellationToken)
+    {
+        var random = new Random(42);
+        var tables = await dbContext.DiningTables.ToListAsync(cancellationToken);
+        var menuItems = await dbContext.MenuItems.ToListAsync(cancellationToken);
+        var users = await dbContext.Users.ToListAsync(cancellationToken);
+        var salesChannels = await dbContext.SalesChannels.ToListAsync(cancellationToken);
+
+        if (tables.Count == 0 || menuItems.Count == 0 || users.Count == 0 || salesChannels.Count == 0)
+        {
+            Console.WriteLine("Warning: Seeding cancelled - prerequisite tables are empty.");
+            return;
+        }
+
+        var channel = salesChannels.FirstOrDefault(x => x.ChannelCode == "DINE_IN") ?? salesChannels[0];
+        var staffList = users.Where(x => x.Role == "Staff").ToList();
+        if (staffList.Count == 0) staffList = users;
+
+        var reasons = new[]
+        {
+            "Khách đổi ý muốn gọi món khác",
+            "Món chuẩn bị quá lâu",
+            "Nhân viên ghi nhầm món",
+            "Hết nguyên liệu chế biến",
+            "Khách hủy bàn đi về"
+        };
+
+        for (int dayOffset = 30; dayOffset >= 0; dayOffset--)
+        {
+            DateTime localDate = DateTime.Today.AddDays(-dayOffset);
+            int count = random.Next(8, 16);
+            
+            for (int i = 0; i < count; i++)
+            {
+                var table = tables[random.Next(tables.Count)];
+                var staff = staffList[random.Next(staffList.Count)];
+
+                DateTime sessionStartLocal = localDate.AddHours(random.Next(10, 22)).AddMinutes(random.Next(0, 60));
+                DateTime sessionStartUtc = DateTime.SpecifyKind(sessionStartLocal.AddHours(-7), DateTimeKind.Utc);
+                DateTime sessionEndUtc = DateTime.SpecifyKind(sessionStartUtc.AddMinutes(random.Next(45, 95)), DateTimeKind.Utc);
+
+                var session = new TableSession
+                {
+                    TableId = table.TableId,
+                    StartedAt = sessionStartUtc,
+                    EndedAt = sessionEndUtc,
+                    Status = "Closed",
+                    OpenedBy = staff.UserId,
+                    ClosedBy = staff.UserId
+                };
+                await dbContext.TableSessions.AddAsync(session, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                int orderCount = random.Next(1, 3);
+                var activeOrderItems = new List<OrderItem>();
+
+                for (int o = 0; o < orderCount; o++)
+                {
+                    bool isCancelledOrder = random.NextDouble() < 0.05;
+                    DateTime orderCreated = DateTime.SpecifyKind(sessionStartUtc.AddMinutes(o * 15), DateTimeKind.Utc);
+                    DateTime orderUpdated = DateTime.SpecifyKind(sessionStartUtc.AddMinutes(o * 15 + 10), DateTimeKind.Utc);
+
+                    var order = new Order
+                    {
+                        TableSessionId = session.TableSessionId,
+                        SalesChannelId = channel.SalesChannelId,
+                        OrderCode = $"ORD-{sessionStartLocal:yyyyMMdd}-{i:D3}-{o:D2}-{random.Next(1000, 9999)}",
+                        OrderSource = "Staff",
+                        Status = isCancelledOrder ? "Cancelled" : "Served",
+                        CreatedAt = orderCreated,
+                        UpdatedAt = orderUpdated,
+                        CreatedBy = staff.UserId
+                    };
+
+                    if (isCancelledOrder)
+                    {
+                        order.CancelledAt = DateTime.SpecifyKind(orderCreated.AddMinutes(15), DateTimeKind.Utc);
+                        order.CancelledBy = staff.UserId;
+                        order.CancelReason = reasons[random.Next(reasons.Length)];
+                    }
+
+                    await dbContext.Orders.AddAsync(order, cancellationToken);
+                    await dbContext.SaveChangesAsync(cancellationToken);
+
+                    int itemCount = random.Next(2, 6);
+                    for (int itemIdx = 0; itemIdx < itemCount; itemIdx++)
+                    {
+                        var menuItem = menuItems[random.Next(menuItems.Count)];
+                        var orderItem = new OrderItem
+                        {
+                            OrderId = order.OrderId,
+                            MenuItemId = menuItem.MenuItemId,
+                            MenuItemNameSnapshot = menuItem.Name,
+                            BasePriceSnapshot = menuItem.BasePrice,
+                            ChannelExtraPriceSnapshot = 0m,
+                            FinalUnitPriceSnapshot = menuItem.BasePrice,
+                            Quantity = random.Next(1, 4),
+                            CreatedAt = orderCreated,
+                            UpdatedAt = orderUpdated
+                        };
+
+                        await dbContext.OrderItems.AddAsync(orderItem, cancellationToken);
+                        if (!isCancelledOrder)
+                        {
+                            activeOrderItems.Add(orderItem);
+                        }
+                    }
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+
+                if (activeOrderItems.Count == 0) continue;
+
+                bool isCancelledBill = random.NextDouble() < 0.08;
+                decimal subtotal = activeOrderItems.Sum(x => x.FinalUnitPriceSnapshot * x.Quantity);
+                decimal discount = random.NextDouble() < 0.15 ? 10000m * random.Next(1, 5) : 0m;
+                if (discount > subtotal) discount = 0m;
+                decimal finalAmount = subtotal - discount;
+
+                var bill = new Bill
+                {
+                    TableSessionId = session.TableSessionId,
+                    SalesChannelId = channel.SalesChannelId,
+                    SalesChannelCodeSnapshot = channel.ChannelCode,
+                    SalesChannelNameSnapshot = channel.ChannelName,
+                    BillCode = $"BILL-{sessionStartLocal:yyyyMMdd}-{i:D3}-{random.Next(1000, 9999)}",
+                    BillName = $"Hóa đơn {table.TableName}",
+                    BillNo = i + 1,
+                    Status = isCancelledBill ? "Cancelled" : "Paid",
+                    SubTotal = subtotal,
+                    DiscountAmount = discount,
+                    FinalAmount = finalAmount,
+                    CreatedAt = sessionEndUtc,
+                    CreatedBy = staff.UserId
+                };
+
+                if (isCancelledBill)
+                {
+                    bill.CancelledAt = DateTime.SpecifyKind(sessionEndUtc.AddMinutes(5), DateTimeKind.Utc);
+                    bill.CancelledBy = staff.UserId;
+                    bill.CancelReason = reasons[random.Next(reasons.Length)];
+                }
+                else
+                {
+                    bill.PaidAt = sessionEndUtc;
+                }
+
+                await dbContext.Bills.AddAsync(bill, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                var billDetails = new List<BillDetail>();
+                foreach (var orderItem in activeOrderItems)
+                {
+                    var detail = new BillDetail
+                    {
+                        BillId = bill.BillId,
+                        MenuItemId = orderItem.MenuItemId,
+                        SalesChannelId = channel.SalesChannelId,
+                        ItemName = orderItem.MenuItemNameSnapshot,
+                        Quantity = orderItem.Quantity,
+                        NotifiedQuantity = orderItem.Quantity,
+                        BasePriceSnapshot = orderItem.BasePriceSnapshot,
+                        MenuItemChannelExtraPriceSnapshot = 0m,
+                        ChoiceExtraPriceSnapshot = 0m,
+                        UnitPrice = orderItem.FinalUnitPriceSnapshot,
+                        TotalPrice = orderItem.FinalUnitPriceSnapshot * orderItem.Quantity,
+                        CreatedAt = sessionEndUtc
+                    };
+                    await dbContext.BillDetails.AddAsync(detail, cancellationToken);
+                    billDetails.Add(detail);
+                }
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                if (!isCancelledBill)
+                {
+                    bool isCombined = random.NextDouble() < 0.25;
+                    if (isCombined)
+                    {
+                        string firstMethod = "Cash";
+                        string secondMethod = random.NextDouble() < 0.5 ? "Card" : "BankTransfer";
+
+                        decimal firstAmount = Math.Round((finalAmount * (decimal)(0.3 + random.NextDouble() * 0.4)) / 1000m) * 1000m;
+                        if (firstAmount >= finalAmount) firstAmount = finalAmount - 10000m;
+                        if (firstAmount <= 0) firstAmount = 10000m;
+                        decimal secondAmount = finalAmount - firstAmount;
+
+                        var payment1 = new Payment
+                        {
+                            BillId = bill.BillId,
+                            PaymentMethod = firstMethod,
+                            Amount = firstAmount,
+                            PaidAt = sessionEndUtc,
+                            ConfirmedBy = staff.UserId
+                        };
+
+                        var payment2 = new Payment
+                        {
+                            BillId = bill.BillId,
+                            PaymentMethod = secondMethod,
+                            Amount = secondAmount,
+                            PaidAt = sessionEndUtc,
+                            ConfirmedBy = staff.UserId
+                        };
+
+                        await dbContext.Payments.AddAsync(payment1, cancellationToken);
+                        await dbContext.Payments.AddAsync(payment2, cancellationToken);
+                    }
+                    else
+                    {
+                        var methods = new[] { "Cash", "BankTransfer", "Card" };
+                        string method = methods[random.Next(methods.Length)];
+
+                        var payment = new Payment
+                        {
+                            BillId = bill.BillId,
+                            PaymentMethod = method,
+                            Amount = finalAmount,
+                            PaidAt = sessionEndUtc,
+                            ConfirmedBy = staff.UserId
+                        };
+                        await dbContext.Payments.AddAsync(payment, cancellationToken);
+                    }
+
+                    bool hasAdjustment = random.NextDouble() < 0.15;
+                    if (hasAdjustment && billDetails.Count > 0)
+                    {
+                        var targetDetail = billDetails[random.Next(billDetails.Count)];
+                        int qtyChange = random.Next(1, targetDetail.Quantity + 1);
+                        string changeType = qtyChange == targetDetail.Quantity ? "CancelItem" : "ReduceQuantity";
+
+                        var adj = new BillDetailAdjustment
+                        {
+                            BillId = bill.BillId,
+                            BillDetailId = targetDetail.BillDetailId,
+                            MenuItemId = targetDetail.MenuItemId,
+                            ItemName = targetDetail.ItemName,
+                            QuantityBefore = targetDetail.Quantity,
+                            QuantityAfter = targetDetail.Quantity - qtyChange,
+                            ChangedQuantity = qtyChange,
+                            ChangeType = changeType,
+                            Reason = reasons[random.Next(reasons.Length)],
+                            CreatedAt = DateTime.SpecifyKind(sessionEndUtc.AddMinutes(-5), DateTimeKind.Utc),
+                            CreatedBy = staff.UserId
+                        };
+                        await dbContext.BillDetailAdjustments.AddAsync(adj, cancellationToken);
+                    }
+                }
+                
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+        Console.WriteLine("Historical billing and cancellation data generated successfully.");
     }
 }

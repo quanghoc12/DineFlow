@@ -70,6 +70,75 @@ public sealed class PaymentCorrectionService : IPaymentCorrectionService
         }, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<PaymentDto>> BatchUpdatePaidPaymentsAsync(
+        int billId,
+        BatchUpdatePaymentsRequest request,
+        int currentUserId,
+        string currentUserRole,
+        CancellationToken cancellationToken = default)
+    {
+        if (!AuthRoles.CanManage(currentUserRole))
+        {
+            throw new UnauthorizedAccessException("Chỉ Admin hoặc Chủ nhà hàng được sửa phương thức thanh toán.");
+        }
+
+        string changeReason = request.ChangeReason.Trim();
+        if (string.IsNullOrWhiteSpace(changeReason))
+        {
+            throw new BusinessException("CHANGE_REASON_REQUIRED", "Lý do thay đổi là bắt buộc.");
+        }
+
+        return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            Bill bill = await _billRepository.GetBillByIdAsync(billId, ct)
+                ?? throw new BusinessException("BILL_NOT_FOUND", "Bill does not exist.");
+
+            if (bill.Status != "Paid")
+            {
+                throw new BusinessException("BILL_NOT_PAID", "Chỉ bill đã thanh toán mới được sửa payment.");
+            }
+
+            IReadOnlyList<Payment> payments = await _paymentRepository.GetPaymentsByBillIdAsync(billId, ct);
+            
+            decimal newSum = request.Payments.Sum(x => x.Amount);
+            if (newSum != bill.FinalAmount)
+            {
+                throw new BusinessException("PAYMENT_TOTAL_MISMATCH", $"Tổng số tiền thanh toán ({newSum:N0} đ) phải bằng số tiền hóa đơn ({bill.FinalAmount:N0} đ).");
+            }
+
+            List<PaymentDto> updatedDtos = [];
+            DateTime updateTime = DateTime.UtcNow;
+
+            foreach (var updatePart in request.Payments)
+            {
+                Payment payment = payments.FirstOrDefault(x => x.PaymentId == updatePart.PaymentId)
+                    ?? throw new BusinessException("PAYMENT_NOT_FOUND", $"Payment ID {updatePart.PaymentId} không thuộc bill.");
+
+                string normalizedMethod = updatePart.PaymentMethod.Trim();
+                if (!PaymentMethods.IsStoredValue(normalizedMethod))
+                {
+                    throw new BusinessException("PAYMENT_METHOD_INVALID", $"Phương thức {updatePart.PaymentMethod} không hợp lệ.");
+                }
+
+                if (updatePart.Amount < 0)
+                {
+                    throw new BusinessException("PAYMENT_AMOUNT_INVALID", "Số tiền thanh toán phải lớn hơn hoặc bằng 0.");
+                }
+
+                payment.PaymentMethod = normalizedMethod;
+                payment.Amount = updatePart.Amount;
+                payment.UpdatedAt = updateTime;
+                payment.UpdatedBy = currentUserId;
+                payment.ChangeReason = changeReason;
+
+                updatedDtos.Add(MapPayment(payment));
+            }
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            return updatedDtos;
+        }, cancellationToken);
+    }
+
     private static PaymentDto MapPayment(Payment payment)
     {
         return new PaymentDto

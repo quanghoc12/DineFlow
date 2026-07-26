@@ -155,3 +155,16 @@ public class UpdatePaidPaymentMethodRequest
     public string NewPaymentMethod { get; set; } = string.Empty;
     public string ChangeReason { get; set; } = string.Empty;
 }
+
+public class BatchUpdatePaymentsRequest
+{
+    public string ChangeReason { get; set; } = string.Empty;
+    public List<PaymentUpdatePart> Payments { get; set; } = [];
+}
+
+public class PaymentUpdatePart
+{
+    public int PaymentId { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+}

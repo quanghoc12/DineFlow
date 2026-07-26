@@ -8,4 +8,11 @@ public interface IPaymentCorrectionService
         int currentUserId,
         string currentUserRole,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PaymentDto>> BatchUpdatePaidPaymentsAsync(
+        int billId,
+        BatchUpdatePaymentsRequest request,
+        int currentUserId,
+        string currentUserRole,
+        CancellationToken cancellationToken = default);
 }

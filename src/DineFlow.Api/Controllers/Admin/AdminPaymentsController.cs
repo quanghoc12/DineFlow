@@ -30,4 +30,20 @@ public sealed class AdminPaymentsController : StaffControllerBase
 
         return Ok(response);
     }
+
+    [HttpPut("{billId:int}/batch")]
+    public async Task<ActionResult<IReadOnlyList<PaymentDto>>> BatchUpdatePaidPayments(
+        int billId,
+        [FromBody] BatchUpdatePaymentsRequest request,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<PaymentDto> response = await _paymentCorrectionService.BatchUpdatePaidPaymentsAsync(
+            billId,
+            request,
+            CurrentUserId,
+            CurrentUserRole,
+            cancellationToken);
+
+        return Ok(response);
+    }
 }

@@ -23,4 +23,10 @@ public sealed class DashboardService : IDashboardService
 
     public Task<DashboardDto> GetDashboardByDateAsync(DateTime localDate, CancellationToken cancellationToken = default) =>
         _reportRepository.GetDashboardByLocalDateAsync(localDate, VietnamOffset, DashboardTopItemCount, cancellationToken);
+
+    public Task<DashboardDto> GetDashboardRangeAsync(DateTime fromLocalDate, DateTime toLocalDate, CancellationToken cancellationToken = default) =>
+        _reportRepository.GetDashboardByLocalDateRangeAsync(fromLocalDate, toLocalDate, VietnamOffset, DashboardTopItemCount, cancellationToken);
+
+    public Task<CancellationSummaryDto> GetCancellationSummaryAsync(DateTime localDate, CancellationToken cancellationToken = default) =>
+        _reportRepository.GetCancellationSummaryByLocalDateAsync(localDate, VietnamOffset, cancellationToken);
 }

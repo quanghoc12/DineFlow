@@ -14,12 +14,13 @@ public sealed class StaffOrderApiClient : IDisposable
 {
     private readonly HttpClient _httpClient;
 
-    public StaffOrderApiClient(string baseAddress = "http://localhost:5080")
+    public StaffOrderApiClient(string? baseAddress = null)
     {
+        baseAddress ??= AppClientSettings.ResolveApiBaseUrl();
         _httpClient = new HttpClient
         {
             BaseAddress = new Uri(baseAddress.TrimEnd('/') + "/"),
-            Timeout = TimeSpan.FromSeconds(10)
+            Timeout = TimeSpan.FromSeconds(45)
         };
 
         _httpClient.DefaultRequestHeaders.Add("X-User-Id", ApiClientSession.CurrentUserId.ToString());
@@ -46,6 +47,16 @@ public sealed class StaffOrderApiClient : IDisposable
     {
         return await GetJsonAsync<DashboardDto>(
             $"api/reports/dashboard?date={date:yyyy-MM-dd}",
+            cancellationToken) ?? new DashboardDto();
+    }
+
+    public async Task<DashboardDto> GetDashboardByRangeAsync(
+        DateTime fromDate,
+        DateTime toDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<DashboardDto>(
+            $"api/reports/dashboard?date={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}",
             cancellationToken) ?? new DashboardDto();
     }
 
@@ -320,6 +331,40 @@ public sealed class StaffOrderApiClient : IDisposable
             cancellationToken);
 
         return await ReadSuccessAsync<PaymentDto>(response, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PaymentDto>> BatchUpdatePaymentsAsync(
+        int billId,
+        BatchUpdatePaymentsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.PutAsJsonAsync(
+            $"api/admin/payments/{billId}/batch",
+            request,
+            cancellationToken);
+
+        return await ReadSuccessAsync<IReadOnlyList<PaymentDto>>(response, cancellationToken);
+    }
+
+    public async Task<CancellationSummaryDto> GetCancellationSummaryAsync(
+        DateTime date,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetJsonAsync<CancellationSummaryDto>(
+            $"api/reports/cancellations?date={date:yyyy-MM-dd}",
+            cancellationToken) ?? new CancellationSummaryDto();
+    }
+
+    public async Task<DashboardAssistantChatResponseDto> ChatWithDashboardAssistantAsync(
+        DashboardAssistantChatRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            "api/reports/assistant/chat",
+            request,
+            cancellationToken);
+
+        return await ReadSuccessAsync<DashboardAssistantChatResponseDto>(response, cancellationToken);
     }
 
     public async Task<BillDto> SplitBillBatchAsync(

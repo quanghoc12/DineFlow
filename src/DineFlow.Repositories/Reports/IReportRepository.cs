@@ -10,6 +10,13 @@ public interface IReportRepository
         int topItemCount,
         CancellationToken cancellationToken = default);
 
+    Task<DashboardDto> GetDashboardByLocalDateRangeAsync(
+        DateTime fromLocalDate,
+        DateTime toLocalDate,
+        TimeSpan localOffset,
+        int topItemCount,
+        CancellationToken cancellationToken = default);
+
     Task<RevenueSummaryDto> GetRevenueSummaryByLocalDateRangeAsync(
         DateTime fromLocalDate,
         DateTime toLocalDate,
@@ -37,5 +44,16 @@ public interface IReportRepository
         string? tableName,
         string? area,
         string? keyword,
+        CancellationToken cancellationToken = default);
+
+    Task<CancellationSummaryDto> GetCancellationSummaryByLocalDateAsync(
+        DateTime localDate,
+        TimeSpan localOffset,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AssistantBusinessContextTextDto>> GetAssistantBusinessContextTextsAsync(
+        DateTime fromLocalDate,
+        DateTime toLocalDate,
+        TimeSpan localOffset,
         CancellationToken cancellationToken = default);
 }

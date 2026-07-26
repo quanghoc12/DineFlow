@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private readonly TableManagementView _tableManagementView;
     private readonly MenuManagementView _menuManagementView;
     private readonly DashboardView _dashboardView;
+    private readonly OrderManagementView _orderManagementView;
 
     public MainWindow(
         ICurrentUserService currentUserService,
@@ -42,6 +43,12 @@ public partial class MainWindow : Window
         _tableManagementView = tableManagementView;
         _menuManagementView = menuManagementView;
         _dashboardView = dashboardView;
+        _orderManagementView = new OrderManagementView(
+            new StaffOrderApiClient(),
+            new StaffRealtimeClient(),
+            new PdfDemoPrintService(),
+            _menuManagementService,
+            _billService);
         InitializeComponent();
         CurrentUserText.Text = string.IsNullOrWhiteSpace(_currentUserService.User?.FullName)
             ? _currentUserService.User?.Username ?? string.Empty
@@ -60,6 +67,7 @@ public partial class MainWindow : Window
             ? "Quản lý thực đơn"
             : "Chỉ Admin hoặc Chủ nhà hàng được sử dụng chức năng này";
         Loaded += MainWindow_Loaded;
+        Closed += MainWindow_Closed;
         ShowOrderScreen();
     }
 
@@ -146,13 +154,13 @@ public partial class MainWindow : Window
 
     private void ShowOrderScreen()
     {
-        ScreenHost.Content = new OrderManagementView(
-            new StaffOrderApiClient(),
-            new StaffRealtimeClient(),
-            new PdfDemoPrintService(),
-            _menuManagementService,
-            _billService);
+        ScreenHost.Content = _orderManagementView;
         SetActiveButton(OrderButton);
+    }
+
+    private async void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        await _orderManagementView.DisposeAsync();
     }
 
     private void SetActiveButton(Button activeButton)

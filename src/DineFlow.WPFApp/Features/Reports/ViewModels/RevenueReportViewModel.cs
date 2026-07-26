@@ -10,32 +10,31 @@ public sealed class RevenueReportViewModel : BaseViewModel
 {
     private readonly StaffOrderApiClient _apiClient;
 
-    private DateTime _fromDate;
-    private DateTime _toDate;
+    private DateTime _selectedDate;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
+    
     private decimal _totalRevenue;
-    private int _paidBillCount;
-    private decimal _averageBillValue;
+    private decimal _cashRevenue;
+    private decimal _bankTransferRevenue;
+    private decimal _cardRevenue;
 
     public RevenueReportViewModel()
     {
         _apiClient = new StaffOrderApiClient();
-        DateTime today = DateTime.Today;
-        _fromDate = new DateTime(today.Year, today.Month, 1);
-        _toDate = today;
+        _selectedDate = DateTime.Today;
     }
 
-    public DateTime FromDate
+    public DateTime SelectedDate
     {
-        get => _fromDate;
-        set => SetProperty(ref _fromDate, value);
-    }
-
-    public DateTime ToDate
-    {
-        get => _toDate;
-        set => SetProperty(ref _toDate, value);
+        get => _selectedDate;
+        set
+        {
+            if (SetProperty(ref _selectedDate, value))
+            {
+                _ = LoadAsync();
+            }
+        }
     }
 
     public string ErrorMessage
@@ -57,33 +56,55 @@ public sealed class RevenueReportViewModel : BaseViewModel
         {
             if (SetProperty(ref _totalRevenue, value))
             {
-                OnComputedChanged();
+                OnPropertyChanged(nameof(TotalRevenueText));
             }
         }
     }
 
-    public int PaidBillCount
+    public decimal CashRevenue
     {
-        get => _paidBillCount;
-        private set => SetProperty(ref _paidBillCount, value);
-    }
-
-    public decimal AverageBillValue
-    {
-        get => _averageBillValue;
+        get => _cashRevenue;
         private set
         {
-            if (SetProperty(ref _averageBillValue, value))
+            if (SetProperty(ref _cashRevenue, value))
             {
-                OnComputedChanged();
+                OnPropertyChanged(nameof(CashRevenueText));
+            }
+        }
+    }
+
+    public decimal BankTransferRevenue
+    {
+        get => _bankTransferRevenue;
+        private set
+        {
+            if (SetProperty(ref _bankTransferRevenue, value))
+            {
+                OnPropertyChanged(nameof(BankTransferRevenueText));
+            }
+        }
+    }
+
+    public decimal CardRevenue
+    {
+        get => _cardRevenue;
+        private set
+        {
+            if (SetProperty(ref _cardRevenue, value))
+            {
+                OnPropertyChanged(nameof(CardRevenueText));
             }
         }
     }
 
     public string TotalRevenueText => FormatMoney(TotalRevenue);
-    public string AverageBillValueText => FormatMoney(AverageBillValue);
+    public string CashRevenueText => FormatMoney(CashRevenue);
+    public string BankTransferRevenueText => FormatMoney(BankTransferRevenue);
+    public string CardRevenueText => FormatMoney(CardRevenue);
 
-    public ObservableCollection<RevenueByDayDto> RevenueByDays { get; } = [];
+    public bool IsAdmin => ApiClientSession.CurrentUserRole == "Admin";
+
+    public ObservableCollection<BillHistoryRowViewModel> Bills { get; } = [];
 
     public async Task LoadAsync()
     {
@@ -92,15 +113,69 @@ public sealed class RevenueReportViewModel : BaseViewModel
 
         try
         {
-            RevenueSummaryDto summary = await _apiClient.GetRevenueSummaryAsync(FromDate, ToDate);
+            // 1. Tải tổng doanh thu
+            RevenueSummaryDto summary = await _apiClient.GetRevenueSummaryAsync(SelectedDate, SelectedDate);
             TotalRevenue = summary.TotalRevenue;
-            PaidBillCount = summary.PaidBillCount;
-            AverageBillValue = summary.AverageBillValue;
 
-            RevenueByDays.Clear();
-            foreach (RevenueByDayDto item in summary.RevenueByDays)
+            // 2. Tải doanh thu theo phương thức
+            var methods = await _apiClient.GetRevenueByPaymentMethodAsync(SelectedDate, SelectedDate);
+            decimal cash = 0, bank = 0, card = 0;
+            foreach (var method in methods)
             {
-                RevenueByDays.Add(item);
+                string m = method.PaymentMethod.ToLower();
+                if (m.Contains("cash") || m.Contains("tiền mặt"))
+                {
+                    cash += method.TotalAmount;
+                }
+                else if (m.Contains("bank") || m.Contains("chuyển khoản"))
+                {
+                    bank += method.TotalAmount;
+                }
+                else if (m.Contains("card") || m.Contains("thẻ"))
+                {
+                    card += method.TotalAmount;
+                }
+                else
+                {
+                    // Fallback matching
+                    if (method.PaymentMethod == DineFlow.BusinessObjects.Bills.PaymentMethods.Cash) cash += method.TotalAmount;
+                    else if (method.PaymentMethod == DineFlow.BusinessObjects.Bills.PaymentMethods.BankTransfer) bank += method.TotalAmount;
+                    else if (method.PaymentMethod == DineFlow.BusinessObjects.Bills.PaymentMethods.Card) card += method.TotalAmount;
+                }
+            }
+            CashRevenue = cash;
+            BankTransferRevenue = bank;
+            CardRevenue = card;
+
+            // 3. Tải danh sách hóa đơn đã thanh toán và gom nhóm
+            var rawPayments = await _apiClient.GetPaidBillHistoryAsync(new PaidBillHistoryFilterDto { FromDate = SelectedDate, ToDate = SelectedDate });
+            
+            Bills.Clear();
+            var grouped = rawPayments
+                .GroupBy(x => x.BillId)
+                .Select(g =>
+                {
+                    var first = g.First();
+                    // Tạo chuỗi hiển thị chi tiết thanh toán nếu có nhiều phương thức
+                    var paymentBreakdown = string.Join(", ", g.Select(p => $"{p.PaymentMethod}: {FormatMoney(p.PaymentAmount)}"));
+                    return new BillHistoryRowViewModel
+                    {
+                        BillId = g.Key,
+                        BillCode = first.BillCode,
+                        TableName = first.TableName,
+                        Area = first.Area,
+                        PaidAt = first.PaidAt,
+                        PaymentsText = paymentBreakdown,
+                        FinalAmount = first.BillFinalAmount,
+                        Payments = g.ToList()
+                    };
+                })
+                .OrderByDescending(x => x.PaidAt)
+                .ToList();
+
+            foreach (var b in grouped)
+            {
+                Bills.Add(b);
             }
         }
         catch (Exception exception)
@@ -113,15 +188,20 @@ public sealed class RevenueReportViewModel : BaseViewModel
         }
     }
 
-    public Task<byte[]> ExportCsvAsync() => _apiClient.ExportRevenueSummaryCsvAsync(FromDate, ToDate);
-    public Task<byte[]> ExportExcelAsync() => _apiClient.ExportRevenueSummaryExcelAsync(FromDate, ToDate);
-
-    private void OnComputedChanged()
-    {
-        OnPropertyChanged(nameof(TotalRevenueText));
-        OnPropertyChanged(nameof(AverageBillValueText));
-    }
-
     private static string FormatMoney(decimal amount) =>
         string.Format(CultureInfo.GetCultureInfo("vi-VN"), "{0:N0} đ", amount);
+}
+
+public sealed class BillHistoryRowViewModel
+{
+    public int BillId { get; set; }
+    public string BillCode { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
+    public string Area { get; set; } = string.Empty;
+    public DateTime PaidAt { get; set; }
+    public string PaidAtText => PaidAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    public string PaymentsText { get; set; } = string.Empty;
+    public decimal FinalAmount { get; set; }
+    public string FinalAmountText => string.Format(CultureInfo.GetCultureInfo("vi-VN"), "{0:N0} đ", FinalAmount);
+    public List<PaidBillHistoryItemDto> Payments { get; set; } = [];
 }

@@ -17,4 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\DineFlow.BusinessObjects\DineFlow.BusinessObjects.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\seed_data.sql" />
+  </ItemGroup>
 </Project>

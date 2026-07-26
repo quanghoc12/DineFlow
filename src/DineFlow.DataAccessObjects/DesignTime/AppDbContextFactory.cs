@@ -11,7 +11,8 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 
     public AppDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("DINEFLOW_CONNECTION_STRING")
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? Environment.GetEnvironmentVariable("DINEFLOW_CONNECTION_STRING")
             ?? DefaultConnectionString;
 
         var options = new DbContextOptionsBuilder<AppDbContext>()

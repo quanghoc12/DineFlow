@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using DineFlow.BusinessObjects.Reports;
 using DineFlow.WPFApp.Features.Reports.ViewModels;
 using DineFlow.WPFApp.Services;
 
@@ -9,17 +10,18 @@ public partial class DashboardView : UserControl
 {
     private const int OverviewIndex = 0;
     private const int RevenueIndex = 1;
-    private const int TopSellingIndex = 2;
-    private const int PaymentMethodIndex = 3;
-    private const int PaidHistoryIndex = 4;
-    private const int PaymentCorrectionIndex = 5;
+    private const int CancellationIndex = 2;
 
     private readonly DashboardViewModel _viewModel;
+    private readonly DashboardAssistantViewModel _assistantViewModel;
 
-    public DashboardView(DashboardViewModel viewModel)
+    public DashboardView(
+        DashboardViewModel viewModel,
+        DashboardAssistantViewModel assistantViewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _assistantViewModel = assistantViewModel;
         DataContext = _viewModel;
         Loaded += DashboardView_Loaded;
         Unloaded += DashboardView_Unloaded;
@@ -30,6 +32,8 @@ public partial class DashboardView : UserControl
     private void DashboardView_Loaded(object sender, RoutedEventArgs e)
     {
         DashboardWorkspaceState.NavigationRequested += OnNavigationRequested;
+        // Tự động tải dữ liệu khi tab được load
+        _ = LoadAsync();
     }
 
     private void DashboardView_Unloaded(object sender, RoutedEventArgs e)
@@ -39,7 +43,19 @@ public partial class DashboardView : UserControl
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
+        _assistantViewModel.InvalidateDataCache();
         await LoadAsync();
+    }
+
+    private void OpenAssistantButton_Click(object sender, RoutedEventArgs e)
+    {
+        _assistantViewModel.UpdateContext(BuildAssistantContext());
+
+        DashboardAssistantWindow window = new(_assistantViewModel)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        window.ShowDialog();
     }
 
     private void OnNavigationRequested(DashboardWorkspaceNavigationRequest request)
@@ -48,35 +64,51 @@ public partial class DashboardView : UserControl
         {
             DashboardTabs.Overview => OverviewIndex,
             DashboardTabs.Revenue => RevenueIndex,
-            DashboardTabs.TopSelling => TopSellingIndex,
-            DashboardTabs.PaymentMethodRevenue => PaymentMethodIndex,
-            DashboardTabs.PaidBillHistory => PaidHistoryIndex,
-            DashboardTabs.PaymentCorrection => PaymentCorrectionIndex,
+            DashboardTabs.Cancellation => CancellationIndex,
             _ => OverviewIndex
         }));
     }
 
     private void OpenOverviewTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(OverviewIndex);
-    private void OpenRevenueTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(RevenueIndex);
-    private void OpenTopSellingTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(TopSellingIndex);
-    private void OpenPaymentMethodRevenueTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(PaymentMethodIndex);
-    private void OpenPaidBillHistoryTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(PaidHistoryIndex);
-    private void OpenPaymentCorrectionTabButton_Click(object sender, RoutedEventArgs e) => SetActiveTab(PaymentCorrectionIndex);
+    private void OpenRevenueTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveTab(RevenueIndex);
+        // Tải lại doanh thu ngày hôm nay khi chuyển sang tab doanh thu
+        _ = RevenueReportViewControl.LoadTodayRevenueAsync();
+    }
+    
+    private void OpenCancellationTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveTab(CancellationIndex);
+        // Tải lại thống kê hủy ngày hôm nay khi chuyển sang tab hủy
+        _ = CancellationViewControl.LoadTodayCancellationsAsync();
+    }
 
     private void SetActiveTab(int tabIndex)
     {
         OverviewPanel.Visibility = tabIndex == OverviewIndex ? Visibility.Visible : Visibility.Collapsed;
         RevenuePanel.Visibility = tabIndex == RevenueIndex ? Visibility.Visible : Visibility.Collapsed;
-        TopSellingPanel.Visibility = tabIndex == TopSellingIndex ? Visibility.Visible : Visibility.Collapsed;
-        PaymentMethodPanel.Visibility = tabIndex == PaymentMethodIndex ? Visibility.Visible : Visibility.Collapsed;
-        PaidHistoryPanel.Visibility = tabIndex == PaidHistoryIndex ? Visibility.Visible : Visibility.Collapsed;
-        PaymentCorrectionPanel.Visibility = tabIndex == PaymentCorrectionIndex ? Visibility.Visible : Visibility.Collapsed;
+        CancellationPanel.Visibility = tabIndex == CancellationIndex ? Visibility.Visible : Visibility.Collapsed;
 
         OverviewTabButton.Tag = tabIndex == OverviewIndex ? "Active" : null;
         RevenueTabButton.Tag = tabIndex == RevenueIndex ? "Active" : null;
-        TopSellingTabButton.Tag = tabIndex == TopSellingIndex ? "Active" : null;
-        PaymentMethodTabButton.Tag = tabIndex == PaymentMethodIndex ? "Active" : null;
-        PaidHistoryTabButton.Tag = tabIndex == PaidHistoryIndex ? "Active" : null;
-        PaymentCorrectionTabButton.Tag = tabIndex == PaymentCorrectionIndex ? "Active" : null;
+        CancellationTabButton.Tag = tabIndex == CancellationIndex ? "Active" : null;
+    }
+
+    private DashboardAssistantContextDto BuildAssistantContext()
+    {
+        string currentTab = RevenuePanel.Visibility == Visibility.Visible
+            ? DashboardTabs.Revenue
+            : CancellationPanel.Visibility == Visibility.Visible
+                ? DashboardTabs.Cancellation
+                : DashboardTabs.Overview;
+
+        return new DashboardAssistantContextDto
+        {
+            CurrentTab = currentTab,
+            ChartMode = _viewModel.SelectedChartMode.ToString(),
+            TopSellingPeriod = _viewModel.TopSellingPeriod,
+            PaymentPeriod = _viewModel.PaymentPeriod
+        };
     }
 }

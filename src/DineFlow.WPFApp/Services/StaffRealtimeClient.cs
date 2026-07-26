@@ -15,8 +15,9 @@ public sealed class StaffRealtimeClient : IAsyncDisposable
     public event Func<RealtimeEventDto, Task>? BillChanged;
     public event Func<RealtimeEventDto, Task>? PaymentConfirmed;
 
-    public StaffRealtimeClient(string baseAddress = "http://localhost:5080")
+    public StaffRealtimeClient(string? baseAddress = null)
     {
+        baseAddress ??= AppClientSettings.ResolveApiBaseUrl();
         _connection = new HubConnectionBuilder()
             .WithUrl($"{baseAddress.TrimEnd('/')}/hubs/dineflow")
             .WithAutomaticReconnect()

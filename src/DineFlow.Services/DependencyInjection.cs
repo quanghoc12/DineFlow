@@ -39,6 +39,14 @@ public static class DependencyInjection
         services.AddScoped<ITopSellingItemReportService, TopSellingItemReportService>();
         services.AddScoped<IPaidBillHistoryReportService, PaidBillHistoryReportService>();
         services.AddScoped<IReportExportService, ReportExportService>();
+        services.AddSingleton<IDashboardAssistantSessionCache, DashboardAssistantSessionCache>();
+        services.AddScoped<IDashboardAssistantContextPlanner, DashboardAssistantContextPlanner>();
+        services.AddScoped<IDashboardAssistantDataProvider, DashboardAssistantDataProvider>();
+        services.AddScoped<IDashboardAssistantRuleGuard, DashboardAssistantRuleGuard>();
+        services.AddSingleton<IAssistantEmbeddingService, LocalHashEmbeddingService>();
+        services.AddScoped<IAssistantVectorSearchService, AssistantVectorSearchService>();
+        services.AddSingleton<IDeepSeekChatClient, DeepSeekChatClient>();
+        services.AddScoped<IDashboardAssistantService, DashboardAssistantService>();
 
         return services;
     }

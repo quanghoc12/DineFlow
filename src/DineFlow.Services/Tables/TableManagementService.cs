@@ -3,6 +3,9 @@ using DineFlow.BusinessObjects.Auth;
 using DineFlow.Repositories.Tables;
 using DineFlow.Services.Auth;
 using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace DineFlow.Services.Tables;
 
@@ -19,8 +22,7 @@ public sealed class TableManagementService : ITableManagementService
     {
         _repository = repository;
         _currentUser = currentUser;
-        _customerWebBaseUrl = configuration["CustomerWeb:BaseUrl"]?.Trim().TrimEnd('/')
-            ?? "http://localhost:5173";
+        _customerWebBaseUrl = ResolveCustomerWebBaseUrl(configuration);
     }
 
     public async Task<IReadOnlyList<ManagedTableDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -282,6 +284,43 @@ public sealed class TableManagementService : ITableManagementService
             ordered[index].UpdatedAt = now;
         }
     }
+
+    private static string ResolveCustomerWebBaseUrl(IConfiguration configuration)
+    {
+        string? configuredUrl = configuration["CustomerWeb:BaseUrl"]?.Trim();
+        if (!string.IsNullOrWhiteSpace(configuredUrl) &&
+            !configuredUrl.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            return configuredUrl.TrimEnd('/');
+        }
+
+        int port = int.TryParse(configuration["CustomerWeb:Port"], out int configuredPort)
+            ? configuredPort
+            : 5173;
+        string host = FindLocalNetworkAddress()?.ToString() ?? "localhost";
+        return $"http://{host}:{port}";
+    }
+
+    private static IPAddress? FindLocalNetworkAddress() =>
+        NetworkInterface.GetAllNetworkInterfaces()
+            .Where(network =>
+                network.OperationalStatus == OperationalStatus.Up &&
+                network.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                network.GetIPProperties().GatewayAddresses.Any(gateway =>
+                    gateway.Address.AddressFamily == AddressFamily.InterNetwork))
+            .OrderBy(network => network.NetworkInterfaceType switch
+            {
+                NetworkInterfaceType.Wireless80211 => 0,
+                NetworkInterfaceType.Ethernet => 1,
+                _ => 2
+            })
+            .SelectMany(network => network.GetIPProperties().UnicastAddresses)
+            .Where(address =>
+                address.Address.AddressFamily == AddressFamily.InterNetwork &&
+                !IPAddress.IsLoopback(address.Address) &&
+                !address.Address.ToString().StartsWith("169.254.", StringComparison.Ordinal))
+            .Select(address => address.Address)
+            .FirstOrDefault();
 
     private async Task RebuildTableOrdersAsync(
         DiningTable target, CancellationToken cancellationToken)

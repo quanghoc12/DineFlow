@@ -11,13 +11,13 @@
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Height" Value="46" />
+            <Setter Property="Height" Value="48" />
             <Setter Property="Margin" Value="0,4" />
             <Setter Property="Padding" Value="16,0" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#E5EEF8" />
+            <Setter Property="Foreground" Value="#9FB3C8" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Cursor" Value="Hand" />
@@ -29,18 +29,36 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8">
-                            <ContentPresenter Margin="{TemplateBinding Padding}"
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="Center" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Active Indicator Line on the left -->
+                                <Border x:Name="ActiveIndicator" 
+                                        Width="4" 
+                                        Height="20" 
+                                        Background="#3B82F6" 
+                                        CornerRadius="2" 
+                                        HorizontalAlignment="Left"
+                                        Margin="-12,0,0,0"
+                                        Visibility="Collapsed"/>
+                                
+                                <ContentPresenter Grid.Column="1" 
+                                                  Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center" />
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#243B53" />
+                                <Setter TargetName="Root" Property="Background" Value="#17324D" />
+                                <Setter Property="Foreground" Value="White" />
                             </Trigger>
                             <Trigger Property="Tag" Value="Active">
-                                <Setter TargetName="Root" Property="Background" Value="#2F80ED" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#69A7FF" />
-                                <Setter Property="Foreground" Value="White" />
+                                <Setter TargetName="Root" Property="Background" Value="#1B365D" />
+                                <Setter TargetName="ActiveIndicator" Property="Visibility" Value="Visible" />
+                                <Setter Property="Foreground" Value="#69A7FF" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -55,71 +73,142 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <!-- Sidebar / Navbar -->
         <Border Grid.Column="0" Background="#102A43">
-            <Grid Margin="18">
+            <Grid Margin="18,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel>
-                    <TextBlock Text="DineFlow"
-                               Foreground="White"
-                               FontSize="28"
-                               FontWeight="Bold" />
-                    <TextBlock Text="Staff workspace"
-                               Foreground="#9FB3C8"
-                               FontSize="13"
-                               Margin="0,4,0,24" />
-                </StackPanel>
+                <!-- Brand Header -->
+                <Grid Margin="0,0,0,28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Border Width="40" Height="40" CornerRadius="10" Background="#0B55A0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <TextBlock Text="&#xEA37;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="DineFlow"
+                                   Foreground="White"
+                                   FontSize="22"
+                                   FontWeight="Bold"/>
+                        <TextBlock Text="Staff Workspace"
+                                   Foreground="#829AB1"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Margin="0,1,0,0"/>
+                    </StackPanel>
+                </Grid>
 
+                <!-- Navigation Buttons -->
                 <StackPanel Grid.Row="1">
                     <Button x:Name="DashboardButton"
-                            Content="Dashboard"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="DashboardButton_Click" />
+                            Click="DashboardButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Dashboard" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="OrderButton"
-                            Content="Quản lý order"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="OrderButton_Click" />
+                            Click="OrderButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9C0;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Quản lý order" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="MenuButton"
-                            Content="Quản lý món"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="MenuButton_Click" />
+                            Click="MenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xEA37;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Quản lý món" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="TableButton"
-                            Content="Quản lý table"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="TableButton_Click" />
+                            Click="TableButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE785;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Quản lý bàn" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="AccountButton"
-                            Content="Quản lý tài khoản"
                             Style="{StaticResource NavButtonStyle}"
-                            Click="AccountButton_Click" />
+                            Click="AccountButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Width="20" VerticalAlignment="Center" FontSize="16" Margin="0,0,12,0"/>
+                            <TextBlock Text="Quản lý tài khoản" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
+                <!-- Current User Profile / Logout Box -->
                 <Border Grid.Row="2"
-                        Background="#17324D"
-                        CornerRadius="10"
-                        Padding="14"
+                        Background="#102A43"
+                        BorderBrush="#243B53"
+                        BorderThickness="0,1,0,0"
+                        Padding="0,20,0,0"
                         Margin="0,16,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Đăng nhập"
-                                   Foreground="#BCCCDC"
-                                   FontSize="12" />
-                        <TextBlock x:Name="CurrentUserText"
-                                   Text="staff01"
-                                   Foreground="White"
-                                   FontWeight="SemiBold"
-                                   Margin="0,4,0,0" />
-                        <Button Content="Đăng xuất"
-                                Click="LogoutButton_Click"
-                                Margin="0,12,0,0"
-                                Padding="8,5"
-                                Background="#243B53"
-                                Foreground="White"
-                                BorderBrush="#486581"
-                                Cursor="Hand" />
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Profile Icon Avatar -->
+                        <Border Width="40" Height="40" CornerRadius="20" Background="#243B53" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#9FB3C8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Nhân viên"
+                                       Foreground="#829AB1"
+                                       FontSize="11" />
+                            <TextBlock x:Name="CurrentUserText"
+                                       Text="staff01"
+                                       Foreground="White"
+                                       FontWeight="SemiBold"
+                                       FontSize="14"
+                                       Margin="0,2,0,0" />
+                            <Button Content="Đăng xuất"
+                                    Click="LogoutButton_Click"
+                                    Margin="0,8,0,0"
+                                    Padding="10,4"
+                                    Background="Transparent"
+                                    Foreground="#F87171"
+                                    BorderThickness="0"
+                                    FontWeight="SemiBold"
+                                    FontSize="12"
+                                    HorizontalAlignment="Left"
+                                    Cursor="Hand"
+                                    Style="{x:Null}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <TextBlock Text="Đăng xuất" Foreground="#F87171" Cursor="Hand" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="TextDecorations" Value="Underline"/>
+                                                            <Setter Property="Foreground" Value="#F87171"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
         </Border>

@@ -19,6 +19,14 @@ public sealed class ReportRepository : IReportRepository
         CancellationToken cancellationToken = default) =>
         _reportDao.GetDashboardByLocalDateAsync(localDate, localOffset, topItemCount, cancellationToken);
 
+    public Task<DashboardDto> GetDashboardByLocalDateRangeAsync(
+        DateTime fromLocalDate,
+        DateTime toLocalDate,
+        TimeSpan localOffset,
+        int topItemCount,
+        CancellationToken cancellationToken = default) =>
+        _reportDao.GetDashboardByLocalDateRangeAsync(fromLocalDate, toLocalDate, localOffset, topItemCount, cancellationToken);
+
     public Task<RevenueSummaryDto> GetRevenueSummaryByLocalDateRangeAsync(
         DateTime fromLocalDate,
         DateTime toLocalDate,
@@ -71,5 +79,22 @@ public sealed class ReportRepository : IReportRepository
             tableName,
             area,
             keyword,
+            cancellationToken);
+
+    public Task<CancellationSummaryDto> GetCancellationSummaryByLocalDateAsync(
+        DateTime localDate,
+        TimeSpan localOffset,
+        CancellationToken cancellationToken = default) =>
+        _reportDao.GetCancellationSummaryByLocalDateAsync(localDate, localOffset, cancellationToken);
+
+    public Task<IReadOnlyList<AssistantBusinessContextTextDto>> GetAssistantBusinessContextTextsAsync(
+        DateTime fromLocalDate,
+        DateTime toLocalDate,
+        TimeSpan localOffset,
+        CancellationToken cancellationToken = default) =>
+        _reportDao.GetAssistantBusinessContextTextsAsync(
+            fromLocalDate,
+            toLocalDate,
+            localOffset,
             cancellationToken);
 }

@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Reports;
+using DineFlow.Api.Controllers.Staff;
 using DineFlow.Services.Reports;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,26 +7,29 @@ namespace DineFlow.Api.Controllers.Reports;
 
 [ApiController]
 [Route("api/reports")]
-public sealed class ReportsController : ControllerBase
+public sealed class ReportsController : StaffControllerBase
 {
     private readonly IDashboardService _dashboardService;
     private readonly IRevenueReportService _revenueReportService;
     private readonly ITopSellingItemReportService _topSellingItemReportService;
     private readonly IPaidBillHistoryReportService _paidBillHistoryReportService;
     private readonly IReportExportService _reportExportService;
+    private readonly IDashboardAssistantService _dashboardAssistantService;
 
     public ReportsController(
         IDashboardService dashboardService,
         IRevenueReportService revenueReportService,
         ITopSellingItemReportService topSellingItemReportService,
         IPaidBillHistoryReportService paidBillHistoryReportService,
-        IReportExportService reportExportService)
+        IReportExportService reportExportService,
+        IDashboardAssistantService dashboardAssistantService)
     {
         _dashboardService = dashboardService;
         _revenueReportService = revenueReportService;
         _topSellingItemReportService = topSellingItemReportService;
         _paidBillHistoryReportService = paidBillHistoryReportService;
         _reportExportService = reportExportService;
+        _dashboardAssistantService = dashboardAssistantService;
     }
 
     [HttpGet("dashboard/today")]
@@ -38,11 +42,22 @@ public sealed class ReportsController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> GetByDate(
         [FromQuery] DateTime? date,
+        [FromQuery] DateTime? toDate,
         CancellationToken cancellationToken)
     {
-        DashboardDto response = date.HasValue
-            ? await _dashboardService.GetDashboardByDateAsync(date.Value.Date, cancellationToken)
-            : await _dashboardService.GetTodayDashboardAsync(cancellationToken);
+        DashboardDto response;
+        if (date.HasValue && toDate.HasValue)
+        {
+            response = await _dashboardService.GetDashboardRangeAsync(date.Value.Date, toDate.Value.Date, cancellationToken);
+        }
+        else if (date.HasValue)
+        {
+            response = await _dashboardService.GetDashboardByDateAsync(date.Value.Date, cancellationToken);
+        }
+        else
+        {
+            response = await _dashboardService.GetTodayDashboardAsync(cancellationToken);
+        }
 
         return Ok(response);
     }
@@ -254,5 +269,29 @@ public sealed class ReportsController : ControllerBase
             cancellationToken);
 
         return File(file.Content, file.ContentType, file.FileName);
+    }
+
+    [HttpGet("cancellations")]
+    public async Task<ActionResult<CancellationSummaryDto>> GetCancellations(
+        [FromQuery] DateTime? date,
+        CancellationToken cancellationToken)
+    {
+        DateTime localDate = date?.Date ?? DateTime.Today;
+        CancellationSummaryDto response = await _dashboardService.GetCancellationSummaryAsync(localDate, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("assistant/chat")]
+    public async Task<ActionResult<DashboardAssistantChatResponseDto>> ChatWithAssistant(
+        [FromBody] DashboardAssistantChatRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        DashboardAssistantChatResponseDto response = await _dashboardAssistantService.ChatAsync(
+            request,
+            CurrentUserId,
+            CurrentUserRole,
+            cancellationToken);
+
+        return Ok(response);
     }
 }
