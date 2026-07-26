@@ -41,24 +41,7 @@ public class CustomerSessionService : ICustomerSessionService
         DiningTable table = await _tableSessionRepository.GetActiveTableByQrTokenAsync(qrToken, cancellationToken)
             ?? throw new BusinessException("TABLE_NOT_FOUND", "Dining table does not exist or is inactive.");
 
-        TableSession? activeSession = await _tableSessionRepository.GetCurrentCustomerSessionByTableIdAsync(
-            table.TableId,
-            cancellationToken);
-        if (activeSession is null)
-        {
-            throw new BusinessException(
-                "TABLE_SESSION_NOT_OPEN",
-                "Phiên bàn đã kết thúc hoặc chưa được mở. Vui lòng quét lại tại nhà hàng hoặc liên hệ nhân viên.");
-        }
-
-        TableSessionDto session = new()
-        {
-            TableId = activeSession.TableId,
-            TableSessionId = activeSession.TableSessionId,
-            StartedAt = activeSession.StartedAt,
-            EndedAt = activeSession.EndedAt,
-            Status = activeSession.Status
-        };
+        TableSessionDto session = await _tableSessionService.GetOrCreateActiveSessionByQrTokenAsync(qrToken, null, cancellationToken);
         TableSessionCustomer? customer = null;
 
         if (!string.IsNullOrWhiteSpace(request.ClientToken))
