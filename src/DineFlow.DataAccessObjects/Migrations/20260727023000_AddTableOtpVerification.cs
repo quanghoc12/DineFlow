@@ -45,7 +45,7 @@ namespace DineFlow.DataAccessObjects.Migrations
                 UPDATE "DiningTables"
                 SET "CurrentOtp" = (
                     SELECT string_agg(substr(chars, floor(random() * length(chars) + 1)::int, 1), '')
-                    FROM generate_series(1, 6), (
+                    FROM generate_series(1, 6 + "DiningTables"."TableId" * 0), (
                         SELECT 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' AS chars
                     ) source
                 ),
