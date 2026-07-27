@@ -1,9 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { StaffLoginResponse, StaffTableOtp, staffOtpApi } from "./api/staffOtpApi";
+import { ScreenShell } from "./components/ScreenShell";
 import { Toast } from "./components/Toast";
 
 const tokenKey = "dineflow.staffOtp.token";
 const userKey = "dineflow.staffOtp.user";
+
+type AreaGroup = {
+  areaId: number | null;
+  area: string;
+  tables: StaffTableOtp[];
+};
 
 export function StaffOtpApp() {
   const [token, setToken] = useState(() => localStorage.getItem(tokenKey) ?? "");
@@ -18,28 +25,18 @@ export function StaffOtpApp() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isResetOpen, setIsResetOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const areas = useMemo(() => {
-    const map = new Map<number, string>();
-    tables.forEach((table) => {
-      if (table.areaId) map.set(table.areaId, table.area);
-    });
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [tables]);
-
-  const grouped = useMemo(() => {
-    return tables.reduce<Record<string, StaffTableOtp[]>>((result, table) => {
-      result[table.area] ??= [];
-      result[table.area].push(table);
-      return result;
-    }, {});
-  }, [tables]);
+  const areaGroups = useMemo(() => groupTables(tables), [tables]);
+  const visibleTables = useMemo(() => filterTables(tables, areaId, status, search), [tables, areaId, status, search]);
+  const visibleGroups = useMemo(() => groupTables(visibleTables), [visibleTables]);
+  const canReset = user?.role === "Admin";
 
   useEffect(() => {
     if (!token) return;
     loadTables();
-  }, [token, areaId, status, search]);
+  }, [token]);
 
   useEffect(() => {
     if (!toast) return;
@@ -63,19 +60,8 @@ export function StaffOtpApp() {
 
   async function loadTables() {
     try {
-      const response = await staffOtpApi.list(token, { areaId, status, search });
+      const response = await staffOtpApi.list(token, {});
       setTables(response);
-    } catch (err) {
-      setToast({ message: (err as Error).message, type: "error" });
-    }
-  }
-
-  async function resetOne(tableId: number) {
-    if (!confirmReset()) return;
-    try {
-      await staffOtpApi.resetOne(token, tableId);
-      await loadTables();
-      setToast({ message: "Đã reset OTP.", type: "success" });
     } catch (err) {
       setToast({ message: (err as Error).message, type: "error" });
     }
@@ -83,9 +69,11 @@ export function StaffOtpApp() {
 
   async function resetSelected() {
     if (selectedIds.length === 0 || !confirmReset()) return;
+
     try {
       await staffOtpApi.resetBatch(token, { tableIds: selectedIds });
       setSelectedIds([]);
+      setIsResetOpen(false);
       await loadTables();
       setToast({ message: "Đã reset OTP các bàn đã chọn.", type: "success" });
     } catch (err) {
@@ -93,20 +81,23 @@ export function StaffOtpApp() {
     }
   }
 
-  async function resetArea() {
-    if (!areaId || !confirmReset()) return;
-    try {
-      await staffOtpApi.resetBatch(token, { areaId });
-      await loadTables();
-      setToast({ message: "Đã reset OTP khu vực.", type: "success" });
-    } catch (err) {
-      setToast({ message: (err as Error).message, type: "error" });
-    }
-  }
-
-  function toggle(tableId: number) {
+  function toggleTable(tableId: number) {
     setSelectedIds((current) =>
       current.includes(tableId) ? current.filter((id) => id !== tableId) : [...current, tableId]);
+  }
+
+  function toggleArea(group: AreaGroup) {
+    const groupIds = group.tables.map((table) => table.tableId);
+    const selectedSet = new Set(selectedIds);
+    const allSelected = groupIds.every((id) => selectedSet.has(id));
+
+    if (allSelected) {
+      setSelectedIds((current) => current.filter((id) => !groupIds.includes(id)));
+      return;
+    }
+
+    groupIds.forEach((id) => selectedSet.add(id));
+    setSelectedIds([...selectedSet]);
   }
 
   function logout() {
@@ -119,71 +110,162 @@ export function StaffOtpApp() {
 
   if (!token || location.pathname.endsWith("/dangnhap")) {
     return (
-      <main className="staff-otp-page">
-        <form className="staff-login" onSubmit={login}>
-          <h1>Đăng nhập nhân viên</h1>
-          <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Username" />
-          <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" type="password" />
-          <button type="submit">Đăng nhập</button>
-        </form>
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      </main>
+      <ScreenShell>
+        <section className="staff-otp-page staff-login-page">
+          <form className="staff-login" onSubmit={login}>
+            <p className="eyebrow">DineFlow Staff</p>
+            <h1>Đăng nhập</h1>
+            <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Username" />
+            <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" type="password" />
+            <button type="submit">Đăng nhập</button>
+          </form>
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        </section>
+      </ScreenShell>
     );
   }
 
-  const canReset = user?.role === "Admin";
   return (
-    <main className="staff-otp-page">
-      <header className="staff-otp-header">
-        <div>
-          <p className="eyebrow">{user?.role}</p>
-          <h1>OTP bàn</h1>
-        </div>
-        <button className="secondary-button" onClick={logout}>Đăng xuất</button>
-      </header>
-
-      <section className="staff-otp-filters">
-        <select value={areaId ?? ""} onChange={(event) => setAreaId(event.target.value ? Number(event.target.value) : null)}>
-          <option value="">Tất cả khu vực</option>
-          {areas.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-        </select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">Tất cả trạng thái</option>
-          <option value="Available">Trống</option>
-          <option value="Occupied">Đang phục vụ</option>
-          <option value="WaitingPayment">Chờ thanh toán</option>
-        </select>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm bàn, khu vực, OTP" />
-        <button disabled={!canReset || selectedIds.length === 0} onClick={resetSelected}>Reset đã chọn</button>
-        <button disabled={!canReset || !areaId} onClick={resetArea}>Reset khu vực</button>
-      </section>
-
-      {Object.entries(grouped).map(([area, areaTables]) => (
-        <section className="staff-otp-area" key={area}>
-          <h2>{area}</h2>
-          <div className="staff-otp-grid">
-            {areaTables.map((table) => (
-              <article className="staff-otp-table" key={table.tableId}>
-                <label>
-                  <input type="checkbox" checked={selectedIds.includes(table.tableId)} onChange={() => toggle(table.tableId)} />
-                  {table.tableName}
-                </label>
-                <strong>{table.currentOtp}</strong>
-                <span>{statusLabel(table.status)}</span>
-                <small>{new Date(table.otpUpdatedAt).toLocaleString("vi-VN")}</small>
-                <div>
-                  <button onClick={() => navigator.clipboard.writeText(table.currentOtp)}>Copy</button>
-                  <button disabled={!canReset} onClick={() => resetOne(table.tableId)}>Reset</button>
-                </div>
-              </article>
-            ))}
+    <ScreenShell>
+      <section className="staff-otp-page">
+        <header className="staff-otp-header">
+          <div>
+            <p className="eyebrow">{user?.role}</p>
+            <h1>OTP bàn</h1>
           </div>
-        </section>
-      ))}
+          <button className="staff-text-button" onClick={logout}>Thoát</button>
+        </header>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </main>
+        <section className="staff-otp-filters">
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm bàn, khu vực, OTP" />
+          <div className="staff-filter-row">
+            <select value={areaId ?? ""} onChange={(event) => setAreaId(event.target.value ? Number(event.target.value) : null)}>
+              <option value="">Tất cả khu vực</option>
+              {areaGroups
+                .filter((group) => group.areaId !== null)
+                .map((group) => <option key={group.areaId} value={group.areaId ?? ""}>{group.area}</option>)}
+            </select>
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              <option value="">Tất cả</option>
+              <option value="Available">Trống</option>
+              <option value="Occupied">Đang phục vụ</option>
+              <option value="WaitingPayment">Chờ TT</option>
+            </select>
+          </div>
+          <button className="staff-reset-entry" disabled={!canReset} onClick={() => setIsResetOpen(true)}>
+            Reset OTP
+          </button>
+        </section>
+
+        <div className="staff-otp-summary">{visibleTables.length} bàn</div>
+
+        {visibleGroups.map((group) => (
+          <section className="staff-otp-area" key={`${group.areaId ?? "legacy"}-${group.area}`}>
+            <h2>{group.area}</h2>
+            <div className="staff-otp-grid">
+              {group.tables.map((table) => (
+                <article className="staff-otp-table" key={table.tableId}>
+                  <div>
+                    <h3>{table.tableName}</h3>
+                    <span>{statusLabel(table.status)}</span>
+                  </div>
+                  <strong>{table.currentOtp}</strong>
+                  <small>{new Date(table.otpUpdatedAt).toLocaleString("vi-VN")}</small>
+                  <button onClick={() => navigator.clipboard.writeText(table.currentOtp)}>Copy OTP</button>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+
+        {isResetOpen && (
+          <div className="staff-reset-backdrop" role="dialog" aria-modal="true">
+            <section className="staff-reset-sheet">
+              <header>
+                <div>
+                  <p className="eyebrow">Admin</p>
+                  <h2>Chọn bàn reset</h2>
+                </div>
+                <button className="staff-text-button" onClick={() => setIsResetOpen(false)}>Đóng</button>
+              </header>
+
+              <div className="staff-reset-list">
+                {areaGroups.map((group) => (
+                  <details className="staff-reset-area" key={`${group.areaId ?? "legacy"}-${group.area}`} open>
+                    <summary>
+                      <label onClick={(event) => event.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isAreaSelected(group, selectedIds)}
+                          onChange={() => toggleArea(group)}
+                        />
+                        {group.area}
+                      </label>
+                      <span>{group.tables.length}</span>
+                    </summary>
+                    <div>
+                      {group.tables.map((table) => (
+                        <label className="staff-reset-table" key={table.tableId}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(table.tableId)}
+                            onChange={() => toggleTable(table.tableId)}
+                          />
+                          <span>{table.tableName}</span>
+                          <strong>{table.currentOtp}</strong>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+
+              <button className="staff-reset-submit" disabled={selectedIds.length === 0} onClick={resetSelected}>
+                Reset {selectedIds.length} bàn
+              </button>
+            </section>
+          </div>
+        )}
+
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      </section>
+    </ScreenShell>
   );
+}
+
+function groupTables(tables: StaffTableOtp[]): AreaGroup[] {
+  const map = new Map<string, AreaGroup>();
+  tables.forEach((table) => {
+    const key = `${table.areaId ?? "legacy"}:${table.area}`;
+    if (!map.has(key)) {
+      map.set(key, { areaId: table.areaId, area: table.area, tables: [] });
+    }
+    map.get(key)!.tables.push(table);
+  });
+
+  return [...map.values()]
+    .map((group) => ({
+      ...group,
+      tables: group.tables.sort((a, b) => a.tableName.localeCompare(b.tableName, "vi"))
+    }))
+    .sort((a, b) => a.area.localeCompare(b.area, "vi"));
+}
+
+function filterTables(tables: StaffTableOtp[], areaId: number | null, status: string, search: string) {
+  const keyword = search.trim().toLowerCase();
+  return tables.filter((table) => {
+    const matchesArea = !areaId || table.areaId === areaId;
+    const matchesStatus = !status || table.status === status;
+    const matchesSearch = !keyword ||
+      table.tableName.toLowerCase().includes(keyword) ||
+      table.area.toLowerCase().includes(keyword) ||
+      table.currentOtp.toLowerCase().includes(keyword);
+    return matchesArea && matchesStatus && matchesSearch;
+  });
+}
+
+function isAreaSelected(group: AreaGroup, selectedIds: number[]) {
+  return group.tables.length > 0 && group.tables.every((table) => selectedIds.includes(table.tableId));
 }
 
 function confirmReset() {
