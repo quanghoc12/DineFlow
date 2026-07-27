@@ -200,30 +200,33 @@ button {
 
 .staff-otp-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 10px;
 }
 
 .staff-otp-table {
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  align-content: space-between;
+  gap: 5px;
+  min-height: 122px;
+  aspect-ratio: 1;
+  padding: 9px;
   background: white;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
 }
 
 .staff-otp-table div {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  gap: 3px;
 }
 
 .staff-otp-table h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .staff-otp-table label {
@@ -234,24 +237,25 @@ button {
 }
 
 .staff-otp-table strong {
-  font-size: 28px;
+  font-size: 20px;
   letter-spacing: 0;
+  line-height: 1.1;
 }
 
 .staff-otp-table small,
 .staff-otp-table span {
   color: #64748b;
-}
-
-.staff-otp-table div {
-  display: flex;
-  gap: 8px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .staff-otp-table button {
-  width: fit-content;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px;
   background: #e0f2fe;
   color: #075985;
+  font-size: 11px;
 }
 
 .staff-otp-summary {
@@ -314,22 +318,16 @@ button {
   background: #f8fafc;
 }
 
-.staff-reset-area summary {
+.staff-reset-area-head {
   min-height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  cursor: pointer;
-  list-style: none;
 }
 
-.staff-reset-area summary::-webkit-details-marker {
-  display: none;
-}
-
-.staff-reset-area summary label,
+.staff-reset-area-head label,
 .staff-reset-table {
   display: flex;
   align-items: center;
@@ -337,7 +335,7 @@ button {
   font-weight: 700;
 }
 
-.staff-reset-area summary span {
+.staff-reset-area-head span {
   min-width: 30px;
   border-radius: 999px;
   padding: 4px 8px;
@@ -348,7 +346,18 @@ button {
   font-weight: 800;
 }
 
-.staff-reset-area > div {
+.staff-reset-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.staff-reset-tables {
   display: grid;
   gap: 1px;
   padding: 0 8px 8px;

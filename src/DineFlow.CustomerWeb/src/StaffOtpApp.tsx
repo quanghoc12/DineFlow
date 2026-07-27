@@ -26,6 +26,7 @@ export function StaffOtpApp() {
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [openAreaKeys, setOpenAreaKeys] = useState<string[]>([]);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const areaGroups = useMemo(() => groupTables(tables), [tables]);
@@ -98,6 +99,12 @@ export function StaffOtpApp() {
 
     groupIds.forEach((id) => selectedSet.add(id));
     setSelectedIds([...selectedSet]);
+  }
+
+  function toggleAreaOpen(group: AreaGroup) {
+    const key = areaKey(group);
+    setOpenAreaKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
   }
 
   function logout() {
@@ -191,9 +198,9 @@ export function StaffOtpApp() {
 
               <div className="staff-reset-list">
                 {areaGroups.map((group) => (
-                  <details className="staff-reset-area" key={`${group.areaId ?? "legacy"}-${group.area}`} open>
-                    <summary>
-                      <label onClick={(event) => event.stopPropagation()}>
+                  <section className="staff-reset-area" key={areaKey(group)}>
+                    <div className="staff-reset-area-head">
+                      <label>
                         <input
                           type="checkbox"
                           checked={isAreaSelected(group, selectedIds)}
@@ -202,21 +209,31 @@ export function StaffOtpApp() {
                         {group.area}
                       </label>
                       <span>{group.tables.length}</span>
-                    </summary>
-                    <div>
-                      {group.tables.map((table) => (
-                        <label className="staff-reset-table" key={table.tableId}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(table.tableId)}
-                            onChange={() => toggleTable(table.tableId)}
-                          />
-                          <span>{table.tableName}</span>
-                          <strong>{table.currentOtp}</strong>
-                        </label>
-                      ))}
+                      <button
+                        type="button"
+                        className="staff-reset-arrow"
+                        aria-label={openAreaKeys.includes(areaKey(group)) ? "Đóng khu vực" : "Mở khu vực"}
+                        onClick={() => toggleAreaOpen(group)}
+                      >
+                        {openAreaKeys.includes(areaKey(group)) ? "⌃" : "⌄"}
+                      </button>
                     </div>
-                  </details>
+                    {openAreaKeys.includes(areaKey(group)) && (
+                      <div className="staff-reset-tables">
+                        {group.tables.map((table) => (
+                          <label className="staff-reset-table" key={table.tableId}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(table.tableId)}
+                              onChange={() => toggleTable(table.tableId)}
+                            />
+                            <span>{table.tableName}</span>
+                            <strong>{table.currentOtp}</strong>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 ))}
               </div>
 
@@ -266,6 +283,10 @@ function filterTables(tables: StaffTableOtp[], areaId: number | null, status: st
 
 function isAreaSelected(group: AreaGroup, selectedIds: number[]) {
   return group.tables.length > 0 && group.tables.every((table) => selectedIds.includes(table.tableId));
+}
+
+function areaKey(group: AreaGroup) {
+  return `${group.areaId ?? "legacy"}-${group.area}`;
 }
 
 function confirmReset() {
