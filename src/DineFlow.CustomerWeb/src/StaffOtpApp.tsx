@@ -183,7 +183,6 @@ export function StaffOtpApp() {
                     </div>
                     <div className="staff-table-title">
                       <h3>{table.tableName}</h3>
-                      <span>{statusDotLabel(table.status)}</span>
                     </div>
                     <span className="staff-status-badge">{statusBadgeLabel(table.status)}</span>
                   </div>
@@ -302,13 +301,6 @@ function confirmReset() {
 }
 
 function statusLabel(status: string) {
-  if (status === "Available") return "Trống";
-  if (status === "Occupied") return "Đang phục vụ";
-  if (status === "WaitingPayment") return "Chờ thanh toán";
-  return status;
-}
-
-function statusDotLabel(status: string) {
   if (status === "Available") return "Trống";
   if (status === "Occupied") return "Đang phục vụ";
   if (status === "WaitingPayment") return "Chờ thanh toán";

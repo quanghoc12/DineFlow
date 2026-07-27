@@ -356,17 +356,6 @@ button {
   line-height: 1.2;
 }
 
-.staff-table-title span::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 4px;
-  border-radius: 999px;
-  background: #16a34a;
-  vertical-align: 1px;
-}
-
 .staff-status-badge {
   width: fit-content;
   max-width: 100%;
