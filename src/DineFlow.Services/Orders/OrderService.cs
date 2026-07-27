@@ -47,16 +47,32 @@ public class OrderService : IOrderService
             throw new BusinessException("CLIENT_TOKEN_REQUIRED", "Client token is required.");
         }
 
-        TableSessionDto session = await _tableSessionService.GetOrCreateActiveSessionByQrTokenAsync(
-            request.TableToken,
-            openedBy: null,
-            cancellationToken);
+        string clientToken = request.ClientToken.Trim();
+        TableSessionCustomer customer = await _tableSessionRepository.GetSessionCustomerByTokenAsync(
+            clientToken,
+            cancellationToken)
+            ?? throw new BusinessException("CUSTOMER_SESSION_NOT_VERIFIED", "Vui lòng nhập đúng mã bàn trước khi gửi order.");
+
+        if (!customer.IsVerified ||
+            customer.TableSession is null ||
+            customer.TableSession.Status is not ("Open" or "WaitingPayment"))
+        {
+            throw new BusinessException(
+                "CUSTOMER_SESSION_NOT_VERIFIED",
+                "Vui lòng nhập đúng mã bàn trước khi gửi order.");
+        }
+
+        if (customer.TableSession.Table is null ||
+            !string.Equals(customer.TableSession.Table.QrToken, request.TableToken, StringComparison.Ordinal))
+        {
+            throw new BusinessException("TABLE_TOKEN_MISMATCH", "Customer session does not belong to this table.");
+        }
 
         CreateOrderResponse response = await CreateOrderCoreAsync(
-            tableSessionId: session.TableSessionId,
+            tableSessionId: customer.TableSessionId,
             salesChannelCode: request.SalesChannelCode ?? "CUSTOMER_WEB",
             externalOrderCode: request.ExternalOrderCode,
-            clientToken: request.ClientToken,
+            clientToken: clientToken,
             displayName: request.DisplayName,
             customerNote: request.CustomerNote,
             items: request.Items,

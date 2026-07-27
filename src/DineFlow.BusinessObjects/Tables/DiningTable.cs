@@ -9,6 +9,8 @@ public class DiningTable
     public int? AreaId { get; set; }
     public string Area { get; set; } = string.Empty;
     public string QrToken { get; set; } = string.Empty;
+    public string CurrentOtp { get; set; } = string.Empty;
+    public DateTime OtpUpdatedAt { get; set; }
     public string Status { get; set; } = "Available";
     public bool IsActive { get; set; } = true;
     public int DisplayOrder { get; set; }

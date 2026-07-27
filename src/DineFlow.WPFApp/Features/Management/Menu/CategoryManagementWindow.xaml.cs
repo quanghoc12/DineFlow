@@ -1,5 +1,4 @@
 using DineFlow.BusinessObjects.Menu;
-using DineFlow.WPFApp.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 

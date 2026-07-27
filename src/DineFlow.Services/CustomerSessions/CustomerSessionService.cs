@@ -79,6 +79,62 @@ public class CustomerSessionService : ICustomerSessionService
         return MapFromCustomer(customer);
     }
 
+    public async Task<CustomerSessionDto> VerifyOtpAsync(
+        VerifyCustomerOtpRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _tableSessionService.ExpireInactiveBrowsingSessionsAsync(cancellationToken);
+
+        string qrToken = NormalizeRequired(request.QrToken, "QR_TOKEN_REQUIRED", "QR token is required.");
+        string clientToken = NormalizeRequired(request.ClientToken, "CLIENT_TOKEN_REQUIRED", "Client token is required.");
+        string otp = NormalizeRequired(request.Otp, "OTP_REQUIRED", "OTP is required.");
+
+        DiningTable table = await _tableSessionRepository.GetActiveTableByQrTokenAsync(qrToken, cancellationToken)
+            ?? throw new BusinessException("TABLE_NOT_FOUND", "Dining table does not exist or is inactive.");
+
+        if (!string.Equals(table.CurrentOtp, otp, StringComparison.Ordinal))
+        {
+            throw new BusinessException("TABLE_OTP_INVALID", "Mã bàn không đúng. Vui lòng hỏi nhân viên.");
+        }
+
+        string? displayName = request.DisplayName?.Trim();
+        if (displayName?.Length > 100)
+        {
+            throw new BusinessException("DISPLAY_NAME_TOO_LONG", "Display name must be 100 characters or fewer.");
+        }
+
+        TableSessionDto session = await _tableSessionService.GetOrCreateActiveSessionByTableIdAsync(
+            table.TableId,
+            openedBy: null,
+            cancellationToken);
+
+        TableSessionCustomer? customer = await _tableSessionRepository.GetSessionCustomerAsync(
+            session.TableSessionId,
+            clientToken,
+            cancellationToken);
+
+        if (customer is null)
+        {
+            customer = new TableSessionCustomer
+            {
+                TableSessionId = session.TableSessionId,
+                ClientToken = clientToken,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _tableSessionRepository.AddSessionCustomerAsync(customer, cancellationToken);
+        }
+
+        customer.IsVerified = true;
+        customer.VerifiedAt ??= DateTime.UtcNow;
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            customer.DisplayName = displayName;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Map(table, session, customer);
+    }
+
     public async Task<CustomerSessionDto> GetCurrentAsync(
         string clientToken,
         CancellationToken cancellationToken = default)
@@ -174,7 +230,11 @@ public class CustomerSessionService : ICustomerSessionService
             SessionCustomerId = customer.SessionCustomerId,
             ClientToken = customer.ClientToken,
             DisplayName = customer.DisplayName,
-            RequiresName = string.IsNullOrWhiteSpace(customer.DisplayName)
+            RequiresName = string.IsNullOrWhiteSpace(customer.DisplayName),
+            IsVerified = customer.IsVerified,
+            RequiresOtp = !customer.IsVerified,
+            CanOrder = customer.IsVerified && session.Status is "Open" or "WaitingPayment",
+            SessionStatus = session.Status
         };
     }
 

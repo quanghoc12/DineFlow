@@ -27,13 +27,13 @@ public sealed class TableManagementService : ITableManagementService
 
     public async Task<IReadOnlyList<ManagedTableDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        EnsureAdmin();
+        EnsureCanViewTables();
         return (await _repository.GetAllAsync(cancellationToken)).Select(Map).ToList();
     }
 
     public async Task<IReadOnlyList<ManagedAreaDto>> GetAreasAsync(CancellationToken cancellationToken = default)
     {
-        EnsureAdmin();
+        EnsureCanViewTables();
         return (await _repository.GetAreasAsync(cancellationToken)).Select(MapArea).ToList();
     }
 
@@ -119,6 +119,8 @@ public sealed class TableManagementService : ITableManagementService
             Area = area,
             DisplayOrder = request.DisplayOrder,
             QrToken = await GenerateUniqueTokenAsync(cancellationToken),
+            CurrentOtp = TableOtpGenerator.Generate(),
+            OtpUpdatedAt = now,
             Status = TableStatuses.Available,
             IsActive = true,
             CreatedAt = now,
@@ -185,12 +187,44 @@ public sealed class TableManagementService : ITableManagementService
         return Map(table);
     }
 
+    public async Task<ManagedTableDto> ResetOtpAsync(int tableId, CancellationToken cancellationToken = default)
+    {
+        EnsureOtpResetAdmin();
+        DiningTable table = await FindAsync(tableId, cancellationToken);
+        DateTime now = DateTime.UtcNow;
+        table.CurrentOtp = TableOtpGenerator.Generate();
+        table.OtpUpdatedAt = now;
+        table.UpdatedAt = now;
+        await _repository.SaveChangesAsync(cancellationToken);
+        return Map(table);
+    }
+
     private void EnsureAdmin()
     {
         if (!_currentUser.IsAuthenticated ||
             !AuthRoles.CanManage(_currentUser.User!.Role))
         {
             throw new UnauthorizedAccessException("Chỉ Admin hoặc Chủ nhà hàng được quản lý bàn và mã QR.");
+        }
+    }
+
+    private void EnsureCanViewTables()
+    {
+        if (!_currentUser.IsAuthenticated ||
+            (!AuthRoles.IsStaff(_currentUser.User!.Role) &&
+             !AuthRoles.IsAdmin(_currentUser.User.Role) &&
+             !AuthRoles.IsOwner(_currentUser.User.Role)))
+        {
+            throw new UnauthorizedAccessException("Không có quyền xem danh sách bàn.");
+        }
+    }
+
+    private void EnsureOtpResetAdmin()
+    {
+        if (!_currentUser.IsAuthenticated ||
+            !AuthRoles.IsAdmin(_currentUser.User!.Role))
+        {
+            throw new UnauthorizedAccessException("Chỉ Admin được reset OTP bàn.");
         }
     }
 
@@ -255,6 +289,8 @@ public sealed class TableManagementService : ITableManagementService
         Area = table.AreaEntity?.AreaName ?? table.Area,
         QrToken = table.QrToken,
         QrUrl = $"{_customerWebBaseUrl}/table/{Uri.EscapeDataString(table.QrToken)}",
+        CurrentOtp = table.CurrentOtp,
+        OtpUpdatedAt = table.OtpUpdatedAt,
         Status = table.Status,
         IsActive = table.IsActive,
         DisplayOrder = table.DisplayOrder

@@ -4,6 +4,7 @@ using DineFlow.Repositories.Common;
 using DineFlow.Repositories.Orders;
 using DineFlow.Services.Common;
 using DineFlow.Services.Realtime;
+using DineFlow.Services.Tables;
 
 namespace DineFlow.Services.Bills;
 
@@ -104,7 +105,7 @@ public class PaymentService : IPaymentService
                     if (table is not null)
                     {
                         table.Status = "Available";
-                        table.UpdatedAt = paidAt;
+                        RotateTableOtp(table, paidAt);
                     }
 
                     sessionClosed = true;
@@ -198,7 +199,7 @@ public class PaymentService : IPaymentService
                     if (table is not null)
                     {
                         table.Status = "Available";
-                        table.UpdatedAt = payment.PaidAt;
+                        RotateTableOtp(table, payment.PaidAt);
                     }
 
                     sessionClosed = true;
@@ -241,6 +242,13 @@ public class PaymentService : IPaymentService
             UpdatedBy = payment.UpdatedBy,
             ChangeReason = payment.ChangeReason
         };
+    }
+
+    private static void RotateTableOtp(DineFlow.BusinessObjects.Tables.DiningTable table, DateTime now)
+    {
+        table.CurrentOtp = TableOtpGenerator.Generate();
+        table.OtpUpdatedAt = now;
+        table.UpdatedAt = now;
     }
 
     private async Task NotifyPaymentChangedAsync(

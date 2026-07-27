@@ -7,15 +7,18 @@ namespace DineFlow.WPFApp.Features.Management.Tables;
 public partial class TableEditorWindow : Window
 {
     private readonly ITableManagementService _service;
+    private readonly bool _canResetOtp;
     private ManagedTableDto? _table;
 
     public TableEditorWindow(
         ITableManagementService service,
         IEnumerable<ManagedAreaDto> areas,
-        ManagedTableDto? table = null)
+        ManagedTableDto? table = null,
+        bool canResetOtp = false)
     {
         InitializeComponent();
         _service = service;
+        _canResetOtp = canResetOtp;
         _table = table;
         AreaComboBox.ItemsSource = areas.Where(area => area.IsActive || area.AreaId == table?.AreaId).ToList();
         AreaComboBox.SelectedItem = AreaComboBox.Items.Cast<ManagedAreaDto>()
@@ -27,6 +30,7 @@ public partial class TableEditorWindow : Window
         TableNameTextBox.Text = table.TableName;
         OrderTextBox.Text = table.DisplayOrder.ToString();
         QrActions.Visibility = Visibility.Visible;
+        ResetOtpButton.IsEnabled = _canResetOtp;
         RefreshTableState();
     }
 
@@ -64,6 +68,17 @@ public partial class TableEditorWindow : Window
         await RunAsync(async () => _table = await _service.ResetQrAsync(_table.TableId));
     }
 
+    private async void ResetOtp_Click(object sender, RoutedEventArgs e)
+    {
+        if (_table is null || MessageBox.Show(
+            "Reset OTP sẽ tạo mã mới cho khách mới vào bàn.\nKhách đã xác thực trong session hiện tại vẫn tiếp tục gọi món được.",
+            "Xác nhận reset OTP",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+
+        await RunAsync(async () => _table = await _service.ResetOtpAsync(_table.TableId));
+    }
+
     private async void ToggleActive_Click(object sender, RoutedEventArgs e)
     {
         if (_table is null) return;
@@ -99,6 +114,8 @@ public partial class TableEditorWindow : Window
     {
         if (_table is null) return;
         UrlTextBox.Text = _table.QrUrl;
+        OtpTextBox.Text = _table.CurrentOtp;
+        OtpUpdatedText.Text = $"Cập nhật: {_table.OtpUpdatedAt.ToLocalTime():dd/MM/yyyy HH:mm}";
         ToggleButton.Content = _table.IsActive ? "Khóa bàn" : "Mở bàn";
     }
 }

@@ -1,8 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using DineFlow.BusinessObjects.Reports;
-using DineFlow.WPFApp.Features.Reports.ViewModels;
-using DineFlow.WPFApp.Services;
 
 namespace DineFlow.WPFApp.Features.Reports.Dashboard;
 

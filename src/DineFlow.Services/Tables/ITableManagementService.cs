@@ -12,4 +12,5 @@ public interface ITableManagementService
     Task UpdateAsync(UpdateManagedTableRequest request, CancellationToken cancellationToken = default);
     Task SetActiveAsync(int tableId, bool active, CancellationToken cancellationToken = default);
     Task<ManagedTableDto> ResetQrAsync(int tableId, CancellationToken cancellationToken = default);
+    Task<ManagedTableDto> ResetOtpAsync(int tableId, CancellationToken cancellationToken = default);
 }

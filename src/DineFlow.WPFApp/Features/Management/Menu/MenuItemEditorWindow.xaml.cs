@@ -1,5 +1,5 @@
 using DineFlow.BusinessObjects.Menu;
-using DineFlow.WPFApp.Services;
+using DineFlow.WPFApp.Services.Api;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Globalization;

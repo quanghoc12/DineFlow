@@ -9,6 +9,7 @@ using DineFlow.Repositories.Menu;
 using DineFlow.Repositories.Orders;
 using DineFlow.Services.Common;
 using DineFlow.Services.Realtime;
+using DineFlow.Services.Tables;
 
 namespace DineFlow.Services.Bills;
 
@@ -407,7 +408,7 @@ public class BillService : IBillService
                     {
                         tableId = table.TableId;
                         table.Status = "Available";
-                        table.UpdatedAt = DateTime.UtcNow;
+                        RotateTableOtp(table, DateTime.UtcNow);
                     }
                 }
             }
@@ -492,6 +493,13 @@ public class BillService : IBillService
             Normalize(x.ChoiceSummary) == Normalize(incoming.ChoiceSummary) &&
             x.UnitPrice == incoming.UnitPrice &&
             Normalize(x.Note) == Normalize(incoming.Note));
+    }
+
+    private static void RotateTableOtp(DineFlow.BusinessObjects.Tables.DiningTable table, DateTime now)
+    {
+        table.CurrentOtp = TableOtpGenerator.Generate();
+        table.OtpUpdatedAt = now;
+        table.UpdatedAt = now;
     }
 
     private async Task RestoreStockIfNeededAsync(

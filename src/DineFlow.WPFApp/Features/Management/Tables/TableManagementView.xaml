@@ -111,14 +111,16 @@
                     <Grid Grid.Row="1" Background="#F4F7FA" Height="46">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="140"/><ColumnDefinition Width="120"/><ColumnDefinition Width="170"/>
+                            <ColumnDefinition Width="110"/><ColumnDefinition Width="140"/><ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="250"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Tên bàn" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
                         <TextBlock Grid.Column="1" Text="Khu vực" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
                         <TextBlock Grid.Column="2" Text="Thứ tự" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
-                        <TextBlock Grid.Column="3" Text="Trạng thái" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
-                        <TextBlock Grid.Column="4" Text="Hoạt động" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
-                        <TextBlock Grid.Column="5" Text="Thao tác" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
+                        <TextBlock Grid.Column="3" Text="OTP" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
+                        <TextBlock Grid.Column="4" Text="Trạng thái" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
+                        <TextBlock Grid.Column="5" Text="Hoạt động" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
+                        <TextBlock Grid.Column="6" Text="Thao tác" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334E68"/>
                     </Grid>
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Tables}">
@@ -128,16 +130,22 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="78"/>
-                                                <ColumnDefinition Width="140"/><ColumnDefinition Width="120"/><ColumnDefinition Width="158"/>
+                                                <ColumnDefinition Width="110"/><ColumnDefinition Width="140"/><ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="238"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding TableName}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                             <TextBlock Grid.Column="1" Text="{Binding Area}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="2" Text="{Binding DisplayOrder}" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding StatusLabel}" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding ActiveStatusLabel}" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Grid.Column="3" Text="{Binding CurrentOtp}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding StatusLabel}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding ActiveStatusLabel}" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <Button Content="Xem QR" Tag="{Binding}" Click="PreviewQrRow_Click"
                                                         Style="{StaticResource TableSecondaryButtonStyle}"
+                                                        MinHeight="34" Padding="12,0" Margin="0,0,7,0"/>
+                                                <Button Content="Reset OTP" Tag="{Binding}" Click="ResetOtpRow_Click"
+                                                        Style="{StaticResource TableSecondaryButtonStyle}"
+                                                        IsEnabled="{Binding DataContext.CanResetOtp, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         MinHeight="34" Padding="12,0" Margin="0,0,7,0"/>
                                                 <Button Content="Sửa" Tag="{Binding}" Click="EditTableRow_Click"
                                                         Style="{StaticResource TableSecondaryButtonStyle}"

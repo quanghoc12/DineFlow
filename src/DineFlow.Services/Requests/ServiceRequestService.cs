@@ -151,16 +151,12 @@ public class ServiceRequestService : IServiceRequestService
             await _tableSessionRepository.GetSessionCustomerByTokenAsync(request.ClientToken.Trim(), cancellationToken);
 
         if (customer?.TableSession is null ||
-            customer.TableSession.Status is not ("Browsing" or "Open" or "WaitingPayment"))
-        {
-            throw new BusinessException("CUSTOMER_SESSION_NOT_ACTIVE", "Customer session is not active.");
-        }
-
-        if (request.RequestType == "PaymentRequest" && customer.TableSession.Status == "Browsing")
+            !customer.IsVerified ||
+            customer.TableSession.Status is not ("Open" or "WaitingPayment"))
         {
             throw new BusinessException(
-                "PAYMENT_REQUEST_REQUIRES_BILL",
-                "Payment can only be requested after the first order has been confirmed.");
+                "CUSTOMER_SESSION_NOT_VERIFIED",
+                "Vui lòng nhập đúng mã bàn trước khi gửi yêu cầu.");
         }
 
         request.TableSessionId = customer.TableSessionId;

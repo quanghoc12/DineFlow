@@ -21,12 +21,18 @@ import { HomeView } from "./views/HomeView";
 import { MenuView } from "./views/MenuView";
 import { MessagesView } from "./views/MessagesView";
 import { WelcomeName } from "./views/WelcomeName";
+import { StaffOtpApp } from "./StaffOtpApp";
 
 function App() {
+  if (window.location.pathname.startsWith("/nhanvien")) {
+    return <StaffOtpApp />;
+  }
+
   const qrToken = useMemo(getQrToken, []);
   const tokenKey = useMemo(() => getTokenStorageKey(qrToken), [qrToken]);
   const [session, setSession] = useState<CustomerSession | null>(null);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
+  const [otpDraft, setOtpDraft] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [view, setView] = useState<View>("home");
   const [catalog, setCatalog] = useState<MenuCatalog>({ categories: [], items: [] });
@@ -221,6 +227,34 @@ function App() {
     }
   }
 
+  async function verifyOtp(event: FormEvent) {
+    event.preventDefault();
+    if (!session) {
+      return;
+    }
+
+    const otp = otpDraft.trim();
+    if (!otp) {
+      showError("Vui lòng nhập mã bàn.");
+      return;
+    }
+
+    try {
+      const updated = await customerApi.verifyOtp(
+        qrToken,
+        session.clientToken,
+        otp,
+        displayNameDraft.trim() || session.displayName);
+      localStorage.setItem(tokenKey, updated.clientToken);
+      setSession(updated);
+      setDisplayNameDraft(updated.displayName ?? "");
+      setOtpDraft("");
+      showSuccess("Đã xác thực mã bàn.");
+    } catch (err) {
+      showError((err as Error).message || "Mã bàn không đúng. Vui lòng hỏi nhân viên.");
+    }
+  }
+
   async function openMenu() {
     setView("menu");
     setSearch("");
@@ -361,11 +395,29 @@ function App() {
   }
 
   const needsName = session.requiresName || isEditingName;
+  const needsOtp = session.requiresOtp || !session.canOrder;
   const editingCartItem = editingCartKey ? cart.find((item) => item.key === editingCartKey) ?? null : null;
 
   return (
     <ScreenShell>
-      {needsName ? (
+      {needsOtp ? (
+        <form className="otp-gate" onSubmit={verifyOtp}>
+          <div className="otp-card">
+            <p className="eyebrow">{session.area}</p>
+            <h1>{session.tableName}</h1>
+            <label htmlFor="table-otp">Mã bàn</label>
+            <input
+              id="table-otp"
+              value={otpDraft}
+              onChange={(event) => setOtpDraft(event.target.value)}
+              maxLength={6}
+              autoComplete="one-time-code"
+              placeholder="aZ7Qp2"
+            />
+            <button type="submit">Vào gọi món</button>
+          </div>
+        </form>
+      ) : needsName ? (
         <WelcomeName
           value={displayNameDraft}
           onChange={setDisplayNameDraft}

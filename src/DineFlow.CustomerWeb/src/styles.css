@@ -55,6 +55,179 @@ button {
   color: #475569;
 }
 
+.otp-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.otp-card {
+  width: min(100%, 360px);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+}
+
+.otp-card h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.otp-card label {
+  font-weight: 700;
+}
+
+.otp-card input {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 20px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.otp-card button {
+  border: 0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--primary-blue);
+  color: white;
+  font-weight: 800;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.staff-otp-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.staff-login {
+  width: min(100%, 360px);
+  margin: 80px auto 0;
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+}
+
+.staff-login h1,
+.staff-otp-header h1,
+.staff-otp-area h2 {
+  margin: 0;
+}
+
+.staff-login input,
+.staff-otp-filters input,
+.staff-otp-filters select {
+  min-height: 44px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: white;
+}
+
+.staff-login button,
+.staff-otp-filters button,
+.staff-otp-table button {
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--primary-blue);
+  color: white;
+  font-weight: 700;
+}
+
+.staff-otp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.staff-otp-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.staff-otp-filters button:disabled,
+.staff-otp-table button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.staff-otp-area {
+  margin-top: 22px;
+}
+
+.staff-otp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.staff-otp-table {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+}
+
+.staff-otp-table label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.staff-otp-table strong {
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.staff-otp-table small,
+.staff-otp-table span {
+  color: #64748b;
+}
+
+.staff-otp-table div {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .staff-otp-page {
+    padding: 16px;
+  }
+
+  .staff-otp-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
 .error-text,
 .validation-text,
 .text-danger {

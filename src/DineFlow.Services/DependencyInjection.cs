@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ITableManagementService, TableManagementService>();
+        services.AddScoped<ITableOtpService, TableOtpService>();
         services.AddScoped<IMenuManagementService, MenuManagementService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IRevenueReportService, RevenueReportService>();

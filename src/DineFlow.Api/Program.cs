@@ -18,6 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddDineFlowServices();
+builder.Services.AddSingleton<IStaffAuthTokenService, StaffAuthTokenService>();
 builder.Services.AddHttpClient<IMenuImageStorageService, MenuImageStorageService>();
 builder.Services.AddScoped<IRealtimeNotificationService, SignalRRealtimeNotificationService>();
 builder.Services.AddCors(options =>

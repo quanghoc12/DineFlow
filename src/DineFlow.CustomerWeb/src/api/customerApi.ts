@@ -51,6 +51,13 @@ export const customerApi = {
     });
   },
 
+  verifyOtp(qrToken: string, clientToken: string, otp: string, displayName?: string | null) {
+    return request<CustomerSession>("/api/customer/table-sessions/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ qrToken, clientToken, otp, displayName })
+    });
+  },
+
   getMenu(categoryId?: number | null, search?: string) {
     const params = new URLSearchParams({ salesChannelCode: "CUSTOMER_WEB" });
     if (categoryId) {

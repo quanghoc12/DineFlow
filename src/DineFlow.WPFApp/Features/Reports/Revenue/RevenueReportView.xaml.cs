@@ -1,7 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using DineFlow.WPFApp.Features.Reports.ViewModels;
-using DineFlow.WPFApp.Views; // where we might put PaymentEditWindow or we can put it in Payments folder
 
 namespace DineFlow.WPFApp.Features.Reports.Revenue;
 

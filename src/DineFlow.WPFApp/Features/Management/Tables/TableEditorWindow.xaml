@@ -54,6 +54,12 @@
                     <Button Content="Copy URL" Click="CopyUrl_Click"
                             Style="{StaticResource TableSecondaryButtonStyle}"
                             HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                    <TextBlock Text="OTP hiện tại" Style="{StaticResource TableDialogLabelStyle}"/>
+                    <TextBox x:Name="OtpTextBox" IsReadOnly="True" Style="{StaticResource TableFieldStyle}"/>
+                    <TextBlock x:Name="OtpUpdatedText" Foreground="#829AB1" Margin="0,8,0,0"/>
+                    <Button x:Name="ResetOtpButton" Content="Reset OTP" Click="ResetOtp_Click"
+                            Style="{StaticResource TableSecondaryButtonStyle}"
+                            HorizontalAlignment="Left" Margin="0,10,0,0"/>
                     <Separator Margin="0,20,0,12"/>
                     <WrapPanel>
                         <Button Content="Tạo lại QR" Click="ResetQr_Click"

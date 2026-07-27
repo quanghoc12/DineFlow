@@ -9,6 +9,10 @@ export type CustomerSession = {
   clientToken: string;
   displayName: string | null;
   requiresName: boolean;
+  isVerified: boolean;
+  requiresOtp: boolean;
+  canOrder: boolean;
+  sessionStatus: string;
 };
 
 export type MenuCatalog = {

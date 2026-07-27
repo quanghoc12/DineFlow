@@ -859,8 +859,16 @@ namespace DineFlow.DataAccessObjects.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<bool>("IsVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<int>("TableSessionId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("SessionCustomerId");
 
@@ -980,6 +988,11 @@ namespace DineFlow.DataAccessObjects.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CurrentOtp")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
                     b.Property<int>("DisplayOrder")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -987,6 +1000,9 @@ namespace DineFlow.DataAccessObjects.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime>("OtpUpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("QrToken")
                         .IsRequired()

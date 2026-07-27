@@ -17,6 +17,7 @@ public sealed class TableManagementDao : ITableManagementDao
         _dbContext.DiningTables
             .AsNoTracking()
             .Include(table => table.AreaEntity)
+            .Include(table => table.TableSessions)
             .OrderBy(table => table.AreaEntity != null ? table.AreaEntity.DisplayOrder : int.MaxValue)
             .ThenBy(table => table.Area)
             .ThenBy(table => table.DisplayOrder)
@@ -25,6 +26,8 @@ public sealed class TableManagementDao : ITableManagementDao
 
     public Task<List<DiningTable>> GetAllForUpdateAsync(CancellationToken cancellationToken = default) =>
         _dbContext.DiningTables
+            .Include(table => table.AreaEntity)
+            .Include(table => table.TableSessions)
             .OrderBy(table => table.DisplayOrder)
             .ThenBy(table => table.TableName)
             .ToListAsync(cancellationToken);
@@ -70,7 +73,10 @@ public sealed class TableManagementDao : ITableManagementDao
         _dbContext.Areas.AddAsync(area, cancellationToken).AsTask();
 
     public Task<DiningTable?> GetByIdAsync(int tableId, CancellationToken cancellationToken = default) =>
-        _dbContext.DiningTables.FirstOrDefaultAsync(table => table.TableId == tableId, cancellationToken);
+        _dbContext.DiningTables
+            .Include(table => table.AreaEntity)
+            .Include(table => table.TableSessions)
+            .FirstOrDefaultAsync(table => table.TableId == tableId, cancellationToken);
 
     public Task<bool> NameExistsInAreaAsync(
         string name,

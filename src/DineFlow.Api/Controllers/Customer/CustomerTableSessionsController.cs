@@ -23,6 +23,15 @@ public class CustomerTableSessionsController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("verify-otp")]
+    public async Task<ActionResult<CustomerSessionDto>> VerifyOtp(
+        [FromBody] VerifyCustomerOtpRequest request,
+        CancellationToken cancellationToken)
+    {
+        CustomerSessionDto response = await _customerSessionService.VerifyOtpAsync(request, cancellationToken);
+        return Ok(response);
+    }
+
     [HttpPut("customer-name")]
     public async Task<ActionResult<CustomerSessionDto>> UpdateCustomerName(
         [FromBody] UpdateCustomerNameRequest request,

@@ -19,6 +19,8 @@ public sealed class ManagedTableDto
     public string Area { get; set; } = string.Empty;
     public string QrToken { get; set; } = string.Empty;
     public string QrUrl { get; set; } = string.Empty;
+    public string CurrentOtp { get; set; } = string.Empty;
+    public DateTime OtpUpdatedAt { get; set; }
     public string Status { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
@@ -57,6 +59,34 @@ public sealed class ManagedAreaDto
     public bool IsActive { get; set; }
     public int TableCount { get; set; }
     public string ActiveStatusLabel => IsActive ? "Hoạt động" : "Đã khóa";
+}
+
+public sealed class TableOtpFilter
+{
+    public int? AreaId { get; set; }
+    public string? Status { get; set; }
+    public string? Search { get; set; }
+}
+
+public sealed class StaffTableOtpDto
+{
+    public int TableId { get; set; }
+    public string TableName { get; set; } = string.Empty;
+    public int? AreaId { get; set; }
+    public string Area { get; set; } = string.Empty;
+    public int AreaDisplayOrder { get; set; }
+    public int TableDisplayOrder { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string CurrentOtp { get; set; } = string.Empty;
+    public DateTime OtpUpdatedAt { get; set; }
+    public int? CurrentSessionId { get; set; }
+    public string? CurrentSessionStatus { get; set; }
+}
+
+public sealed class ResetTableOtpBatchRequest
+{
+    public int? AreaId { get; set; }
+    public List<int> TableIds { get; set; } = [];
 }
 
 public sealed class SaveAreaRequest

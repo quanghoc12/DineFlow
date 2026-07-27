@@ -76,6 +76,8 @@ public class AppDbContext : DbContext
             entity.Property(x => x.TableName).HasMaxLength(100).IsRequired();
             entity.Property(x => x.Area).HasMaxLength(100).IsRequired();
             entity.Property(x => x.QrToken).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.CurrentOtp).HasMaxLength(6).IsRequired();
+            entity.Property(x => x.OtpUpdatedAt).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
             entity.Property(x => x.DisplayOrder).HasDefaultValue(0);
 
@@ -198,6 +200,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => new { x.TableSessionId, x.ClientToken }).IsUnique();
             entity.Property(x => x.ClientToken).HasMaxLength(200).IsRequired();
             entity.Property(x => x.DisplayName).HasMaxLength(150);
+            entity.Property(x => x.IsVerified).HasDefaultValue(false);
 
             entity.HasOne(x => x.TableSession)
                 .WithMany(x => x.Customers)

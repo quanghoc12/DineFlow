@@ -5,6 +5,7 @@ using DineFlow.Repositories.Common;
 using DineFlow.Repositories.Orders;
 using DineFlow.Services.Common;
 using DineFlow.Services.Realtime;
+using DineFlow.Services.Tables;
 using Microsoft.EntityFrameworkCore;
 
 namespace DineFlow.Services.Orders;
@@ -303,7 +304,7 @@ public class TableSessionService : ITableSessionService
             if (table is not null)
             {
                 table.Status = "Available";
-                table.UpdatedAt = DateTime.UtcNow;
+                RotateTableOtp(table, DateTime.UtcNow);
             }
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -432,6 +433,13 @@ public class TableSessionService : ITableSessionService
             EndedAt = session.EndedAt,
             Status = session.Status
         };
+    }
+
+    private static void RotateTableOtp(DiningTable table, DateTime now)
+    {
+        table.CurrentOtp = TableOtpGenerator.Generate();
+        table.OtpUpdatedAt = now;
+        table.UpdatedAt = now;
     }
 
     private async Task NotifyTableSessionChangedAsync(

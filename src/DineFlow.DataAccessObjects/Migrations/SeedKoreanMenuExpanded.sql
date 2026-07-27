@@ -773,5 +773,25 @@ BEGIN
         END IF;
     END LOOP;
 
+    
+    ----------------------------------------------------------------------------
+    -- 6. UPDATE IMAGES FOR ORIGINAL 15 MENU ITEMS
+    ----------------------------------------------------------------------------
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/samgyeopsal.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Ba chỉ heo nướng Samgyeopsal' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/galbi.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Sườn bò nướng Galbi' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/nac-vai-heo-sot-cay.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Nạc vai heo sốt cay' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/budae-jjigae.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Lẩu quân đội Budae-jjigae' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/kimchi-jjigae.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Canh Kimchi Kimchijigae' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/sundubu-jjigae.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Canh đậu hũ non Sundubu-jigae' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/bibimbap.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Cơm trộn Bibimbap' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/jajangmyeon.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Mì tương đen Jajangmyeon' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/tteokbokki.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Bánh gạo cay Tteokbokki' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/japchae.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Miến trộn Japchae' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/kimchi-pajeon.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Bánh xèo Kimchi Pajeon' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/chamisul-soju.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Rượu Soju truyền thống Chamisul' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/makgeolli.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Rượu gạo Makgeolli' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/tra-sam-mat-ong.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Trà sâm mật ong Hàn Quốc' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+    UPDATE "MenuItems" SET "ImageUrl" = 'https://qcnchscanwgqeyyzipgu.supabase.co/storage/v1/object/public/menu-images/menu-items/20260727/nuoc-suoi.jpg', "UpdatedAt" = v_now WHERE "Name" = 'Nước suối' AND ("ImageUrl" IS NULL OR "ImageUrl" = '' OR "ImageUrl" ILIKE '%.webp%');
+
     RAISE NOTICE 'DineFlow Korean Menu Seeder completed successfully!';
 END $$;

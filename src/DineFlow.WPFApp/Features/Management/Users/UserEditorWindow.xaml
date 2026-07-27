@@ -1,0 +1,61 @@
+<Window x:Class="DineFlow.WPFApp.Features.Management.Users.UserEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Người dùng" Width="680" Height="650" MinWidth="620" MinHeight="600"
+        Background="#EEF3F8" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <ResourceDictionary Source="/DineFlow.WPFApp;component/Features/Management/Tables/TableManagementStyles.xaml"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="88"/><RowDefinition Height="*"/><RowDefinition Height="84"/></Grid.RowDefinitions>
+        <Border Background="#0B55A0" Padding="30,0">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock x:Name="TitleText" Text="Thêm người dùng" Foreground="White" FontSize="26" FontWeight="Bold"/>
+                <TextBlock Text="Thiết lập thông tin đăng nhập và quyền truy cập."
+                           Foreground="#CDE4FF" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Margin="24" Padding="28,16" Background="White" CornerRadius="16">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Tên đăng nhập" Style="{StaticResource TableDialogLabelStyle}"/>
+                    <TextBox x:Name="UsernameTextBox" Style="{StaticResource TableFieldStyle}"/>
+                    <TextBlock Text="Họ và tên" Style="{StaticResource TableDialogLabelStyle}"/>
+                    <TextBox x:Name="FullNameTextBox" Style="{StaticResource TableFieldStyle}"/>
+                    <TextBlock Text="Vai trò" Style="{StaticResource TableDialogLabelStyle}"/>
+                    <ComboBox x:Name="RoleComboBox" Style="{StaticResource TableComboStyle}" SelectedIndex="1">
+                        <ComboBoxItem x:Name="OwnerRoleOption" Content="Chủ nhà hàng" Tag="Owner"/>
+                        <ComboBoxItem Content="Admin" Tag="Admin"/>
+                        <ComboBoxItem Content="Staff" Tag="Staff"/>
+                    </ComboBox>
+                    <StackPanel x:Name="PasswordPanel">
+                        <TextBlock Text="Mật khẩu" Style="{StaticResource TableDialogLabelStyle}"/>
+                        <PasswordBox x:Name="PasswordBox" MinHeight="42" Padding="12,8"
+                                     BorderBrush="#DDE5EE" BorderThickness="1"/>
+                    </StackPanel>
+                    <Border x:Name="AccountStatusPanel" Visibility="Collapsed"
+                            Background="#F4F7FA" CornerRadius="10" Padding="16" Margin="0,22,0,0">
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Text="Trạng thái tài khoản" FontWeight="SemiBold" Foreground="#334E68"/>
+                                <TextBlock x:Name="AccountStatusText" Margin="0,4,0,0" Foreground="#627D98"/>
+                            </StackPanel>
+                            <Button x:Name="ToggleAccountButton" HorizontalAlignment="Right"
+                                    Click="ToggleAccountButton_Click"
+                                    Style="{StaticResource TableSecondaryButtonStyle}"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="ErrorText" Foreground="#C53030" TextWrapping="Wrap" Margin="0,14,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <Border Grid.Row="2" Background="White" BorderBrush="#DDE5EE" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="24,0">
+                <Button Content="Hủy" Click="CancelButton_Click" Style="{StaticResource TableSecondaryButtonStyle}"
+                        MinWidth="110" Margin="0,0,10,0"/>
+                <Button Content="Lưu người dùng" Click="SaveButton_Click"
+                        Style="{StaticResource TablePrimaryButtonStyle}" MinWidth="150"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

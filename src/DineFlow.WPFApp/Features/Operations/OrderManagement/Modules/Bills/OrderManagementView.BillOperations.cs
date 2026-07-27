@@ -10,7 +10,7 @@ using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
 using DineFlow.Services.Requests;
-using DineFlow.WPFApp.Services;
+using DineFlow.WPFApp.Services.Api;
 
 namespace DineFlow.WPFApp.Features.Operations.OrderManagement;
 

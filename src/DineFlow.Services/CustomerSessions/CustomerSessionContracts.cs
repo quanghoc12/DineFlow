@@ -12,6 +12,14 @@ public class UpdateCustomerNameRequest
     public string DisplayName { get; set; } = string.Empty;
 }
 
+public class VerifyCustomerOtpRequest
+{
+    public string QrToken { get; set; } = string.Empty;
+    public string ClientToken { get; set; } = string.Empty;
+    public string Otp { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
+}
+
 public class CustomerSessionDto
 {
     public int TableId { get; set; }
@@ -22,6 +30,10 @@ public class CustomerSessionDto
     public string ClientToken { get; set; } = string.Empty;
     public string? DisplayName { get; set; }
     public bool RequiresName { get; set; }
+    public bool IsVerified { get; set; }
+    public bool RequiresOtp { get; set; }
+    public bool CanOrder { get; set; }
+    public string SessionStatus { get; set; } = string.Empty;
 }
 
 public class CustomerMessageDto
@@ -47,6 +59,7 @@ public class CustomerMessageItemDto
 public interface ICustomerSessionService
 {
     Task<CustomerSessionDto> ScanAsync(ScanCustomerSessionRequest request, CancellationToken cancellationToken = default);
+    Task<CustomerSessionDto> VerifyOtpAsync(VerifyCustomerOtpRequest request, CancellationToken cancellationToken = default);
     Task<CustomerSessionDto> UpdateCustomerNameAsync(UpdateCustomerNameRequest request, CancellationToken cancellationToken = default);
     Task<CustomerSessionDto> GetCurrentAsync(string clientToken, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CustomerMessageDto>> GetMessagesAsync(string clientToken, CancellationToken cancellationToken = default);

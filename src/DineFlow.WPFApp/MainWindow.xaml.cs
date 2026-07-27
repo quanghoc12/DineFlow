@@ -1,12 +1,14 @@
 using System.Windows;
 using System.Windows.Controls;
 using DineFlow.WPFApp.Features.Operations.OrderManagement;
-using DineFlow.WPFApp.Services;
+using DineFlow.WPFApp.Services.Api;
+using DineFlow.WPFApp.Services.Authorization;
+using DineFlow.WPFApp.Services.Realtime;
 using DineFlow.Services.Auth;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
-using DineFlow.WPFApp.Views;
 using DineFlow.WPFApp.Features.Management.Tables;
+using DineFlow.WPFApp.Features.Management.Users;
 using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.BusinessObjects.Auth;
 using DineFlow.WPFApp.Features.Reports.Dashboard;

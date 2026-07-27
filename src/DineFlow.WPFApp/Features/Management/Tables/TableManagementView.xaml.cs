@@ -1,6 +1,5 @@
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.Services.Tables;
-using DineFlow.WPFApp.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -60,7 +59,7 @@ public partial class TableManagementView : UserControl
 
     private async void CreateButton_Click(object sender, RoutedEventArgs e)
     {
-        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas)
+        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas, canResetOtp: _viewModel.CanResetOtp)
             { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() == true && dialog.AreaValue is { } area)
             await _viewModel.CreateAsync(dialog.TableNameValue, area, dialog.DisplayOrderValue);
@@ -69,7 +68,7 @@ public partial class TableManagementView : UserControl
     private async void EditTableRow_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not ManagedTableDto table) return;
-        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas, table)
+        TableEditorWindow dialog = new(_service, _viewModel.ManagedAreas, table, _viewModel.CanResetOtp)
             { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() == true && dialog.AreaValue is { } area)
             await _viewModel.UpdateAsync(table, dialog.TableNameValue, area, dialog.DisplayOrderValue);
@@ -81,5 +80,20 @@ public partial class TableManagementView : UserControl
     {
         if ((sender as FrameworkElement)?.Tag is not ManagedTableDto table) return;
         new QrPreviewWindow(table) { Owner = Window.GetWindow(this) }.ShowDialog();
+    }
+
+    private async void ResetOtpRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ManagedTableDto table) return;
+        if (MessageBox.Show(
+                "Reset OTP sẽ tạo mã mới cho khách mới vào bàn.\nKhách đã xác thực trong session hiện tại vẫn tiếp tục gọi món được.",
+                "Xác nhận reset OTP",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        await _viewModel.ResetOtpAsync(table);
     }
 }
