@@ -325,12 +325,17 @@ button {
 }
 
 .staff-reset-area-head {
+  width: 100%;
+  border: 0;
   min-height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
+  background: transparent;
+  color: #0f172a;
+  cursor: pointer;
 }
 
 .staff-reset-area-head label,
@@ -350,17 +355,6 @@ button {
   text-align: center;
   font-size: 12px;
   font-weight: 800;
-}
-
-.staff-reset-arrow {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #e2e8f0;
-  color: #0f172a;
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 900;
 }
 
 .staff-reset-tables {

@@ -198,8 +198,13 @@ export function StaffOtpApp() {
               <div className="staff-reset-list">
                 {areaGroups.map((group) => (
                   <section className="staff-reset-area" key={areaKey(group)}>
-                    <div className="staff-reset-area-head">
-                      <label>
+                    <button
+                      type="button"
+                      className="staff-reset-area-head"
+                      aria-expanded={openAreaKeys.includes(areaKey(group))}
+                      onClick={() => toggleAreaOpen(group)}
+                    >
+                      <label onClick={(event) => event.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isAreaSelected(group, selectedIds)}
@@ -208,15 +213,7 @@ export function StaffOtpApp() {
                         {group.area}
                       </label>
                       <span>{group.tables.length}</span>
-                      <button
-                        type="button"
-                        className="staff-reset-arrow"
-                        aria-label={openAreaKeys.includes(areaKey(group)) ? "Đóng khu vực" : "Mở khu vực"}
-                        onClick={() => toggleAreaOpen(group)}
-                      >
-                        {openAreaKeys.includes(areaKey(group)) ? "⌃" : "⌄"}
-                      </button>
-                    </div>
+                    </button>
                     {openAreaKeys.includes(areaKey(group)) && (
                       <div className="staff-reset-tables">
                         {group.tables.map((table) => (
