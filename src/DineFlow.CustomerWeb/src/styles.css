@@ -234,17 +234,17 @@ button {
 .staff-otp-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   margin-top: 10px;
 }
 
 .staff-otp-table {
   display: grid;
   align-content: space-between;
-  gap: 7px;
-  min-height: 124px;
+  gap: 8px;
+  min-height: 138px;
   aspect-ratio: 1;
-  padding: 10px;
+  padding: 9px 8px;
   background: white;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-top: 2px solid #1677ff;
@@ -272,26 +272,28 @@ button {
 
 .staff-table-top {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 7px;
-  position: relative;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 7px;
+  row-gap: 5px;
   padding-bottom: 8px;
   border-bottom: 1px dashed #cbd5e1;
 }
 
 .staff-table-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 8px;
   background: #eafaf1;
+  grid-row: 1 / span 2;
 }
 
 .staff-table-icon span {
   position: relative;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border: 2px solid #16a34a;
   border-radius: 4px 4px 3px 3px;
 }
@@ -326,6 +328,10 @@ button {
   font-size: 12px;
   line-height: 1.15;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .staff-otp-table label {
@@ -337,7 +343,7 @@ button {
 
 .staff-otp-table strong {
   color: #0f172a;
-  font-size: 18px;
+  font-size: 20px;
   letter-spacing: 0;
   line-height: 1.1;
 }
@@ -345,7 +351,7 @@ button {
 .staff-otp-table small,
 .staff-otp-table span {
   color: #64748b;
-  font-size: 10px;
+  font-size: 10.5px;
   line-height: 1.2;
 }
 
@@ -361,18 +367,18 @@ button {
 }
 
 .staff-status-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  max-width: 58px;
-  padding: 3px 5px;
+  width: fit-content;
+  max-width: 100%;
+  grid-column: 2;
+  padding: 3px 7px;
   border-radius: 6px;
   background: #eaf2ff;
   color: #1677ff !important;
   text-align: center;
-  font-size: 8px !important;
+  font-size: 9px !important;
   font-weight: 900;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .staff-otp-table.is-occupied .staff-status-badge {

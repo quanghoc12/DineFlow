@@ -316,9 +316,9 @@ function statusDotLabel(status: string) {
 }
 
 function statusBadgeLabel(status: string) {
-  if (status === "Available") return "Sẵn sàng";
-  if (status === "Occupied") return "Đang phục vụ";
-  if (status === "WaitingPayment") return "Chờ thanh toán";
+  if (status === "Available") return "Sẵn";
+  if (status === "Occupied") return "Phục vụ";
+  if (status === "WaitingPayment") return "Chờ TT";
   return status;
 }
 
