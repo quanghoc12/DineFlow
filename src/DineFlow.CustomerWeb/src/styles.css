@@ -316,6 +316,19 @@ button {
   right: 1px;
 }
 
+.staff-otp-table.is-occupied .staff-table-icon {
+  background: #e0f2fe;
+}
+
+.staff-otp-table.is-occupied .staff-table-icon span {
+  border-color: #0284c7;
+}
+
+.staff-otp-table.is-occupied .staff-table-icon span::before,
+.staff-otp-table.is-occupied .staff-table-icon span::after {
+  background: #0284c7;
+}
+
 .staff-table-title {
   display: grid;
   gap: 2px;
