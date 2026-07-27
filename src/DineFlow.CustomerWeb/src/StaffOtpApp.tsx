@@ -168,16 +168,27 @@ export function StaffOtpApp() {
 
         {visibleGroups.map((group) => (
           <section className="staff-otp-area" key={`${group.areaId ?? "legacy"}-${group.area}`}>
-            <h2>{group.area}</h2>
+            <header className="staff-area-header">
+              <div>
+                <h2>{group.area}</h2>
+                <p>Chọn bàn để lấy mã OTP và bắt đầu sử dụng</p>
+              </div>
+            </header>
             <div className="staff-otp-grid">
               {group.tables.map((table) => (
                 <article className={`staff-otp-table ${statusClass(table.status)}`} key={table.tableId}>
-                  <div>
-                    <h3>{table.tableName}</h3>
-                    <span>{statusLabel(table.status)}</span>
+                  <div className="staff-table-top">
+                    <div className="staff-table-icon" aria-hidden="true">
+                      <span></span>
+                    </div>
+                    <div className="staff-table-title">
+                      <h3>{table.tableName}</h3>
+                      <span>{statusDotLabel(table.status)}</span>
+                    </div>
+                    <span className="staff-status-badge">{statusBadgeLabel(table.status)}</span>
                   </div>
                   <strong>{table.currentOtp}</strong>
-                  <small>{new Date(table.otpUpdatedAt).toLocaleString("vi-VN")}</small>
+                  <small>{formatOtpTime(table.otpUpdatedAt)}</small>
                 </article>
               ))}
             </div>
@@ -297,9 +308,35 @@ function statusLabel(status: string) {
   return status;
 }
 
+function statusDotLabel(status: string) {
+  if (status === "Available") return "Trống";
+  if (status === "Occupied") return "Đang phục vụ";
+  if (status === "WaitingPayment") return "Chờ thanh toán";
+  return status;
+}
+
+function statusBadgeLabel(status: string) {
+  if (status === "Available") return "Sẵn sàng";
+  if (status === "Occupied") return "Đang phục vụ";
+  if (status === "WaitingPayment") return "Chờ thanh toán";
+  return status;
+}
+
 function statusClass(status: string) {
   if (status === "Available") return "is-available";
   if (status === "Occupied") return "is-occupied";
   if (status === "WaitingPayment") return "is-waiting-payment";
   return "";
+}
+
+function formatOtpTime(value: string) {
+  const date = new Date(value);
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
 }
