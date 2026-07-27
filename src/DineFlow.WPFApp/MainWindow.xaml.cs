@@ -11,7 +11,7 @@ using DineFlow.WPFApp.Features.Management.Tables;
 using DineFlow.WPFApp.Features.Management.Users;
 using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.BusinessObjects.Auth;
-using DineFlow.WPFApp.Features.Reports.Dashboard;
+using DineFlow.WPFApp.Features.Dashboard;
 
 namespace DineFlow.WPFApp;
 

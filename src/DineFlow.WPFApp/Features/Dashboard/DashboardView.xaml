@@ -1,0 +1,411 @@
+<UserControl x:Class="DineFlow.WPFApp.Features.Dashboard.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:revenue="clr-namespace:DineFlow.WPFApp.Features.Billing.Revenue"
+             xmlns:cancellation="clr-namespace:DineFlow.WPFApp.Features.Billing.Cancellation">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/DineFlow.WPFApp;component/Features/Shared/ReportWorkspaceStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+
+            <Style x:Key="ChartTabRadioButtonStyle" TargetType="RadioButton">
+                <Setter Property="Background" Value="#F1F5F9" />
+                <Setter Property="Foreground" Value="#475569" />
+                <Setter Property="Padding" Value="12,6" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Border" 
+                                    Background="{TemplateBinding Background}" 
+                                    BorderBrush="#CBD5E1" 
+                                    BorderThickness="1" 
+                                    CornerRadius="6" 
+                                    Padding="{TemplateBinding Padding}" 
+                                    Margin="4,0">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="#3B82F6" />
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="#3B82F6" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="#3B82F6" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CompactChartTabRadioButtonStyle" TargetType="RadioButton">
+                <Setter Property="Background" Value="#F1F5F9" />
+                <Setter Property="Foreground" Value="#475569" />
+                <Setter Property="Padding" Value="7,4" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Border" 
+                                    Background="{TemplateBinding Background}" 
+                                    BorderBrush="#CBD5E1" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4" 
+                                    Padding="{TemplateBinding Padding}" 
+                                    Margin="2,0">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="#3B82F6" />
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="#3B82F6" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="#3B82F6" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Style="{StaticResource ReportWorkspaceRootStyle}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="58" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#0B55A0" Padding="12,7">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="OverviewTabButton" Content="Tổng quan" Tag="Active" Style="{StaticResource TopTabButtonStyle}" Click="OpenOverviewTabButton_Click" />
+                    <Button x:Name="RevenueTabButton" Content="Doanh thu" Style="{StaticResource TopTabButtonStyle}" Click="OpenRevenueTabButton_Click" />
+                    <Button x:Name="CancellationTabButton" Content="Hủy" Style="{StaticResource TopTabButtonStyle}" Click="OpenCancellationTabButton_Click" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Text="{Binding ErrorMessage}"
+                           Foreground="#FEE2E2"
+                           TextWrapping="Wrap"
+                           MaxWidth="520"
+                           FontWeight="SemiBold" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16">
+            <!-- 1. PANEL TỔNG QUAN -->
+            <Grid x:Name="OverviewPanel" Visibility="Visible">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Background="White" CornerRadius="10" Padding="14" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Dashboard tổng quan" FontSize="18" FontWeight="Bold" Foreground="#102A43" />
+                                <TextBlock Text="{Binding TitleDate, StringFormat=Ngày dữ liệu: {0}}" Foreground="#64748B" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <Button Content="Chatbot AI"
+                                        Click="OpenAssistantButton_Click"
+                                        Style="{StaticResource TableSecondaryButtonStyle}"
+                                        MinHeight="34"
+                                        Padding="16,0"
+                                        Margin="0,0,8,0" />
+                                <Button Content="Tải lại"
+                                        Click="RefreshButton_Click"
+                                        Style="{StaticResource TableSecondaryButtonStyle}"
+                                        MinHeight="34"
+                                        Padding="16,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <!-- Metrics Title & Grid -->
+                            <TextBlock Text="{Binding MetricsPeriodText, StringFormat='Thống kê theo: {0}'}" 
+                                       FontSize="15" FontWeight="SemiBold" Foreground="#1E293B" 
+                                       Margin="0,4,0,10" />
+                            <UniformGrid Columns="4" Margin="0,0,0,16">
+                                <Border Style="{StaticResource ReportWorkspaceMetricCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Doanh thu" Style="{StaticResource ReportWorkspaceMutedTextStyle}" />
+                                        <TextBlock Text="{Binding RevenueTodayText}" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#102A43" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReportWorkspaceMetricCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Bill đã thanh toán" Style="{StaticResource ReportWorkspaceMutedTextStyle}" />
+                                        <TextBlock Text="{Binding PaidBillCountToday}" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#102A43" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReportWorkspaceMetricCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Giá trị bill trung bình" Style="{StaticResource ReportWorkspaceMutedTextStyle}" />
+                                        <TextBlock Text="{Binding AverageBillValueText}" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#102A43" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReportWorkspaceMetricCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Số lượng order" Style="{StaticResource ReportWorkspaceMutedTextStyle}" />
+                                        <TextBlock Text="{Binding OrderCountToday}" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#102A43" />
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Biểu Đồ Doanh Thu -->
+                            <Border Style="{StaticResource ReportWorkspacePanelStyle}" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Text="{Binding ChartTitle}" FontSize="18" FontWeight="Bold" Foreground="#102A43" VerticalAlignment="Center" />
+                                        
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <RadioButton Content="7 ngày" Style="{StaticResource ChartTabRadioButtonStyle}" IsChecked="{Binding Is7DaysSelected, Mode=TwoWay}" />
+                                            <RadioButton Content="30 ngày" Style="{StaticResource ChartTabRadioButtonStyle}" IsChecked="{Binding Is30DaysSelected, Mode=TwoWay}" />
+                                            <RadioButton Content="1 năm" Style="{StaticResource ChartTabRadioButtonStyle}" IsChecked="{Binding Is1YearSelected, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <ItemsControl ItemsSource="{Binding ChartRevenueByDays}" Height="180">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="{Binding RelativeSource={RelativeSource AncestorType=ItemsControl}, Path=Items.Count}" Rows="1" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid VerticalAlignment="Bottom" Margin="2,0" Background="Transparent" Cursor="Hand">
+                                                     <Grid.InputBindings>
+                                                         <MouseBinding MouseAction="LeftClick" 
+                                                                       Command="{Binding DataContext.SelectChartItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                       CommandParameter="{Binding}" />
+                                                     </Grid.InputBindings>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+                                                    <Border Grid.Row="0" 
+                                                            Height="{Binding Height}" 
+                                                            Width="{Binding Width}" 
+                                                            Background="#3B82F6" 
+                                                            CornerRadius="3,3,0,0" 
+                                                            HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Bottom"
+                                                            ToolTip="{Binding RevenueText}">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="Background" Value="#2563EB" />
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                    </Border>
+                                                    <TextBlock Grid.Row="1" Text="{Binding DateText}" HorizontalAlignment="Center" FontSize="11" Foreground="#64748B" Margin="0,8,0,0" FontWeight="SemiBold" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource ReportWorkspacePanelStyle}" Margin="0,16,0,0">
+                                <StackPanel>
+                                    <!-- Header Row with Sub-Tabs and Filters -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Sub-Tabs Selector (Left) -->
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <RadioButton Content="Món bán chạy" 
+                                                         Style="{StaticResource ChartTabRadioButtonStyle}" 
+                                                         IsChecked="{Binding IsTopSellingTabSelected, Mode=TwoWay}" 
+                                                         Padding="14,8" />
+                                            <RadioButton Content="Phương thức thanh toán" 
+                                                         Style="{StaticResource ChartTabRadioButtonStyle}" 
+                                                         IsChecked="{Binding IsPaymentMethodsTabSelected, Mode=TwoWay}" 
+                                                         Padding="14,8" />
+                                        </StackPanel>
+                                        
+                                        <!-- Filters (Right) -->
+                                        <!-- 1. Filters for Top Selling Items -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsTopSellingTabSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            
+                                            <TextBlock Text="{Binding TopSellingPeriodText}" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                                            <TextBlock Text="Top:" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" />
+                                            <ComboBox Width="55" Height="26" Margin="0,0,12,0" FontSize="11"
+                                                      ItemsSource="{Binding TopCountOptions}" 
+                                                      SelectedItem="{Binding SelectedTopCount, Mode=TwoWay}" />
+
+                                            <RadioButton Content="Nay" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsTopTodaySelected, Mode=TwoWay}" />
+                                            <RadioButton Content="7 ngày" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsTop7DaysSelected, Mode=TwoWay}" />
+                                            <RadioButton Content="30 ngày" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsTop30DaysSelected, Mode=TwoWay}" />
+                                            
+                                            <!-- DatePicker replacing custom button -->
+                                            <DatePicker Width="115" Height="24" Margin="6,0,0,0" FontSize="11"
+                                                        SelectedDate="{Binding TopCustomDate, Mode=TwoWay}" />
+                                        </StackPanel>
+                                        
+                                        <!-- 2. Filters for Payment Methods -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsPaymentMethodsTabSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            
+                                            <TextBlock Text="{Binding PaymentPeriodText}" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                                            <RadioButton Content="Nay" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsPayTodaySelected, Mode=TwoWay}" />
+                                            <RadioButton Content="7 ngày" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsPay7DaysSelected, Mode=TwoWay}" />
+                                            <RadioButton Content="30 ngày" Style="{StaticResource CompactChartTabRadioButtonStyle}" IsChecked="{Binding IsPay30DaysSelected, Mode=TwoWay}" />
+                                            
+                                            <!-- DatePicker replacing custom button -->
+                                            <DatePicker Width="115" Height="24" Margin="6,0,0,0" FontSize="11"
+                                                        SelectedDate="{Binding PayCustomDate, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <!-- Content Row -->
+                                    <Grid>
+                                        <!-- View 1: Top Món Bán Chạy -->
+                                        <Grid Visibility="{Binding IsTopSellingTabSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="38" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Grid Background="#F4F7FA">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="150" />
+                                                    <ColumnDefinition Width="200" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Tên món ăn" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                                <TextBlock Grid.Column="1" Text="Số lượng đã bán" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                                <TextBlock Grid.Column="2" Text="Doanh thu mang về" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                            </Grid>
+                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MinHeight="260" MaxHeight="350">
+                                                <ItemsControl ItemsSource="{Binding TopSellingItems}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource ManagementListRowStyle}" Padding="8,10">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="150" />
+                                                                        <ColumnDefinition Width="200" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Text="{Binding ItemName}" VerticalAlignment="Center" FontWeight="Bold" FontSize="12" Foreground="#1E293B" TextTrimming="CharacterEllipsis" Margin="8,0" />
+                                                                    <TextBlock Grid.Column="1" Text="{Binding TotalQuantity}" VerticalAlignment="Center" FontSize="12" Foreground="#475569" Margin="8,0" />
+                                                                    <TextBlock Grid.Column="2" Text="{Binding TotalRevenue, StringFormat={}{0:N0} đ}" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#10B981" Margin="8,0" />
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </Grid>
+
+                                        <!-- View 2: Doanh Thu Theo Phương Thức -->
+                                        <Grid Visibility="{Binding IsPaymentMethodsTabSelected, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="38" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Grid Background="#F4F7FA">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="150" />
+                                                    <ColumnDefinition Width="200" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Phương thức thanh toán" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                                <TextBlock Grid.Column="1" Text="Số lượt giao dịch" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                                <TextBlock Grid.Column="2" Text="Tổng tiền thu về" Margin="16,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#334155" />
+                                            </Grid>
+                                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MinHeight="260" MaxHeight="350">
+                                                    <ItemsControl ItemsSource="{Binding RevenueByPaymentMethods}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Style="{StaticResource ManagementListRowStyle}" Padding="8,10">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                            <ColumnDefinition Width="150" />
+                                                                            <ColumnDefinition Width="200" />
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Text="{Binding PaymentMethod}" VerticalAlignment="Center" FontWeight="Bold" FontSize="12" Foreground="#1E293B" Margin="8,0" />
+                                                                        <TextBlock Grid.Column="1" Text="{Binding PaymentCount}" VerticalAlignment="Center" FontSize="12" Foreground="#475569" Margin="8,0" />
+                                                                        <TextBlock Grid.Column="2" Text="{Binding TotalAmount, StringFormat={}{0:N0} đ}" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Foreground="#3B82F6" Margin="8,0" />
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </Grid>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Background="#99FFFFFF"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="Đang tải dashboard..."
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="#102A43" />
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- 2. PANEL DOANH THU -->
+            <Grid x:Name="RevenuePanel" Visibility="Collapsed">
+                <revenue:RevenueReportView x:Name="RevenueReportViewControl" />
+            </Grid>
+
+            <!-- 3. PANEL HỦY -->
+            <Grid x:Name="CancellationPanel" Visibility="Collapsed">
+                <cancellation:CancellationView x:Name="CancellationViewControl" />
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

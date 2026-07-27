@@ -21,7 +21,7 @@ import { HomeView } from "./views/HomeView";
 import { MenuView } from "./views/MenuView";
 import { MessagesView } from "./views/MessagesView";
 import { WelcomeName } from "./views/WelcomeName";
-import { StaffOtpApp } from "./StaffOtpApp";
+import { StaffOtpApp } from "./views/StaffOtpApp";
 
 function App() {
   if (window.location.pathname.startsWith("/nhanvien")) {
