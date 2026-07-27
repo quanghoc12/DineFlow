@@ -356,6 +356,7 @@ public class BillService : IBillService
         int currentUserId,
         CancellationToken cancellationToken = default)
     {
+        RealtimeEventDto? tableOtpChangedPayload = null;
         (int TableSessionId, int? TableId) changed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             Bill bill = await _billRepository.GetBillByIdAsync(billId, ct)
@@ -408,7 +409,8 @@ public class BillService : IBillService
                     {
                         tableId = table.TableId;
                         table.Status = "Available";
-                        RotateTableOtp(table, DateTime.UtcNow);
+                        TableOtpRotation.Rotate(table);
+                        tableOtpChangedPayload = CreateTableOtpChangedPayload(table, session);
                     }
                 }
             }
@@ -421,6 +423,10 @@ public class BillService : IBillService
         if (changed.TableId.HasValue)
         {
             await NotifyTableSessionChangedAsync(changed.TableSessionId, changed.TableId, cancellationToken);
+            if (tableOtpChangedPayload is not null)
+            {
+                await NotifyTableOtpChangedAsync(tableOtpChangedPayload, cancellationToken);
+            }
         }
     }
 
@@ -495,11 +501,38 @@ public class BillService : IBillService
             Normalize(x.Note) == Normalize(incoming.Note));
     }
 
-    private static void RotateTableOtp(DineFlow.BusinessObjects.Tables.DiningTable table, DateTime now)
+    private static RealtimeEventDto CreateTableOtpChangedPayload(
+        DineFlow.BusinessObjects.Tables.DiningTable table,
+        TableSession? session = null)
     {
-        table.CurrentOtp = TableOtpGenerator.Generate();
-        table.OtpUpdatedAt = now;
-        table.UpdatedAt = now;
+        return new RealtimeEventDto
+        {
+            TableSessionId = session?.TableSessionId ?? 0,
+            TableId = table.TableId,
+            CurrentOtp = table.CurrentOtp,
+            OtpUpdatedAt = table.OtpUpdatedAt,
+            TableStatus = table.Status,
+            SessionStatus = session?.Status
+        };
+    }
+
+    private async Task NotifyTableOtpChangedAsync(
+        RealtimeEventDto payload,
+        CancellationToken cancellationToken)
+    {
+        await _realtimeNotificationService.NotifyStaffAsync(
+            RealtimeEvents.TableOtpChanged,
+            payload,
+            cancellationToken);
+
+        if (payload.TableSessionId > 0)
+        {
+            await _realtimeNotificationService.NotifySessionAsync(
+                payload.TableSessionId,
+                RealtimeEvents.TableOtpChanged,
+                payload,
+                cancellationToken);
+        }
     }
 
     private async Task RestoreStockIfNeededAsync(

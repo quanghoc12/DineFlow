@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
   ?? `${window.location.protocol}//${window.location.hostname}:5080`;
 
 export type StaffLoginResponse = {
@@ -46,6 +46,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const staffOtpApi = {
+  apiBaseUrl,
+
   login(username: string, password: string) {
     return request<StaffLoginResponse>("/api/staff/auth/login", {
       method: "POST",

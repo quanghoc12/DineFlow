@@ -8,6 +8,8 @@ export type CustomerSession = {
   sessionCustomerId: number;
   clientToken: string;
   displayName: string | null;
+  currentOtp: string;
+  otpUpdatedAt: string;
   requiresName: boolean;
   isVerified: boolean;
   requiresOtp: boolean;

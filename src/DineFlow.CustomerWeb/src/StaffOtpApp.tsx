@@ -2,6 +2,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { StaffLoginResponse, StaffTableOtp, staffOtpApi } from "./api/staffOtpApi";
 import { ScreenShell } from "./components/ScreenShell";
 import { Toast } from "./components/Toast";
+import {
+  createDineFlowConnection,
+  joinStaffRealtime,
+  RealtimeEvent,
+  realtimeEvents
+} from "./signalr/dineFlowConnection";
 
 const tokenKey = "dineflow.staffOtp.token";
 const userKey = "dineflow.staffOtp.user";
@@ -40,6 +46,25 @@ export function StaffOtpApp() {
   }, [token]);
 
   useEffect(() => {
+    if (!token) return;
+
+    const connection = createDineFlowConnection(staffOtpApi.apiBaseUrl);
+    connection.on(realtimeEvents.tableOtpChanged, handleTableOtpChanged);
+    connection.onreconnected(() => {
+      void joinStaffRealtime(connection);
+    });
+
+    void joinStaffRealtime(connection).catch(() => {
+      setToast({ message: "Realtime OTP tạm thời chưa kết nối.", type: "error" });
+    });
+
+    return () => {
+      connection.off(realtimeEvents.tableOtpChanged, handleTableOtpChanged);
+      void connection.stop();
+    };
+  }, [token]);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 3000);
     return () => window.clearTimeout(timer);
@@ -66,6 +91,32 @@ export function StaffOtpApp() {
     } catch (err) {
       setToast({ message: (err as Error).message, type: "error" });
     }
+  }
+
+  function handleTableOtpChanged(payload: RealtimeEvent) {
+    if (!payload.tableId || !payload.currentOtp || !payload.otpUpdatedAt) {
+      void loadTables();
+      return;
+    }
+
+    setTables((current) => {
+      const exists = current.some((table) => table.tableId === payload.tableId);
+      if (!exists) {
+        void loadTables();
+        return current;
+      }
+
+      return current.map((table) => table.tableId === payload.tableId
+        ? {
+            ...table,
+            currentOtp: payload.currentOtp ?? table.currentOtp,
+            otpUpdatedAt: payload.otpUpdatedAt ?? table.otpUpdatedAt,
+            status: payload.tableStatus ?? table.status,
+            currentSessionId: payload.tableSessionId > 0 ? payload.tableSessionId : table.currentSessionId,
+            currentSessionStatus: payload.sessionStatus ?? table.currentSessionStatus
+          }
+        : table);
+    });
   }
 
   async function resetSelected() {

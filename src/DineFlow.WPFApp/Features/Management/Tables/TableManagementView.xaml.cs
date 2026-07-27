@@ -1,7 +1,9 @@
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.Services.Tables;
+using DineFlow.WPFApp.Services.Realtime;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace DineFlow.WPFApp.Features.Management.Tables;
 
@@ -9,16 +11,47 @@ public partial class TableManagementView : UserControl
 {
     private readonly TableManagementViewModel _viewModel;
     private readonly ITableManagementService _service;
+    private readonly StaffRealtimeClient _realtimeClient = new();
+    private bool _realtimeStarted;
 
     public TableManagementView(TableManagementViewModel viewModel, ITableManagementService service)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _service = service;
+        _realtimeClient.TableOtpChanged += async payload =>
+        {
+            Task updateTask = await Dispatcher.InvokeAsync(
+                () => _viewModel.HandleTableOtpChangedAsync(payload),
+                DispatcherPriority.Background);
+            await updateTask;
+        };
         DataContext = viewModel;
     }
 
-    public Task LoadAsync() => _viewModel.LoadAsync();
+    public async Task LoadAsync()
+    {
+        await EnsureRealtimeStartedAsync();
+        await _viewModel.LoadAsync();
+    }
+
+    private async Task EnsureRealtimeStartedAsync()
+    {
+        if (_realtimeStarted)
+        {
+            return;
+        }
+
+        try
+        {
+            await _realtimeClient.StartAsync();
+            _realtimeStarted = true;
+        }
+        catch
+        {
+            // Loading tables should still work even if realtime is temporarily unavailable.
+        }
+    }
 
     private void AreaTab_Click(object sender, RoutedEventArgs e)
     {

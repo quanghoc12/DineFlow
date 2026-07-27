@@ -29,6 +29,8 @@ public class CustomerSessionDto
     public int SessionCustomerId { get; set; }
     public string ClientToken { get; set; } = string.Empty;
     public string? DisplayName { get; set; }
+    public string CurrentOtp { get; set; } = string.Empty;
+    public DateTime OtpUpdatedAt { get; set; }
     public bool RequiresName { get; set; }
     public bool IsVerified { get; set; }
     public bool RequiresOtp { get; set; }

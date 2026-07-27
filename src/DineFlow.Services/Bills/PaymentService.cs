@@ -35,6 +35,7 @@ public class PaymentService : IPaymentService
         int currentUserId,
         CancellationToken cancellationToken = default)
     {
+        RealtimeEventDto? tableOtpChangedPayload = null;
         PaymentResultDto result = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             Bill bill = await _billRepository.GetBillByIdAsync(request.BillId, ct)
@@ -105,7 +106,8 @@ public class PaymentService : IPaymentService
                     if (table is not null)
                     {
                         table.Status = "Available";
-                        RotateTableOtp(table, paidAt);
+                        TableOtpRotation.Rotate(table, paidAt);
+                        tableOtpChangedPayload = CreateTableOtpChangedPayload(table, session);
                     }
 
                     sessionClosed = true;
@@ -125,6 +127,10 @@ public class PaymentService : IPaymentService
         }, cancellationToken);
 
         await NotifyPaymentChangedAsync(result.BillId, result.SessionClosed, cancellationToken);
+        if (tableOtpChangedPayload is not null)
+        {
+            await NotifyTableOtpChangedAsync(tableOtpChangedPayload, cancellationToken);
+        }
         return result;
     }
 
@@ -134,6 +140,7 @@ public class PaymentService : IPaymentService
         CancellationToken cancellationToken = default)
     {
         bool sessionClosed = false;
+        RealtimeEventDto? tableOtpChangedPayload = null;
         PaymentDto dto = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             Bill bill = await _billRepository.GetBillByIdAsync(request.BillId, ct)
@@ -199,7 +206,8 @@ public class PaymentService : IPaymentService
                     if (table is not null)
                     {
                         table.Status = "Available";
-                        RotateTableOtp(table, payment.PaidAt);
+                        TableOtpRotation.Rotate(table, payment.PaidAt);
+                        tableOtpChangedPayload = CreateTableOtpChangedPayload(table, session);
                     }
 
                     sessionClosed = true;
@@ -211,6 +219,10 @@ public class PaymentService : IPaymentService
         }, cancellationToken);
 
         await NotifyPaymentChangedAsync(dto.BillId, sessionClosed, cancellationToken);
+        if (tableOtpChangedPayload is not null)
+        {
+            await NotifyTableOtpChangedAsync(tableOtpChangedPayload, cancellationToken);
+        }
         return dto;
     }
 
@@ -244,11 +256,38 @@ public class PaymentService : IPaymentService
         };
     }
 
-    private static void RotateTableOtp(DineFlow.BusinessObjects.Tables.DiningTable table, DateTime now)
+    private static RealtimeEventDto CreateTableOtpChangedPayload(
+        DineFlow.BusinessObjects.Tables.DiningTable table,
+        DineFlow.BusinessObjects.Orders.TableSession? session = null)
     {
-        table.CurrentOtp = TableOtpGenerator.Generate();
-        table.OtpUpdatedAt = now;
-        table.UpdatedAt = now;
+        return new RealtimeEventDto
+        {
+            TableSessionId = session?.TableSessionId ?? 0,
+            TableId = table.TableId,
+            CurrentOtp = table.CurrentOtp,
+            OtpUpdatedAt = table.OtpUpdatedAt,
+            TableStatus = table.Status,
+            SessionStatus = session?.Status
+        };
+    }
+
+    private async Task NotifyTableOtpChangedAsync(
+        RealtimeEventDto payload,
+        CancellationToken cancellationToken)
+    {
+        await _realtimeNotificationService.NotifyStaffAsync(
+            RealtimeEvents.TableOtpChanged,
+            payload,
+            cancellationToken);
+
+        if (payload.TableSessionId > 0)
+        {
+            await _realtimeNotificationService.NotifySessionAsync(
+                payload.TableSessionId,
+                RealtimeEvents.TableOtpChanged,
+                payload,
+                cancellationToken);
+        }
     }
 
     private async Task NotifyPaymentChangedAsync(

@@ -1,8 +1,10 @@
 using DineFlow.BusinessObjects.Auth;
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.Services.Auth;
+using DineFlow.Services.Realtime;
 using DineFlow.Services.Tables;
 using DineFlow.WPFApp.Core;
+using DineFlow.WPFApp.Services.Api;
 using System.Collections.ObjectModel;
 
 namespace DineFlow.WPFApp.Features.Management.Tables;
@@ -11,6 +13,7 @@ public sealed class TableManagementViewModel : BaseViewModel
 {
     private readonly ITableManagementService _service;
     private readonly ICurrentUserService _currentUserService;
+    private readonly StaffOrderApiClient _apiClient = new();
     private List<ManagedTableDto> _allTables = [];
     private ManagedTableDto? _selectedTable;
     private string _searchText = string.Empty;
@@ -127,7 +130,34 @@ public sealed class TableManagementViewModel : BaseViewModel
         ExecuteAndReloadAsync(() => _service.ResetQrAsync(table.TableId));
 
     public Task ResetOtpAsync(ManagedTableDto table) =>
-        ExecuteAndReloadAsync(() => _service.ResetOtpAsync(table.TableId));
+        ExecuteAndReloadAsync(() => _apiClient.ResetTableOtpAsync(table.TableId));
+
+    public async Task HandleTableOtpChangedAsync(RealtimeEventDto payload)
+    {
+        if (!payload.TableId.HasValue ||
+            string.IsNullOrWhiteSpace(payload.CurrentOtp) ||
+            !payload.OtpUpdatedAt.HasValue)
+        {
+            await LoadAsync();
+            return;
+        }
+
+        ManagedTableDto? table = _allTables.FirstOrDefault(x => x.TableId == payload.TableId.Value);
+        if (table is null)
+        {
+            await LoadAsync();
+            return;
+        }
+
+        table.CurrentOtp = payload.CurrentOtp;
+        table.OtpUpdatedAt = payload.OtpUpdatedAt.Value;
+        if (!string.IsNullOrWhiteSpace(payload.TableStatus))
+        {
+            table.Status = payload.TableStatus;
+        }
+
+        ApplyFilter();
+    }
 
     private async Task ExecuteAndReloadAsync(Func<Task> action)
     {

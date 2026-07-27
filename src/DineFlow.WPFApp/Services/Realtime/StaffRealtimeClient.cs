@@ -13,6 +13,7 @@ public sealed class StaffRealtimeClient : IAsyncDisposable
     public event Func<RealtimeEventDto, Task>? ServiceRequestCreated;
     public event Func<RealtimeEventDto, Task>? ServiceRequestConfirmed;
     public event Func<RealtimeEventDto, Task>? TableSessionChanged;
+    public event Func<RealtimeEventDto, Task>? TableOtpChanged;
     public event Func<RealtimeEventDto, Task>? BillChanged;
     public event Func<RealtimeEventDto, Task>? PaymentConfirmed;
 
@@ -59,6 +60,9 @@ public sealed class StaffRealtimeClient : IAsyncDisposable
         _connection.On<RealtimeEventDto>(
             RealtimeEvents.TableSessionChanged,
             payload => InvokeAsync(TableSessionChanged, payload));
+        _connection.On<RealtimeEventDto>(
+            RealtimeEvents.TableOtpChanged,
+            payload => InvokeAsync(TableOtpChanged, payload));
         _connection.On<RealtimeEventDto>(
             RealtimeEvents.BillChanged,
             payload => InvokeAsync(BillChanged, payload));

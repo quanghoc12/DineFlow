@@ -283,6 +283,8 @@ public class TableSessionService : ITableSessionService
         int closedBy,
         CancellationToken cancellationToken = default)
     {
+        RealtimeEventDto? tableOtpChangedPayload = null;
+        int? closedTableId = null;
         bool closed = await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             TableSession session = await _tableSessionRepository.GetByIdAsync(tableSessionId, ct)
@@ -304,7 +306,9 @@ public class TableSessionService : ITableSessionService
             if (table is not null)
             {
                 table.Status = "Available";
-                RotateTableOtp(table, DateTime.UtcNow);
+                TableOtpRotation.Rotate(table);
+                closedTableId = table.TableId;
+                tableOtpChangedPayload = CreateTableOtpChangedPayload(table, session);
             }
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -313,7 +317,11 @@ public class TableSessionService : ITableSessionService
 
         if (closed)
         {
-            await NotifyTableSessionChangedAsync(tableSessionId, null, cancellationToken);
+            await NotifyTableSessionChangedAsync(tableSessionId, closedTableId, cancellationToken);
+            if (tableOtpChangedPayload is not null)
+            {
+                await NotifyTableOtpChangedAsync(tableOtpChangedPayload, cancellationToken);
+            }
         }
 
         return closed;
@@ -435,11 +443,36 @@ public class TableSessionService : ITableSessionService
         };
     }
 
-    private static void RotateTableOtp(DiningTable table, DateTime now)
+    private static RealtimeEventDto CreateTableOtpChangedPayload(DiningTable table, TableSession? session = null)
     {
-        table.CurrentOtp = TableOtpGenerator.Generate();
-        table.OtpUpdatedAt = now;
-        table.UpdatedAt = now;
+        return new RealtimeEventDto
+        {
+            TableSessionId = session?.TableSessionId ?? 0,
+            TableId = table.TableId,
+            CurrentOtp = table.CurrentOtp,
+            OtpUpdatedAt = table.OtpUpdatedAt,
+            TableStatus = table.Status,
+            SessionStatus = session?.Status
+        };
+    }
+
+    private async Task NotifyTableOtpChangedAsync(
+        RealtimeEventDto payload,
+        CancellationToken cancellationToken)
+    {
+        await _realtimeNotificationService.NotifyStaffAsync(
+            RealtimeEvents.TableOtpChanged,
+            payload,
+            cancellationToken);
+
+        if (payload.TableSessionId > 0)
+        {
+            await _realtimeNotificationService.NotifySessionAsync(
+                payload.TableSessionId,
+                RealtimeEvents.TableOtpChanged,
+                payload,
+                cancellationToken);
+        }
     }
 
     private async Task NotifyTableSessionChangedAsync(

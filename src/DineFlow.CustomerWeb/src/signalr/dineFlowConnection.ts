@@ -7,13 +7,18 @@ export type RealtimeEvent = {
   orderId?: number | null;
   requestId?: number | null;
   billId?: number | null;
+  currentOtp?: string | null;
+  otpUpdatedAt?: string | null;
+  tableStatus?: string | null;
+  sessionStatus?: string | null;
   eventTime: string;
 };
 
 export const realtimeEvents = {
   customerMessageCreated: "CustomerMessageCreated",
   customerOrderStatusChanged: "CustomerOrderStatusChanged",
-  tableSessionChanged: "TableSessionChanged"
+  tableSessionChanged: "TableSessionChanged",
+  tableOtpChanged: "TableOtpChanged"
 };
 
 export function createDineFlowConnection(apiBaseUrl: string) {
@@ -31,6 +36,14 @@ export async function joinCustomerRealtime(connection: HubConnection, session: C
 
   await connection.invoke("JoinCustomer", session.clientToken);
   await connection.invoke("JoinSession", session.tableSessionId);
+}
+
+export async function joinStaffRealtime(connection: HubConnection) {
+  if (connection.state !== HubConnectionState.Connected) {
+    await connection.start();
+  }
+
+  await connection.invoke("JoinStaff");
 }
 
 export function upsertCustomerMessage(messages: CustomerMessage[], nextMessage: CustomerMessage) {

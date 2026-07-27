@@ -2,16 +2,21 @@ using DineFlow.BusinessObjects.Auth;
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.Repositories.Tables;
 using DineFlow.Services.Common;
+using DineFlow.Services.Realtime;
 
 namespace DineFlow.Services.Tables;
 
 public sealed class TableOtpService : ITableOtpService
 {
     private readonly ITableManagementRepository _repository;
+    private readonly IRealtimeNotificationService _realtimeNotificationService;
 
-    public TableOtpService(ITableManagementRepository repository)
+    public TableOtpService(
+        ITableManagementRepository repository,
+        IRealtimeNotificationService realtimeNotificationService)
     {
         _repository = repository;
+        _realtimeNotificationService = realtimeNotificationService;
     }
 
     public async Task<IReadOnlyList<StaffTableOtpDto>> GetAsync(
@@ -58,7 +63,9 @@ public sealed class TableOtpService : ITableOtpService
 
         Rotate(table);
         await _repository.SaveChangesAsync(cancellationToken);
-        return Map(table);
+        StaffTableOtpDto dto = Map(table);
+        await NotifyTableOtpChangedAsync(dto, cancellationToken);
+        return dto;
     }
 
     public async Task<IReadOnlyList<StaffTableOtpDto>> ResetBatchAsync(
@@ -99,7 +106,13 @@ public sealed class TableOtpService : ITableOtpService
         }
 
         await _repository.SaveChangesAsync(cancellationToken);
-        return selected.Select(Map).ToList();
+        List<StaffTableOtpDto> dtos = selected.Select(Map).ToList();
+        foreach (StaffTableOtpDto dto in dtos)
+        {
+            await NotifyTableOtpChangedAsync(dto, cancellationToken);
+        }
+
+        return dtos;
     }
 
     public async Task RotateForClosedSessionAsync(int tableId, CancellationToken cancellationToken = default)
@@ -111,14 +124,42 @@ public sealed class TableOtpService : ITableOtpService
         }
 
         Rotate(table);
+        await _repository.SaveChangesAsync(cancellationToken);
+        await NotifyTableOtpChangedAsync(Map(table), cancellationToken);
+    }
+
+    private async Task NotifyTableOtpChangedAsync(
+        StaffTableOtpDto table,
+        CancellationToken cancellationToken)
+    {
+        RealtimeEventDto payload = new()
+        {
+            TableSessionId = table.CurrentSessionId ?? 0,
+            TableId = table.TableId,
+            CurrentOtp = table.CurrentOtp,
+            OtpUpdatedAt = table.OtpUpdatedAt,
+            TableStatus = table.Status,
+            SessionStatus = table.CurrentSessionStatus
+        };
+
+        await _realtimeNotificationService.NotifyStaffAsync(
+            RealtimeEvents.TableOtpChanged,
+            payload,
+            cancellationToken);
+
+        if (payload.TableSessionId > 0)
+        {
+            await _realtimeNotificationService.NotifySessionAsync(
+                payload.TableSessionId,
+                RealtimeEvents.TableOtpChanged,
+                payload,
+                cancellationToken);
+        }
     }
 
     private static void Rotate(DiningTable table)
     {
-        DateTime now = DateTime.UtcNow;
-        table.CurrentOtp = TableOtpGenerator.Generate();
-        table.OtpUpdatedAt = now;
-        table.UpdatedAt = now;
+        TableOtpRotation.Rotate(table);
     }
 
     private static StaffTableOtpDto Map(DiningTable table)

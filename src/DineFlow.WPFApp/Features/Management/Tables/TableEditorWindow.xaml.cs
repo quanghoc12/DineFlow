@@ -1,5 +1,6 @@
 using DineFlow.BusinessObjects.Tables;
 using DineFlow.Services.Tables;
+using DineFlow.WPFApp.Services.Api;
 using System.Windows;
 
 namespace DineFlow.WPFApp.Features.Management.Tables;
@@ -7,6 +8,7 @@ namespace DineFlow.WPFApp.Features.Management.Tables;
 public partial class TableEditorWindow : Window
 {
     private readonly ITableManagementService _service;
+    private readonly StaffOrderApiClient _apiClient = new();
     private readonly bool _canResetOtp;
     private ManagedTableDto? _table;
 
@@ -76,7 +78,13 @@ public partial class TableEditorWindow : Window
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
 
-        await RunAsync(async () => _table = await _service.ResetOtpAsync(_table.TableId));
+        await RunAsync(async () =>
+        {
+            StaffTableOtpDto otp = await _apiClient.ResetTableOtpAsync(_table.TableId);
+            _table.CurrentOtp = otp.CurrentOtp;
+            _table.OtpUpdatedAt = otp.OtpUpdatedAt;
+            _table.Status = otp.Status;
+        });
     }
 
     private async void ToggleActive_Click(object sender, RoutedEventArgs e)

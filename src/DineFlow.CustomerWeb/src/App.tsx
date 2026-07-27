@@ -159,6 +159,32 @@ function App() {
         .catch((err: Error) => showError(err.message));
     });
 
+    connection.on(realtimeEvents.tableOtpChanged, (event: RealtimeEvent) => {
+      if (event.tableSessionId !== session.tableSessionId && event.tableId !== session.tableId) {
+        return;
+      }
+
+      if (!event.currentOtp || !event.otpUpdatedAt) {
+        customerApi.scan(qrToken, session.clientToken)
+          .then((updated) => {
+            localStorage.setItem(tokenKey, updated.clientToken);
+            setSession(updated);
+            setDisplayNameDraft(updated.displayName ?? "");
+          })
+          .catch((err: Error) => showError(err.message));
+        return;
+      }
+
+      setSession((current) => current && current.tableId === event.tableId
+        ? {
+            ...current,
+            currentOtp: event.currentOtp ?? current.currentOtp,
+            otpUpdatedAt: event.otpUpdatedAt ?? current.otpUpdatedAt,
+            sessionStatus: event.sessionStatus ?? current.sessionStatus
+          }
+        : current);
+    });
+
     const startConnection = async () => {
       try {
         await joinCustomerRealtime(connection, session);
@@ -369,6 +395,20 @@ function App() {
     }
   }
 
+  async function copyCurrentOtp() {
+    if (!session?.currentOtp) {
+      showError("Chưa có mã OTP để copy.");
+      return;
+    }
+
+    try {
+      await copyText(session.currentOtp);
+      showSuccess("Đã copy mã OTP.");
+    } catch {
+      showError("Không thể copy mã OTP.");
+    }
+  }
+
   function closeItemSheet() {
     if (editingCartKey) {
       setIsCartOpen(true);
@@ -436,6 +476,7 @@ function App() {
               unreadMessageCount={unreadMessageCount}
               onCallStaff={() => setIsStaffRequestOpen(true)}
               onRequestPayment={() => setIsPaymentRequestOpen(true)}
+              onCopyOtp={copyCurrentOtp}
             />
           )}
 
@@ -525,6 +566,22 @@ function App() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </ScreenShell>
   );
+}
+
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
 }
 
 function mergeCartItem(current: CartItem[], nextItem: CartItem) {

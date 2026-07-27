@@ -119,13 +119,12 @@ public sealed class TableManagementService : ITableManagementService
             Area = area,
             DisplayOrder = request.DisplayOrder,
             QrToken = await GenerateUniqueTokenAsync(cancellationToken),
-            CurrentOtp = TableOtpGenerator.Generate(),
-            OtpUpdatedAt = now,
             Status = TableStatuses.Available,
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now
         };
+        TableOtpRotation.Rotate(table, now);
         await _repository.AddAsync(table, cancellationToken);
         await RebuildTableOrdersAsync(table, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -191,10 +190,7 @@ public sealed class TableManagementService : ITableManagementService
     {
         EnsureOtpResetAdmin();
         DiningTable table = await FindAsync(tableId, cancellationToken);
-        DateTime now = DateTime.UtcNow;
-        table.CurrentOtp = TableOtpGenerator.Generate();
-        table.OtpUpdatedAt = now;
-        table.UpdatedAt = now;
+        TableOtpRotation.Rotate(table);
         await _repository.SaveChangesAsync(cancellationToken);
         return Map(table);
     }

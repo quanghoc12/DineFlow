@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using DineFlow.BusinessObjects.Menu;
 using DineFlow.BusinessObjects.Reports;
+using DineFlow.BusinessObjects.Tables;
 using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
@@ -36,6 +37,18 @@ public sealed class StaffOrderApiClient : IDisposable
         return await _httpClient.GetFromJsonAsync<IReadOnlyList<DiningTableDto>>(
             "api/staff/tables?activeOnly=true",
             cancellationToken) ?? [];
+    }
+
+    public async Task<StaffTableOtpDto> ResetTableOtpAsync(
+        int tableId,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response = await _httpClient.PostAsync(
+            $"api/staff/table-otps/{tableId}/reset",
+            content: null,
+            cancellationToken);
+
+        return await ReadSuccessAsync<StaffTableOtpDto>(response, cancellationToken);
     }
 
     public async Task<DashboardDto> GetTodayDashboardAsync(CancellationToken cancellationToken = default)

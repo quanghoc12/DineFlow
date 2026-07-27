@@ -884,6 +884,49 @@ p {
   stroke-width: 2.5;
 }
 
+.home-otp-card {
+  width: min(100%, 230px);
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(59, 130, 246, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.home-otp-card span,
+.home-otp-card small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-otp-card button {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+}
+
+.home-otp-card strong {
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.home-otp-card svg {
+  width: 20px;
+  height: 20px;
+  color: #0b84f3;
+  flex-shrink: 0;
+}
+
 .support-section {
   position: relative;
   z-index: 2;

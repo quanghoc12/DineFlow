@@ -12,7 +12,8 @@ export function HomeView({
   onOpenMessages,
   unreadMessageCount,
   onCallStaff,
-  onRequestPayment
+  onRequestPayment,
+  onCopyOtp
 }: {
   session: CustomerSession;
   onEditName: () => void;
@@ -21,6 +22,7 @@ export function HomeView({
   unreadMessageCount: number;
   onCallStaff: () => void;
   onRequestPayment: () => void;
+  onCopyOtp: () => void;
 }) {
   return (
     <section className="home-screen">
@@ -50,6 +52,18 @@ export function HomeView({
             Sửa
           </span>
         </button>
+
+        <div className="home-otp-card">
+          <span>Mã bàn hiện tại</span>
+          <button type="button" onClick={onCopyOtp} aria-label="Copy mã OTP">
+            <strong>{session.currentOtp}</strong>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+          <small>Cập nhật {formatOtpTime(session.otpUpdatedAt)}</small>
+        </div>
       </header>
 
       <div className="support-section">
@@ -85,3 +99,11 @@ export function HomeView({
   );
 }
 
+function formatOtpTime(value: string) {
+  const date = new Date(value);
+  return date.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}

@@ -230,6 +230,8 @@ public class CustomerSessionService : ICustomerSessionService
             SessionCustomerId = customer.SessionCustomerId,
             ClientToken = customer.ClientToken,
             DisplayName = customer.DisplayName,
+            CurrentOtp = table.CurrentOtp,
+            OtpUpdatedAt = table.OtpUpdatedAt,
             RequiresName = string.IsNullOrWhiteSpace(customer.DisplayName),
             IsVerified = customer.IsVerified,
             RequiresOtp = !customer.IsVerified,
