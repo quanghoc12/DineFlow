@@ -5,13 +5,12 @@ using DineFlow.WPFApp.Services.Api;
 using DineFlow.WPFApp.Services.Authorization;
 using DineFlow.WPFApp.Services.Realtime;
 using DineFlow.Services.Auth;
-using DineFlow.Services.Bills;
-using DineFlow.Services.Menu;
 using DineFlow.WPFApp.Features.Management.Tables;
 using DineFlow.WPFApp.Features.Management.Users;
 using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.BusinessObjects.Auth;
 using DineFlow.WPFApp.Features.Dashboard;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DineFlow.WPFApp;
 
@@ -19,38 +18,22 @@ public partial class MainWindow : Window
 {
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuthService _authService;
-    private readonly IMenuManagementService _menuManagementService;
-    private readonly IBillService _billService;
-    private readonly UserManagementView _userManagementView;
-    private readonly TableManagementView _tableManagementView;
-    private readonly MenuManagementView _menuManagementView;
-    private readonly DashboardView _dashboardView;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly OrderManagementView _orderManagementView;
+    private IServiceScope? _featureScope;
 
     public MainWindow(
         ICurrentUserService currentUserService,
         IAuthService authService,
-        IMenuManagementService menuManagementService,
-        IBillService billService,
-        UserManagementView userManagementView,
-        TableManagementView tableManagementView,
-        MenuManagementView menuManagementView,
-        DashboardView dashboardView)
+        IServiceScopeFactory scopeFactory)
     {
         _currentUserService = currentUserService;
         _authService = authService;
-        _menuManagementService = menuManagementService;
-        _billService = billService;
-        _userManagementView = userManagementView;
-        _tableManagementView = tableManagementView;
-        _menuManagementView = menuManagementView;
-        _dashboardView = dashboardView;
+        _scopeFactory = scopeFactory;
         _orderManagementView = new OrderManagementView(
             new StaffOrderApiClient(),
             new StaffRealtimeClient(),
-            new PdfDemoPrintService(),
-            _menuManagementService,
-            _billService);
+            new PdfDemoPrintService());
         _orderManagementView.SidebarNotificationCountChanged += UpdateOrderSidebarBadge;
         InitializeComponent();
         CurrentUserText.Text = string.IsNullOrWhiteSpace(_currentUserService.User?.FullName)
@@ -104,9 +87,8 @@ public partial class MainWindow : Window
 
     private async void DashboardButton_Click(object sender, RoutedEventArgs e)
     {
-        ScreenHost.Content = _dashboardView;
-        SetActiveButton(DashboardButton);
-        await _dashboardView.LoadAsync();
+        DashboardView dashboardView = ShowScopedView<DashboardView>(DashboardButton);
+        await dashboardView.LoadAsync();
     }
 
     private void OrderButton_Click(object sender, RoutedEventArgs e)
@@ -122,9 +104,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        ScreenHost.Content = _menuManagementView;
-        SetActiveButton(MenuButton);
-        await _menuManagementView.LoadAsync();
+        MenuManagementView menuManagementView = ShowScopedView<MenuManagementView>(MenuButton);
+        await menuManagementView.LoadAsync();
     }
 
     private async void TableButton_Click(object sender, RoutedEventArgs e)
@@ -135,9 +116,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        ScreenHost.Content = _tableManagementView;
-        SetActiveButton(TableButton);
-        await _tableManagementView.LoadAsync();
+        TableManagementView tableManagementView = ShowScopedView<TableManagementView>(TableButton);
+        await tableManagementView.LoadAsync();
     }
 
     private async void AccountButton_Click(object sender, RoutedEventArgs e)
@@ -148,15 +128,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        ScreenHost.Content = _userManagementView;
-        SetActiveButton(AccountButton);
-        await _userManagementView.LoadAsync();
+        UserManagementView userManagementView = ShowScopedView<UserManagementView>(AccountButton);
+        await userManagementView.LoadAsync();
     }
 
     private bool HasManagementRole() => AuthRoles.CanManage(_currentUserService.User?.Role);
 
     private void ShowOrderScreen()
     {
+        DisposeFeatureScope();
         ScreenHost.Content = _orderManagementView;
         SetActiveButton(OrderButton);
     }
@@ -164,7 +144,25 @@ public partial class MainWindow : Window
     private async void MainWindow_Closed(object? sender, EventArgs e)
     {
         _orderManagementView.SidebarNotificationCountChanged -= UpdateOrderSidebarBadge;
+        DisposeFeatureScope();
         await _orderManagementView.DisposeAsync();
+    }
+
+    private TView ShowScopedView<TView>(Button activeButton)
+        where TView : UserControl
+    {
+        DisposeFeatureScope();
+        _featureScope = _scopeFactory.CreateScope();
+        TView view = _featureScope.ServiceProvider.GetRequiredService<TView>();
+        ScreenHost.Content = view;
+        SetActiveButton(activeButton);
+        return view;
+    }
+
+    private void DisposeFeatureScope()
+    {
+        _featureScope?.Dispose();
+        _featureScope = null;
     }
 
     private void UpdateOrderSidebarBadge(int count)

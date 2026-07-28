@@ -6,7 +6,6 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using DineFlow.BusinessObjects.Menu;
-using DineFlow.Services.Bills;
 using DineFlow.Services.Menu;
 using DineFlow.Services.Orders;
 using DineFlow.Services.Requests;
@@ -20,8 +19,6 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged, 
     private readonly StaffOrderApiClient _apiClient;
     private readonly StaffRealtimeClient _realtimeClient;
     private readonly PdfDemoPrintService _pdfPrintService;
-    private readonly IMenuManagementService _menuManagementService;
-    private readonly IBillService _billService;
     private readonly SemaphoreSlim _billReloadLock = new(1, 1);
     private readonly SemaphoreSlim _pendingOrdersReloadLock = new(1, 1);
     private readonly SemaphoreSlim _serviceRequestsReloadLock = new(1, 1);
@@ -62,15 +59,11 @@ public partial class OrderManagementView : UserControl, INotifyPropertyChanged, 
     internal OrderManagementView(
         StaffOrderApiClient apiClient,
         StaffRealtimeClient realtimeClient,
-        PdfDemoPrintService pdfPrintService,
-        IMenuManagementService menuManagementService,
-        IBillService billService)
+        PdfDemoPrintService pdfPrintService)
     {
         _apiClient = apiClient;
         _realtimeClient = realtimeClient;
         _pdfPrintService = pdfPrintService;
-        _menuManagementService = menuManagementService;
-        _billService = billService;
         InitializeComponent();
         _tables = [];
         _menuItems = [];

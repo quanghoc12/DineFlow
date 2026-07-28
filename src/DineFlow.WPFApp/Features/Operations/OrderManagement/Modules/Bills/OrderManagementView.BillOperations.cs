@@ -849,7 +849,7 @@ public partial class OrderManagementView
 
         try
         {
-            IReadOnlyList<ManagedSalesChannelDto> channels = await _menuManagementService.GetSalesChannelsAsync();
+            IReadOnlyList<ManagedSalesChannelDto> channels = await _apiClient.GetSalesChannelsAsync();
             var activeChannels = channels.Where(c => c.IsActive).ToList();
 
             if (activeChannels.Count == 0)
@@ -885,7 +885,7 @@ public partial class OrderManagementView
 
                         if (result == MessageBoxResult.Yes)
                         {
-                            BillDto updatedBill = await _billService.ApplySalesChannelPricingAsync(
+                            BillDto updatedBill = await _apiClient.ApplySalesChannelPricingAsync(
                                 _selectedBill.BillId, selectedChannel.SalesChannelId);
 
                             _selectedBill.CopyFrom(MapBill(updatedBill));
