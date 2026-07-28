@@ -11,6 +11,8 @@ namespace DineFlow.Services.Tables;
 
 public sealed class TableManagementService : ITableManagementService
 {
+    private const string DefaultCustomerWebBaseUrl = "https://dine-flow-two.vercel.app";
+
     private readonly ITableManagementRepository _repository;
     private readonly ICurrentUserService _currentUser;
     private readonly string _customerWebBaseUrl;
@@ -323,7 +325,17 @@ public sealed class TableManagementService : ITableManagementService
         if (!string.IsNullOrWhiteSpace(configuredUrl) &&
             !configuredUrl.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
-            return configuredUrl.TrimEnd('/');
+            string trimmedUrl = configuredUrl.TrimEnd('/');
+            bool isProduction = string.Equals(
+                configuration["ASPNETCORE_ENVIRONMENT"],
+                "Production",
+                StringComparison.OrdinalIgnoreCase);
+            if (LooksLikeCustomerWebUrl(trimmedUrl, allowLocal: !isProduction))
+            {
+                return trimmedUrl;
+            }
+
+            return DefaultCustomerWebBaseUrl;
         }
 
         int port = int.TryParse(configuration["CustomerWeb:Port"], out int configuredPort)
@@ -331,6 +343,27 @@ public sealed class TableManagementService : ITableManagementService
             : 5173;
         string host = FindLocalNetworkAddress()?.ToString() ?? "localhost";
         return $"http://{host}:{port}";
+    }
+
+    private static bool LooksLikeCustomerWebUrl(string url, bool allowLocal)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+        {
+            return false;
+        }
+
+        string host = uri.Host;
+        bool isLocal = host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            IPAddress.TryParse(host, out _);
+        bool isApiHost = host.Contains("onrender.com", StringComparison.OrdinalIgnoreCase) ||
+            uri.AbsolutePath.Contains("/api", StringComparison.OrdinalIgnoreCase);
+
+        if (isLocal)
+        {
+            return allowLocal;
+        }
+
+        return !isApiHost;
     }
 
     private static IPAddress? FindLocalNetworkAddress() =>

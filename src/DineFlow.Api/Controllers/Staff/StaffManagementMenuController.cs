@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Menu;
+using DineFlow.Services.Auth;
 using DineFlow.Services.Menu;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,22 +9,28 @@ namespace DineFlow.Api.Controllers.Staff;
 [Route("api/staff/management/menu")]
 public sealed class StaffManagementMenuController : StaffControllerBase
 {
+    private readonly ICurrentUserService _currentUserService;
     private readonly IMenuManagementService _menuManagementService;
 
-    public StaffManagementMenuController(IMenuManagementService menuManagementService)
+    public StaffManagementMenuController(
+        ICurrentUserService currentUserService,
+        IMenuManagementService menuManagementService)
     {
+        _currentUserService = currentUserService;
         _menuManagementService = menuManagementService;
     }
 
     [HttpGet("categories")]
     public async Task<ActionResult<IReadOnlyList<ManagedCategoryDto>>> GetCategories(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _menuManagementService.GetCategoriesAsync(cancellationToken));
     }
 
     [HttpPost("categories")]
     public async Task<IActionResult> SaveCategory([FromBody] SaveCategoryRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveCategoryAsync(request, cancellationToken);
         return NoContent();
     }
@@ -31,6 +38,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("categories/{categoryId:int}/active")]
     public async Task<IActionResult> SetCategoryActive(int categoryId, [FromBody] SetCategoryActiveRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetCategoryActiveAsync(categoryId, request.IsActive, cancellationToken);
         return NoContent();
     }
@@ -38,6 +46,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpDelete("categories/{categoryId:int}")]
     public async Task<IActionResult> DeleteCategory(int categoryId, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.DeleteCategoryAsync(categoryId, cancellationToken);
         return NoContent();
     }
@@ -45,12 +54,14 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpGet("items")]
     public async Task<ActionResult<IReadOnlyList<ManagedMenuItemDto>>> GetItems(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _menuManagementService.GetItemsAsync(cancellationToken));
     }
 
     [HttpPost("items")]
     public async Task<IActionResult> SaveItem([FromBody] SaveMenuItemRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveItemAsync(request, cancellationToken);
         return NoContent();
     }
@@ -58,6 +69,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("items/{itemId:int}/availability")]
     public async Task<IActionResult> SetItemAvailability(int itemId, [FromBody] SetItemAvailabilityRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetItemAvailabilityAsync(itemId, request.IsAvailable, cancellationToken);
         return NoContent();
     }
@@ -65,6 +77,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("items/{itemId:int}/deleted")]
     public async Task<IActionResult> SetItemDeleted(int itemId, [FromBody] SetItemDeletedRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetItemDeletedAsync(itemId, request.IsDeleted, cancellationToken);
         return NoContent();
     }
@@ -72,12 +85,14 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpGet("choice-groups")]
     public async Task<ActionResult<IReadOnlyList<ManagedChoiceGroupDto>>> GetChoiceGroups(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _menuManagementService.GetChoiceGroupsAsync(cancellationToken));
     }
 
     [HttpPost("choice-groups")]
     public async Task<IActionResult> SaveChoiceGroup([FromBody] SaveChoiceGroupRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveChoiceGroupAsync(request, cancellationToken);
         return NoContent();
     }
@@ -85,6 +100,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("choice-groups/{choiceGroupId:int}/availability")]
     public async Task<IActionResult> SetChoiceGroupAvailability(int choiceGroupId, [FromBody] SetChoiceGroupAvailabilityRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetChoiceGroupAvailabilityAsync(choiceGroupId, request.IsAvailable, cancellationToken);
         return NoContent();
     }
@@ -92,6 +108,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPost("choice-items")]
     public async Task<IActionResult> SaveChoiceItem([FromBody] SaveChoiceItemRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveChoiceItemAsync(request, cancellationToken);
         return NoContent();
     }
@@ -99,6 +116,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("choice-items/{choiceItemId:int}/availability")]
     public async Task<IActionResult> SetChoiceItemAvailability(int choiceItemId, [FromBody] SetChoiceItemAvailabilityRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetChoiceItemAvailabilityAsync(choiceItemId, request.IsAvailable, cancellationToken);
         return NoContent();
     }
@@ -106,6 +124,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPost("choice-group-assignments")]
     public async Task<IActionResult> AssignChoiceGroup([FromBody] AssignChoiceGroupRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.AssignChoiceGroupAsync(request, cancellationToken);
         return NoContent();
     }
@@ -113,6 +132,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpDelete("items/{menuItemId:int}/choice-groups/{choiceGroupId:int}")]
     public async Task<IActionResult> RemoveChoiceGroupAssignment(int menuItemId, int choiceGroupId, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.RemoveChoiceGroupAssignmentAsync(menuItemId, choiceGroupId, cancellationToken);
         return NoContent();
     }
@@ -120,12 +140,14 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpGet("sales-channels")]
     public async Task<ActionResult<IReadOnlyList<ManagedSalesChannelDto>>> GetSalesChannels(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _menuManagementService.GetSalesChannelsAsync(cancellationToken));
     }
 
     [HttpPost("sales-channels")]
     public async Task<IActionResult> SaveSalesChannel([FromBody] SaveSalesChannelRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveSalesChannelAsync(request, cancellationToken);
         return NoContent();
     }
@@ -133,6 +155,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPatch("sales-channels/{salesChannelId:int}/active")]
     public async Task<IActionResult> SetSalesChannelActive(int salesChannelId, [FromBody] SetSalesChannelActiveRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SetSalesChannelActiveAsync(salesChannelId, request.IsActive, cancellationToken);
         return NoContent();
     }
@@ -140,6 +163,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpDelete("sales-channels/{salesChannelId:int}")]
     public async Task<IActionResult> DeleteSalesChannel(int salesChannelId, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.DeleteSalesChannelAsync(salesChannelId, cancellationToken);
         return NoContent();
     }
@@ -147,6 +171,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPost("item-channel-prices")]
     public async Task<IActionResult> SaveMenuItemChannelPrice([FromBody] SaveChannelPriceRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveMenuItemChannelPriceAsync(request, cancellationToken);
         return NoContent();
     }
@@ -154,6 +179,7 @@ public sealed class StaffManagementMenuController : StaffControllerBase
     [HttpPost("choice-item-channel-prices")]
     public async Task<IActionResult> SaveChoiceItemChannelPrice([FromBody] SaveChannelPriceRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _menuManagementService.SaveChoiceItemChannelPriceAsync(request, cancellationToken);
         return NoContent();
     }

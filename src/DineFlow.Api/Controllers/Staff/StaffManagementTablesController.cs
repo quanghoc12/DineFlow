@@ -1,4 +1,5 @@
 using DineFlow.BusinessObjects.Tables;
+using DineFlow.Services.Auth;
 using DineFlow.Services.Tables;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,22 +9,28 @@ namespace DineFlow.Api.Controllers.Staff;
 [Route("api/staff/management/tables")]
 public sealed class StaffManagementTablesController : StaffControllerBase
 {
+    private readonly ICurrentUserService _currentUserService;
     private readonly ITableManagementService _tableManagementService;
 
-    public StaffManagementTablesController(ITableManagementService tableManagementService)
+    public StaffManagementTablesController(
+        ICurrentUserService currentUserService,
+        ITableManagementService tableManagementService)
     {
+        _currentUserService = currentUserService;
         _tableManagementService = tableManagementService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ManagedTableDto>>> GetTables(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.GetAllAsync(cancellationToken));
     }
 
     [HttpGet("areas")]
     public async Task<ActionResult<IReadOnlyList<ManagedAreaDto>>> GetAreas(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.GetAreasAsync(cancellationToken));
     }
 
@@ -32,6 +39,7 @@ public sealed class StaffManagementTablesController : StaffControllerBase
         [FromBody] SaveAreaRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.SaveAreaAsync(request, cancellationToken));
     }
 
@@ -41,6 +49,7 @@ public sealed class StaffManagementTablesController : StaffControllerBase
         [FromBody] SetAreaActiveRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _tableManagementService.SetAreaActiveAsync(areaId, request.IsActive, cancellationToken);
         return NoContent();
     }
@@ -50,6 +59,7 @@ public sealed class StaffManagementTablesController : StaffControllerBase
         [FromBody] CreateManagedTableRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.CreateAsync(request, cancellationToken));
     }
 
@@ -59,6 +69,7 @@ public sealed class StaffManagementTablesController : StaffControllerBase
         [FromBody] UpdateManagedTableRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         request.TableId = tableId;
         await _tableManagementService.UpdateAsync(request, cancellationToken);
         return NoContent();
@@ -70,6 +81,7 @@ public sealed class StaffManagementTablesController : StaffControllerBase
         [FromBody] SetTableActiveRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _tableManagementService.SetActiveAsync(tableId, request.IsActive, cancellationToken);
         return NoContent();
     }
@@ -77,12 +89,14 @@ public sealed class StaffManagementTablesController : StaffControllerBase
     [HttpPost("{tableId:int}/reset-qr")]
     public async Task<ActionResult<ManagedTableDto>> ResetQr(int tableId, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.ResetQrAsync(tableId, cancellationToken));
     }
 
     [HttpPost("{tableId:int}/reset-otp")]
     public async Task<ActionResult<ManagedTableDto>> ResetOtp(int tableId, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _tableManagementService.ResetOtpAsync(tableId, cancellationToken));
     }
 }

@@ -29,5 +29,27 @@ public class BusinessExceptionMiddleware
                 message = ex.Message
             }));
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                code = "FORBIDDEN",
+                message = ex.Message
+            }));
+        }
+        catch (InvalidOperationException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                code = "INVALID_OPERATION",
+                message = ex.Message
+            }));
+        }
     }
 }

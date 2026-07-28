@@ -8,22 +8,28 @@ namespace DineFlow.Api.Controllers.Staff;
 [Route("api/staff/management/users")]
 public sealed class StaffManagementUsersController : StaffControllerBase
 {
+    private readonly ICurrentUserService _currentUserService;
     private readonly IUserService _userService;
 
-    public StaffManagementUsersController(IUserService userService)
+    public StaffManagementUsersController(
+        ICurrentUserService currentUserService,
+        IUserService userService)
     {
+        _currentUserService = currentUserService;
         _userService = userService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<UserSummary>>> Get(CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         return Ok(await _userService.GetUsersAsync(cancellationToken));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _userService.CreateAsync(request, cancellationToken);
         return NoContent();
     }
@@ -34,6 +40,7 @@ public sealed class StaffManagementUsersController : StaffControllerBase
         [FromBody] UpdateUserRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         request.UserId = userId;
         await _userService.UpdateAsync(request, cancellationToken);
         return NoContent();
@@ -45,6 +52,7 @@ public sealed class StaffManagementUsersController : StaffControllerBase
         [FromBody] SetUserActiveRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _userService.SetActiveAsync(userId, request.IsActive, cancellationToken);
         return NoContent();
     }
@@ -55,6 +63,7 @@ public sealed class StaffManagementUsersController : StaffControllerBase
         [FromBody] ResetUserPasswordRequest request,
         CancellationToken cancellationToken)
     {
+        UseHeaderUser(_currentUserService);
         await _userService.ResetPasswordAsync(userId, request.CurrentPassword, request.NewPassword, cancellationToken);
         return NoContent();
     }
