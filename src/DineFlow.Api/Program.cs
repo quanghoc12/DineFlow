@@ -6,6 +6,7 @@ using DineFlow.Api.Realtime;
 using DineFlow.Api.BackgroundServices;
 using DineFlow.Api.Services;
 using DineFlow.Services;
+using DineFlow.Services.Auth;
 using DineFlow.Services.Realtime;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             errorCodesToAdd: null)));
 
 builder.Services.AddDineFlowServices();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IStaffAuthTokenService, StaffAuthTokenService>();
 builder.Services.AddHttpClient<IMenuImageStorageService, MenuImageStorageService>();
 builder.Services.AddScoped<IRealtimeNotificationService, SignalRRealtimeNotificationService>();
