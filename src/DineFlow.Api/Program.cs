@@ -74,8 +74,8 @@ if (builder.Configuration.GetValue("Database:MigrateOnStartup", true))
     await dbContext.Database.MigrateAsync();
 }
 
-app.UseMiddleware<BusinessExceptionMiddleware>();
 app.UseCors("CustomerWeb");
+app.UseMiddleware<BusinessExceptionMiddleware>();
 
 app.MapGet("/health", () => Results.Ok(new
 {
