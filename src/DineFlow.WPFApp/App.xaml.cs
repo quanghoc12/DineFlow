@@ -1,5 +1,4 @@
 using DineFlow.DataAccessObjects.DbContexts;
-using DineFlow.DataAccessObjects.Seed;
 using DineFlow.Services;
 using DineFlow.Services.Auth;
 using DineFlow.WPFApp.Features.Auth;
@@ -9,6 +8,7 @@ using DineFlow.WPFApp.Features.Management.Menu;
 using DineFlow.WPFApp.Features.Dashboard;
 using DineFlow.WPFApp.Features.Billing.Revenue;
 using DineFlow.WPFApp.Features.Billing.Cancellation;
+using DineFlow.WPFApp.Services.Api;
 using DineFlow.WPFApp.Services.Authorization;
 using DineFlow.WPFApp.Services.Configuration;
 using Microsoft.EntityFrameworkCore;
@@ -33,8 +33,14 @@ public partial class App : Application
 
         ServiceCollection services = new();
         services.AddSingleton(configuration);
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null)));
         services.AddDineFlowServices();
+        services.AddSingleton<IAuthService, ApiAuthService>();
         services.AddTransient<LoginViewModel>();
         services.AddTransient<UserManagementViewModel>();
         services.AddTransient<TableManagementViewModel>();
@@ -53,13 +59,6 @@ public partial class App : Application
         services.AddTransient<CancellationView>();
         services.AddTransient<MainWindow>();
         _serviceProvider = services.BuildServiceProvider();
-
-        using (IServiceScope initializationScope = _serviceProvider.CreateScope())
-        {
-            AppDbContext dbContext = initializationScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await dbContext.Database.MigrateAsync();
-            await DevelopmentDataSeeder.SeedDevelopmentDataAsync(dbContext);
-        }
 
         RunLoginLoop();
     }

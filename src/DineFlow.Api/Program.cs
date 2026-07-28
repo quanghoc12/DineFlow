@@ -15,7 +15,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? "Host=localhost;Port=5433;Database=dineflow;Username=dineflow_user;Password=dineflow_password";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null)));
 
 builder.Services.AddDineFlowServices();
 builder.Services.AddSingleton<IStaffAuthTokenService, StaffAuthTokenService>();
