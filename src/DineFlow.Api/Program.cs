@@ -82,7 +82,8 @@ app.UseMiddleware<BusinessExceptionMiddleware>();
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "Healthy",
-    service = "DineFlow.Api"
+    service = "DineFlow.Api",
+    commit = Environment.GetEnvironmentVariable("RENDER_GIT_COMMIT") ?? string.Empty
 }));
 
 app.MapControllers();
