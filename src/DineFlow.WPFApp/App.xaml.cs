@@ -1,6 +1,8 @@
 using DineFlow.DataAccessObjects.DbContexts;
 using DineFlow.Services;
 using DineFlow.Services.Auth;
+using DineFlow.Services.Menu;
+using DineFlow.Services.Tables;
 using DineFlow.WPFApp.Features.Auth;
 using DineFlow.WPFApp.Features.Management.Users;
 using DineFlow.WPFApp.Features.Management.Tables;
@@ -41,6 +43,9 @@ public partial class App : Application
                     errorCodesToAdd: null)));
         services.AddDineFlowServices();
         services.AddSingleton<IAuthService, ApiAuthService>();
+        services.AddScoped<IUserService, ApiUserService>();
+        services.AddScoped<IMenuManagementService, ApiMenuManagementService>();
+        services.AddScoped<ITableManagementService, ApiTableManagementService>();
         services.AddTransient<LoginViewModel>();
         services.AddTransient<UserManagementViewModel>();
         services.AddTransient<TableManagementViewModel>();
