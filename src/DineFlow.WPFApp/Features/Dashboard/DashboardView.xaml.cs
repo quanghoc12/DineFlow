@@ -30,8 +30,6 @@ public partial class DashboardView : UserControl
     private void DashboardView_Loaded(object sender, RoutedEventArgs e)
     {
         DashboardWorkspaceState.NavigationRequested += OnNavigationRequested;
-        // Tự động tải dữ liệu khi tab được load
-        _ = LoadAsync();
     }
 
     private void DashboardView_Unloaded(object sender, RoutedEventArgs e)

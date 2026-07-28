@@ -20,7 +20,7 @@ public partial class MainWindow : Window
     private readonly IAuthService _authService;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly OrderManagementView _orderManagementView;
-    private IServiceScope? _featureScope;
+    private readonly List<IServiceScope> _featureScopes = [];
 
     public MainWindow(
         ICurrentUserService currentUserService,
@@ -151,9 +151,9 @@ public partial class MainWindow : Window
     private TView ShowScopedView<TView>(Button activeButton)
         where TView : UserControl
     {
-        DisposeFeatureScope();
-        _featureScope = _scopeFactory.CreateScope();
-        TView view = _featureScope.ServiceProvider.GetRequiredService<TView>();
+        IServiceScope scope = _scopeFactory.CreateScope();
+        _featureScopes.Add(scope);
+        TView view = scope.ServiceProvider.GetRequiredService<TView>();
         ScreenHost.Content = view;
         SetActiveButton(activeButton);
         return view;
@@ -161,8 +161,19 @@ public partial class MainWindow : Window
 
     private void DisposeFeatureScope()
     {
-        _featureScope?.Dispose();
-        _featureScope = null;
+        foreach (IServiceScope scope in _featureScopes.ToList())
+        {
+            try
+            {
+                scope.Dispose();
+            }
+            catch
+            {
+                // A screen may still be unwinding an async DB connection; app shutdown should continue.
+            }
+        }
+
+        _featureScopes.Clear();
     }
 
     private void UpdateOrderSidebarBadge(int count)
