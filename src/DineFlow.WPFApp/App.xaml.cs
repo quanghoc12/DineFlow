@@ -31,7 +31,7 @@ public partial class App : Application
         IConfiguration configuration = AppClientSettings.LoadConfiguration();
 
         string connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Thiếu ConnectionStrings:DefaultConnection.");
+            ?? "Host=localhost;Port=5433;Database=dineflow;Username=dineflow_user;Password=dineflow_password";
 
         ServiceCollection services = new();
         services.AddSingleton(configuration);

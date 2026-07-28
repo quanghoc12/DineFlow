@@ -4,7 +4,7 @@ namespace DineFlow.WPFApp.Services.Configuration;
 
 internal static class AppClientSettings
 {
-    private const string DefaultApiBaseUrl = "http://localhost:5080";
+    private const string DefaultApiBaseUrl = "https://dineflow-ohjj.onrender.com";
 
     public static IConfiguration LoadConfiguration()
     {
